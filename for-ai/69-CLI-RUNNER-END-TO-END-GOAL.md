@@ -1,5 +1,14 @@
 # CLI → Planner JSON → Runner validation goal
 
+The dated progress receipts below preserve what was observed in September;
+their retired playback gates and commands are not current implementation
+instructions. Current P1 native import prepares HTML-playable files with
+FFprobe/FFmpeg, preserves originals in `source-videos/`, and binds the exact
+prepared file under `assets/stimuli/` after HTML representative-frame proof.
+Runner plays that declared file with HTML video. CLI parity remains fail closed
+where no actual browser decoder can attest frames; installed execution and
+independently read XDF remain open.
+
 ### Current reconstruction prerequisite receipt
 
 Root independently read the earlier Runner synthetic lifecycle XDF with pyxdf
@@ -25,7 +34,7 @@ metadata, complete questionnaire definitions and answers, and observed temporal
 events with unique video, named-ISI and occurrence identities. Separate attempt
 files or the original Planner JSON must not be necessary to interpret the XDF.
 This extends the existing goal; it does not replace the original mock or permit
-fixture-only, parser-only or unqualified native playback claims.
+fixture-only, parser-only or unverified playback claims.
 
 The user's demographic answer activates a **shipped EN/DE demographics asset**:
 full name (text), age (number), gender (male, female, other, prefer not to say),
@@ -245,14 +254,11 @@ not the requested CLI-created experiment or evidence of native execution.
 The new native writer requires hard-link support; browser preflight prevents
 ordinary nonempty replacement but does not prove atomic multi-writer exclusion.
 
-Runner's isolated master-consumer baseline is `3301440`. Root confirmed the
-reported current blocker in `research_native_media/capability.rs`: qualified
-Start, format-matrix and redistribution readiness are false, and actor readiness
-does not enable Start. The corresponding missing installed/bootstrap, source/
-redistribution closure, format and lifecycle evidence is recorded in30/40.
-The Live Preview task now owns a read-only qualification-gap audit; Runner keeps
-implementing complete master consumers. No flag change, weaker playback path or
-mock is authorized as a substitute for passing the existing execution gates.
+Runner's isolated master-consumer baseline was `3301440`. At that date, its
+former media capability blocked Start. This is a historical source observation,
+not the present HTML video path. Installed playback, format/decode, input,
+timing and XDF evidence still require the current release gates in
+[30](30-TESTING-AND-RELEASE.md) and [40](40-ROADMAP.md).
 
 ### Independent production CLI driver
 
@@ -321,7 +327,7 @@ The public About catalogue can use this exact captured descriptor set as a
 verification reference. Explicit presentation-target authoring was found missing
 from this catalogue and is allocated to S7 before final export integration.
 
-### Actual native clip diagnostic and corrected next action
+### Historical native clip diagnostic — 2026-09-12
 
 Live Preview's isolated diagnostic checkpoint is `dffe166`; its first completed
 real-runtime attempt used a test-only copied executable with the required
@@ -435,8 +441,8 @@ and browser Runner readers for English and German, including all six steps and
 saved P4/P5 geometry. See [the concise release validation record](../docs/release-validation.md)
 for exact files, source/artifact hashes and evidence. Root remains sole owner;
 other tasks stay idle. Planner validation is passed for this scenario. Actual
-Runner playback, native combined screenshots and XDF remain open, with qualified
-Start still disabled. Continue at the native Runner gate; do not repeat the
+Runner playback, native combined screenshots and XDF remained open. Continue
+at the current Runner gate; do not repeat the
 passed Planner scenario unless a relevant change invalidates it.
 
 ## Current user amendment — 2026-09-13

@@ -535,7 +535,7 @@ owns full source-bound combined builds and actual native/application execution.
   workspace3 readers, Main master3/consumer composition. Root schema freeze02
   requires nine-key controlled geometry with complete nativeDisplayMetadata2.
 - Preserve absent versus explicit tags, reject malformed/conflicting/reflection,
-  configure pinned d3d11videosink through safe property APIs before Play creation,
+  configure the now-retired sink through safe property APIs before Play creation,
   set/readback quarter-turns and fence generation/metadata. Pre-sink snapshots
   must match raw source/PAR before applying controlled rotation once. No new
   unsafe, qualification flags, auto fallback or silent later reconfiguration.
@@ -543,7 +543,7 @@ owns full source-bound combined builds and actual native/application execution.
   geometry and error tests). Tagged absence is an empty struct variant so extra
   keys reject. No actor wiring/native build or actual playback claim yet.
   Cancellation and lifecycle handoffs remain unchanged.
-- Actor continuation: safe explicit d3d11 sink installed before Play creation;
+- Actor continuation: the retired sink was installed before Play creation;
   per-generation policy freezes selected stream ID, metadata revision and typed
   rotation readback. Later drift fails closed and hides/pauses the child, never
   reconfigures a frozen policy. Raw tag cardinality is checked before parsing;
@@ -6245,3 +6245,7 @@ constructor and companion lease signatures. `cargo fmt --all --check`, source
 reference scans and `git diff --check` pass. Full Rust compilation is deferred
 to CI because local disk space is limited; no installed qualification is
 claimed.
+## 20261004-Media-documentation-audit
+
+- Owner/scope: P1 documentation handoff in the isolated P1 worktree; `for-ai/20`, `61`, `67`, `69`, `72`, `docs/release-validation.md` and `docs/compartment-catalog.md` only. Root owns the current control-plane, segment and compatibility documents.
+- Current route: native P1 preserves originals in `source-videos/`, probes with FFprobe, converts incompatible sources with FFmpeg into `assets/stimuli/`, and requires HTML representative-frame proof before GUI confirmation. Runner consumes the exact prepared file through HTML video. Static browser and CLI limitations, installed qualification gaps and dated September evidence are stated in the edited documents.

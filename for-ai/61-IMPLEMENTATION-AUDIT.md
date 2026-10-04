@@ -1,6 +1,6 @@
 # Implementation audit and source evidence
 
-This is the detailed current-state audit supporting the [central segment roadmap](60-SEGMENT-CATALOGUE.md). It retains the original S1–S8 UI IDs, file/data flow, redundancy candidates and findings; use the roadmap’s P1–P7/R1 IDs for future capability work. This audit does not override the researcher’s final-state requirements.
+This is the dated 2026-09-11 source audit supporting the [central segment roadmap](60-SEGMENT-CATALOGUE.md). It retains the original S1–S8 UI IDs, file/data flow, redundancy candidates and findings as historical evidence; use the roadmap’s P1–P7/R1 IDs for current capability work. The former single-app Start path and media actor described in the snapshot below are superseded. Current P1 prepares video with FFprobe/FFmpeg, keeps originals in `source-videos/`, and confirms HTML decode of playable files under `assets/stimuli/`; the separate Runner plays declared prepared assets through HTML video. This audit does not override the researcher’s final-state requirements.
 
 **Source baseline:** integrated commit `305d3ac6b2de40a27436f7c97cb1ee2d2a2e87ce`, audited 2026-09-11. Inventory: 420 tracked files, 43 Research JavaScript modules, 36 Rust source files, 48 JavaScript test files. Source presence is distinct from runtime or research qualification. Builds, installed applications, private workspaces and remote deployment were not inspected as current runtime evidence.
 
@@ -32,13 +32,13 @@ flowchart TD
   T --> K[Recovery journal and safe restart]
 ```
 
-**Designer → Runner handoff:** one canonical JSON file contains the experiment
-definition and all embedded questionnaire content. Video bytes remain separate
-under `assets/stimuli/`; the package identifies and hashes them. The JSON alone
-does not carry the movies, participant responses, or platform qualification.
-The current Designer's manual-plan editing gap is described in S3/S4 below.
+**Current Planner → Runner handoff:** master5 JSON identifies the prepared video
+under `assets/stimuli/` and separately declared questionnaire assets under
+`assets/questionnaires/`. The project must travel with those files. The JSON
+does not carry movie bytes, participant responses, or platform qualification.
+The S3/S4 gap analysis below describes the 2026-09-11 source snapshot.
 
-## Designer: eight current Setup segments
+## Designer: eight Setup segments in the 2026-09-11 snapshot
 
 ### S1 — `workspace` — Workspace & Libraries
 
@@ -122,7 +122,7 @@ The current Designer's manual-plan editing gap is described in S3/S4 below.
   recognition is not codec qualification. Browser placement mismatch: F02.
 - **Sources:** [current section](../site/src/research/ui-view.js),
   [manual plan reader/resolver](../site/src/research/external-experiment.js),
-  [native catalogue adapter](../site/src/research/native-media-catalogue.js),
+  [current P1 media preparation](../site/src/research/planner-media-preparation.js),
   [schedule export columns](../site/src/research/tabular.js).
 - [ ] **Review S3:** confirm manual-plan controls and per-occurrence ISI requirements.
 
@@ -223,11 +223,10 @@ The current Designer's manual-plan editing gap is described in S3/S4 below.
   `{participantCode,age,gender,handedness}`, attempt reservation and runtime
   receipts. Raw names are erased before the Start request; Rust's type named
   `TransientParticipant` contains coded fields plus participant ID, not names.
-- **Current limits:** Designer completion and Runner intake share this Setup
-  flow; they are not separate executables. Native package save acknowledgement
-  is not awaited by the UI finalizer (F03). Native package Start requires
-  qualified media and remains blocked before mutation; the displayed unqualified
-  playback selector cannot make a package runnable (F06).
+- **Snapshot limits (2026-09-11):** this was a single-app Setup/Start flow.
+  Planner and Runner are now separate programs. Current P1 media preparation
+  and Runner HTML playback follow their own owner contracts; see
+  [16](16-COMPANION-APP-BOUNDARY.md) and [66](66-PLANNER-RUNNER-COMPATIBILITY.md).
 - **Sources:** [Review markup](../site/src/research/ui-view.js),
   [finalizer/Start assembly](../site/src/research/app.js),
   [native requests](../site/src/research/native-package-protocol.js),
@@ -314,14 +313,14 @@ study or a guarantee of complete questionnaire-language coverage for a new desig
 
 - [ ] **Review package:** confirm that this contains all intended runnable design choices.
 
-## Runner: reconstruction and execution segments
+## Runner: reconstruction and execution in the 2026-09-11 snapshot
 
 | ID | Purpose / input received | Output produced / next consumer | Current state |
 | --- | --- | --- | --- |
 | `runner-intake` | Canonical package bytes from Designer, authorized asset tree, participant ID and explicit terminal option-ID path | Compiled selection: language-specific settings/hash, experiment plan, participant assignment/hash, flat protocol plan/hash, asset bindings; feeds preflight | Browser and Rust compilers present. No locale, RNG, clock or prior storage supplies missing design fields. |
-| `runner-start` | Compiled selection, coded demographics, input receipt, live storage/media/platform gates and attempt choice | Create-new attempt, immutable snapshots, lock/reservation, start receipt and active step | Browser implementation present. Native implementation present but qualified media capability currently blocks public package Start. |
+| `runner-start` | Compiled selection, coded demographics, input receipt, live storage/media/platform gates and attempt choice | Create-new attempt, immutable snapshots, lock/reservation, start receipt and active step | Historical package-v1 snapshot; current Runner has a separate master route and HTML playback. Installed qualification is still open. |
 | `runner-questionnaire` | Frozen definition and module/step identity; participant option selections and response latency | Durable draft; on submit, validated response rows and completion event plus safe step advance | Single choice. Labels/codes derive from the frozen definition, not submitted scores. Unanswered optional items omit rows. No rating sampling or regular LSL state during forms. |
-| `runner-video` | Current stimulus and verified media binding, playback policy, input and appearance configuration | Playback lifecycle/status, affect-state samples while playing, events; advances to the next protocol step after decoded end | Pause/Stop paths present. Native actor source exists; installed media/input/timing qualification remains open. |
+| `runner-video` | Current stimulus and verified media binding, playback policy, input and appearance configuration | Playback lifecycle/status, affect-state samples while playing, events; advances to the next protocol step after decoded end | Runner HTML video source is current; installed media/input/timing qualification remains open. |
 | `runner-interval` | Previous video's explicit `isiAfterMs` and ordered pre/post-ISI hooks | Neutral timed interval; start/completion events; next step | Every video has an interval, including final and zero-duration intervals. No rating acquisition; interrupted interval restarts its full duration. |
 | `runner-finish` | Completed sequence or Stop Early, durable rows/events and frozen receipts | Complete or Partial manifest, tables/snapshots, output receipt, lock release and Setup return | Retry/recovery logic present. Completion is not claimed until durable finalization. |
 
@@ -345,7 +344,7 @@ Sources: [browser run controller](../site/src/research/run-controller.js),
 - [ ] **Review runner-video/interval:** confirm playback, hooks, Pause, timing and restart behavior.
 - [ ] **Review runner-finish:** confirm complete, partial and output receipt behavior.
 
-## Shared execution services
+## Shared execution services in the 2026-09-11 snapshot
 
 | ID | Main function | Input ← producer | Output → consumer / limitation |
 | --- | --- | --- | --- |
@@ -353,7 +352,7 @@ Sources: [browser run controller](../site/src/research/run-controller.js),
 | `asset-verification` | Verify declared file closure and separate decode readiness | Package asset manifest + selected workspace files + decoder observations | Exact asset bindings, bounded media grants and readiness errors → compiler/Start/media. A scan never silently enrolls assets. |
 | `participant` | Derive code and reconstruct attempt state | Transient form → frontend code derivation; locks/journals/manifests → state audit | Code/age/closed gender/handedness plus Available/Active/Partial/Complete → Start/chooser. No raw-name persistence. |
 | `affect-state` | Convert accepted input into bounded VA state and mappings | Frozen binding, accepted edges or pointer/stick state | Current/target x/y, radius/angle, six mapped values, active flags → renderer/sampler/LSL. Native input mailbox bounds digital FIFO and coalesces continuous state observably. |
-| `media` | Own prepare/play/pause/end/error and resource teardown | Opaque verified asset grant, viewport, typed lifecycle actions | Media state/position/decode receipts → run authority. Current presentation uses HTML video; installed correspondence remains open. |
+| `media` | Prepare exact P1 source and play declared asset | FFprobe/FFmpeg preparation, current HTML decode evidence and opaque verified asset grant | Prepared-file receipts and HTML lifecycle/position evidence → run authority. |
 | `timing` | Sample only active playback on a monotonic schedule | Explicit 1–240 Hz, active segment, timestamped affect/media state | `ResearchSampleV1` rows and explicit missed-deadline events → writer/LSL. No animation-clock sampling or backfill. |
 | `recording` | Persist typed evidence and project selected formats | Samples, events, questionnaire responses, frozen package/plan/participant context | Journal, CSV/TSV, JSON snapshots and manifest → filesystem/audit. Browser commits IndexedDB before materialization; Rust owns files. |
 | `recovery` | Validate durable evidence and restart safely or finish pending output | Frozen package/hash bindings, valid journal and current workspace | Recovery choices, restored draft or restarted video/interval, finalize-only receipt; corrupt evidence is quarantined. No mid-video/partial-ISI resume. |
@@ -416,7 +415,7 @@ Exact columns: [ratings and schedule](../site/src/research/tabular.js),
 | ID | Purpose and input | Output / current scope |
 | --- | --- | --- |
 | `reference-catalogues` | Curated stimulus/questionnaire metadata, local public reference materials and provenance | Inspiration links, rights/status metadata and public catalogue assets. No automatic media selection or package enrollment. Simplified S2 has no broader questionnaire-catalogue opener; the old dialog, metadata and handlers remain in source/markup. |
-| `build-delivery` | Entrypoints, source, locked dependencies, build config and runtime pin | Static Pages closure, Tauri frontend and optional unsigned interface-only native packages plus provenance. Windows research runtime qualification remains open; macOS/Linux builds are Setup evaluation only. |
+| `build-delivery` | Entrypoints, source, locked dependencies and build config | Static Pages closure, Tauri frontend and optional unsigned interface-only native packages plus provenance. Windows research qualification remains open; macOS/Linux builds are Setup evaluation only. |
 | `verification-tools` | Fixtures, typed test seams, explicit candidate/runtime input | Node/Rust tests, independent-process reproduction receipts and optional off-screen/worker diagnostics. Diagnostic results are not live-study qualification. |
 | `legacy-compatibility` | Historical V1/V2/V3 settings/plans/manifests and explicit imports | Strict historical reading/conversion/recovery. `counterbalancer.js`, `protocol-plan.js`, `youtube-player.js` and legacy native runtime paths remain source; they are not new-package allocation or YouTube authority. |
 | `instructions-provenance` | Charter, status, workflow, references and review decisions | `for-ai/`, root instructions, README/notices and this running checklist; not executable settings. |
@@ -427,6 +426,7 @@ Sources: [stimulus catalogue](../site/src/research/stimulus-inspiration.js),
 [artifact guard](../scripts/verify-research-build.js),
 [desktop config](../desktop/vite.config.js),
 [unsigned packaging](../scripts/build-unqualified-desktop-package.js),
+[current P1 media preparation](../src-tauri/src/research_workspace/media_preparation.rs),
 [independent-instance verifier](../scripts/verify-experiment-package-instance.js).
 
 - [ ] **Review supporting segments:** confirm catalogue, compatibility and delivery boundaries.
@@ -488,7 +488,8 @@ later implementation pass.
 
 ## Findings and proposed follow-up checklist
 
-These are current observations for review. This pass makes no application fix.
+These were observations for review at the source baseline. This audit pass made
+no application fix; current owner checklists supersede the unchecked items.
 
 For workflow cleanup, review **F01–F03 and F06 first**: they affect authoring,
 asset placement, save completion or the available Start path. **F04/F05/F07**
@@ -527,11 +528,9 @@ a confirmed defect; the description states its evidence and limits.
   `questionnaire-responses.csv/tsv`; native package storage constants write
   `questionnaire.csv/tsv`. Both expose response output kinds. Document or align
   the external analysis interface with explicit compatibility handling.
-- [ ] **F06 — Make the native playback selector's package limit clear.** Review
-  offers `unqualifiedWebview`, but `PackageProtocolRuntime::start` requires
-  qualified native media; native qualification currently blocks Start. Do not present
-  the legacy fallback as a way to run a new package. This is a UI/runtime scope
-  mismatch, not permission to enable an alternate backend.
+- [x] **F06 — Historical playback selector finding superseded.** The old
+  selector and actor are not current Runner media paths. Current Runner uses
+  HTML video; actual installed playback and XDF remain separate release gates.
 - [ ] **F07 — Review preview-to-package expectations.** Label repetition
   5/10 currently blocks Build until reset to 1, while Face/tile/timing/hold/halo
   drafts stay outside package serialization. Decide whether to retain this
@@ -566,8 +565,9 @@ are not carried in that marker payload. The roadmap tracks the intended
 replacement contract at P3-06/P3-07 and deferred runtime work at R1-04/R1-06;
 existing outlet tests do not close these items.
 
-This index accounts for every Research JS module and Rust source file in the
-snapshot. Grouping means functional coverage, not a line-by-line security audit.
+This index accounts for the Research JS modules and Rust source files in the
+snapshot, with current P1 and Runner media replacements noted in their rows.
+Grouping means functional coverage, not a line-by-line security audit.
 Some owners span several catalogue IDs; source files are not additional modes.
 All filenames in the JS column are under `site/src/research/`; Rust filenames
 are under `src-tauri/src/` unless a different root is stated.
@@ -576,11 +576,11 @@ are under `src-tauri/src/` unless a different root is stated.
 | --- | --- | --- |
 | Shell, modes, presentation and platform composition | `app.js`, `ui-view.js`, `ui-contracts.js`, `ui-bootstrap.js`, `browser-entry.js`, `native-entry.js`, `native-bridge.js`, `runtime-bridge.js` | `main.rs`, `lib.rs`, `research_commands.rs`, `research_error.rs`, `research_platform.rs` |
 | Package, canonical contracts and manual protocol | `canonical.js`, `contracts.js`, `experiment-package.js`, `external-experiment.js`, `external-protocol.js` | `research_contracts.rs`, `research_experiment_package.rs`, `research_external_protocol.rs`, `research_protocol.rs`, `research_native_protocol/compiler.rs`, `research_native_protocol/contracts.rs` |
-| Workspace, assets and storage capability | `workspace.js`, `storage-capability.js`, `native-media-catalogue.js` | `research_workspace.rs` |
+| Workspace, assets and storage capability | `workspace.js`, `storage-capability.js`, `planner-media-preparation.js` | `research_workspace.rs`, `research_workspace/media_preparation.rs` |
 | Questionnaires | `questionnaires.js`, `questionnaire-authoring.js`, `questionnaire-assets.js`, `questionnaire-editor.js`, `questionnaire-sheet.js`, `questionnaire-storage-request.js` | `research_native_protocol/responses.rs` (shared definition types in `research_protocol.rs`) |
 | Participant and input | `identity.js`, `input-controller.js` | `research_participant.rs`, `research_input.rs`, `research_gamepad.rs`, `research_native_protocol/input_mailbox.rs` |
 | Visual, mappings and transient preview | `mappings.js`, `preview.js`, `preview-response-simulator.js`, `preview-tiles.js`, `responsive-face.js`, `setup-accordion-motion.js`; geometry in `site/src/math.js` | Mapping/state types and evaluation in `research_contracts.rs` |
-| Native media adapters and lifecycle | `native-media-controller.js`, `native-run-media.js` | `research_native_media.rs`, `research_native_media/capability.rs`, `research_native_media/contracts.rs`, `research_native_media/state.rs` |
+| Current Runner HTML media lifecycle | `runner/src/html-video-player.js` | Opaque asset grants in `research_workspace.rs`; Runner authority in `research_runner_master` |
 | Run, timing, persistence, recovery and LSL | `native-package-protocol.js`, `run-controller.js`, `sampling-worker.js`, `browser-journal.js`, `protocol-records.js`, `tabular.js` | `research_native_protocol.rs`, `research_native_protocol/commands.rs`, `research_native_protocol/reducer.rs`, `research_native_protocol/runtime.rs`, `research_native_protocol/records.rs`, `research_native_protocol/storage.rs`, `research_native_protocol/recovery.rs`, `research_clock.rs`, `research_timing.rs`, `research_lsl.rs` |
 | Historical compatibility | `counterbalancer.js`, `protocol-plan.js`, `youtube-player.js` | `research_runtime.rs`, `research_run_storage.rs` |
 | Inspiration metadata | `questionnaire-inspiration.js`, `stimulus-inspiration.js` | No separate native authority |
@@ -596,7 +596,7 @@ participate in experiment reconstruction.
 
 - Source/field trace covered both entrypoints, eight section builders, settings
   assembly, questionnaire normalization/save/coverage, package creation/load,
-  selected route compilation, browser/native Start, native media capability,
+  selected route compilation, the then-current browser/native Start and media capability,
   responses and both file writers, recovery/record contracts and build gates.
 - Executed the canonical fixture through the actual JS parser and selected
   participant compiler. Observed all nine package root keys, actual nested

@@ -1,5 +1,14 @@
 # Completed Planner authoring goal — 2026-09-12
 
+This page records the 2026-09-12 baseline completion and its exact artifacts;
+it is not a current build recipe. The 2026-10-04 P1 media amendment adds native
+FFprobe/FFmpeg preparation: preserve imported originals in `source-videos/`,
+publish only compatible or converted MP4 bytes under `assets/stimuli/`, and
+confirm representative HTML frames before accepting selected video references.
+The static browser consumes prepared assets; CLI cannot claim HTML decode
+attestation without a browser decoder. Current gates are in [60](60-SEGMENT-CATALOGUE.md)
+and [66](66-PLANNER-RUNNER-COMPATIBILITY.md).
+
 The researcher explicitly set a sustained goal to finish and validate the
 **Experiment Planner** as a complete JSON authoring interface. This allocation
 supersedes the preceding bounded UI/confirmation intake. The researcher then
@@ -29,9 +38,9 @@ canonical HEAD without changing this tested product or binary.
 28,512,256 bytes, SHA-256
 `71bf24779a376249de9c5ed7e2c77e9b11cbb41bd3519332519cf4110a048fca`.
 Root independently verified this hash and the successful canonical native build
-log. The historical locked build enabled its then-current media feature and
-used its pinned SDK; it has DOCS_RS absent. Three
-existing workspace dead-code warnings and the Cargo PDB-name warning remain.
+log. That historical build used the then-required native media feature and SDK,
+with DOCS_RS absent. Three existing workspace dead-code warnings and the Cargo
+PDB-name warning remained.
 This is a local development build, not an installer or installed qualification.
 
 Canonical Desktop 11/Pages 235/Runner 7 frontend closures pass; a fresh canonical
@@ -71,10 +80,10 @@ No foreground launch or remote publication was performed.
   pass at e00cb35; source and images were independently checked. The supplemental
   actual setup/reopen cycle passes 35 checks. Authoring previews and narrow media
   inspection remain available.
-- Normal pinned-SDK/native-feature linked tests at e00cb35 pass 243 with two
-  opt-in LSL tests ignored. The 827-file pinned runtime was verified, DOCS_RS is
-  absent and the required-runtime gate is enabled. This is linked software
-  evidence, not installed DLL/resource/redistribution or playback qualification.
+- Historical native-feature linked tests at e00cb35 passed 243 with two
+  opt-in LSL tests ignored. The then-pinned runtime was verified and DOCS_RS
+  absent. This remains dated software evidence, not current media preparation,
+  installed playback or release qualification.
 
 Root evidence: `D:/GitHub/.affect-preview-checks/planner-final-workflow-`
 `{chrome,edge}-875efae-20260912/`, plus the capture roots in 64. P7 evidence is
@@ -99,7 +108,7 @@ never assembles separate JSON files by hand.
 
 | Contribution | Required information |
 | --- | --- |
-| P1 — Workspace/videos | Study identity, media reference and safe locations, stable asset identities/readable annotations, hashes/lengths, durations and oriented display geometry |
+| P1 — Workspace/videos | Study identity, preserved originals and prepared HTML-playable file references, safe locations, stable asset identities/readable annotations, hashes/lengths, durations and oriented display geometry |
 | P2 — Questionnaires | Complete selected-language definitions, instructions, items/options, labels/scoring annotations, required flags, modules and explicit presentation/administration semantics |
 | P3 — Versions/timing | Exact variant identities/order, researcher-defined named ISIs, occurrences, planned boundaries and marker definitions; allocation remains Runner-owned |
 | P4 — Screen/layout | Screen dimensions/calibration or relative basis, explicit fixed reference, fit policy, video/Flubber sizes and centre relationship, units and validation requirements |
