@@ -50,6 +50,8 @@ jobs:
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --no-run
       - name: Exercise exact Runner video step binding
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib research_runner_master::commands::html_video_tests::html_video_url_can_select_only_a_saved_video_step -- --exact
+      - name: Exercise observed HTML video session boundary
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --lib research_runner_master::html_session::tests::observed_video_events_require_the_current_position_and_grant -- --exact
       - name: Compare saved master plans in independent JS and Rust readers
         shell: pwsh
         run: |

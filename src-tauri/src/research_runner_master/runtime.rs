@@ -1,11 +1,13 @@
 //! Runner master wire contracts and a fail-closed session authority.
 use super::MasterSelector;
 use crate::research_error::{CommandError, ResearchResult};
+use crate::research_input::ResearchInputService;
 use crate::research_participant::{validate_participant_code, TransientParticipant};
 use serde::{Deserialize, Serialize};
 #[cfg(test)]
 use serde_json::json;
 use serde_json::Value;
+use std::sync::{mpsc, Arc, Mutex, MutexGuard};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -250,6 +252,31 @@ pub enum MasterAction {
         data: Value,
         page_no: u32,
     },
+    #[serde(skip)]
+    VideoGrant {
+        position: u32,
+        media_grant_id: String,
+    },
+    #[serde(skip)]
+    VideoPlaying {
+        position: u32,
+        media_grant_id: String,
+    },
+    #[serde(skip)]
+    VideoPaused {
+        position: u32,
+        media_grant_id: String,
+    },
+    #[serde(skip)]
+    VideoEnded {
+        position: u32,
+        media_grant_id: String,
+    },
+    #[serde(skip)]
+    VideoFailed {
+        position: u32,
+        media_grant_id: String,
+    },
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
@@ -281,6 +308,23 @@ impl From<MasterActionV2> for MasterAction {
         }
     }
 }
+pub(crate) type Message = (MasterAction, mpsc::Sender<ResearchResult<MasterStatus>>);
+
+#[derive(Clone)]
+pub(crate) struct InputAuthority {
+    pub service: Arc<ResearchInputService>,
+    pub id: String,
+}
+impl Drop for InputAuthority {
+    fn drop(&mut self) {
+        self.service.end_run(&self.id);
+    }
+}
+
+pub(crate) fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|error| error.into_inner())
+}
+
 /// The historical native Start commands remain registered for stable wire
 /// errors. Runner sessions use the HTML path; this authority cannot start one.
 pub(crate) const RUNNER_START_UNAVAILABLE_REASON: &str =

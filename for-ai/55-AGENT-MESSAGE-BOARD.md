@@ -6441,3 +6441,30 @@ target the installed programs. A local source-to-Runner-build hash comparison
 also found all nine registered Face atlases (nine source, nine built, none
 missing or unexpected). Native Start is still closed; no installed participant
 playback, visual Face selection, physical input, LSL or XDF is qualified.
+
+## 20261004-R1-native-HTML-attempt-worker
+
+Owner: root, R1/RR-04/06/07/08/09 and R1-03/04/05/07, Backend Verification.
+Isolated branch `codex/segment-r1-html-authority` from P7 `3d5865b`.
+Bounded deliverable: implement the Rust-owned HTML session worker against the
+frozen master5 selection and exact P1 media grant, with position-bound observed
+video transitions, native interval/input sampling, form answers, markers,
+LSL/XDF and durable partial/completed attempts. The current master1–4 readers
+and wire error contracts stay intact; normal Start stays closed until exact
+installed session and independent XDF evidence pass. A permanently unqualified
+validation attempt is the first executable gate. Shared seams are workspace
+media grants, input authority, recorder selection and frontend video callbacks;
+no retired player, additional unsafe boundary, or Planner schema change.
+Evidence to collect now: state/contract tests, native compile/lint, source-plan
+parity and synthetic output reconstruction. Installed visual/device/recorded
+full-run gates remain separate and await their exact candidate.
+
+First worker slice: the existing form/ISI/response/sampling/marker/LSL/storage
+logic is carried into `html_session.rs` without any native player adapter.
+Video steps now wait for an opaque grant and exact position-bound HTML
+play/pause/end/failure observations; duplicate or stale end cannot advance the
+plan. An isolated worker test exercises this transition without decoded media.
+The module is registered for compile checks but not started by `MasterRuntime`.
+Local Windows `cargo check --tests --no-default-features` and formatting pass;
+the focused test still needs execution in CI because the local disk falls below
+1 GB after compilation. This is a source checkpoint, not an executable session.
