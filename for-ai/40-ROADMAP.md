@@ -1396,9 +1396,11 @@ LSL stream-versus-file ownership, and remaining native qualification.
 Implemented safe groundwork:
 
 - exact GStreamer 1.28.6 Windows MSVC x86_64 combined-installer identity and a
-  canonical 827-file / 340,362,958-byte integration-tree manifest. Component
-  checksum notes exist, but source archive names, URLs, byte lengths, retained
-  artifacts, and automated source verification are explicitly incomplete;
+  canonical 827-file / 340,362,958-byte integration-tree manifest. Six direct
+  component source archive names, URLs, byte lengths and SHA-256 values are
+  pinned and checked against upstream sums by a manual Windows CI job, with a
+  temporary 14-day review artifact. Complete source/license closure for the
+  distributable DLL/plugin tree remains open;
 - a deterministic staging/verifying script that rejects traversal, links,
   missing/extra/modified files, coordinated DLL-plus-manifest tampering, and
   wrong-architecture engine DLLs while preserving upstream notices;

@@ -6373,3 +6373,22 @@ parsing helper stdout: `mt.exe` prints a status line before the JSON. The
 helper's own `artifact-receipt.json` is the authoritative machine-readable
 output; CI now reads that file. No test assertion or app behavior failed in
 this attempt.
+Run `37184918675` then passed its `windows` and `component-sources` jobs at
+`5b8d69a`: the prepared native test log records 1 passed, 0 failed and the
+copy-only Common Controls 6 test manifest receipt records `qualified:false`.
+The redundant feature-branch suite build was cancelled after those jobs passed.
+Root merged the exact tested tree into `codex/p7-windows-suite` as `6a0e992`;
+both commits have Git tree `401ad4bd6a9370e9530f6acba4d8978e86a1aa79`.
+The merged source still needs its own exact-commit suite build and installed
+audit. No installed participant run, video playback, input, LSL or XDF claim
+follows from this focused test.
+
+The preceding integrated suite run `37182385963` passed all three jobs for
+`3ae5fb3`: Windows checks, six direct source archives, and fresh silent NSIS
+installation with `issues:[]` and `launcherVerified:true`. Its unsigned,
+unqualified installer ZIP artifact is `11296121762` (153,636,833 bytes,
+SHA-256 `b098a19a0e9fac2fb14228cc708f94fa6442622900494b2bf1178c0fd933c3a1`);
+the temporary component-source ZIP is `11295622049` (19,317,679 bytes,
+SHA-256 `f4d84e4329bc1cc87c080442a1ad5931ba595ba3b119c6168ee50537a45ae1fe`).
+These do not include an approved native runtime package or physical workflow
+qualification.

@@ -47,20 +47,27 @@ controls any app-data removal.
 
 ## Exact installed-file evidence
 
-[Windows run 37176003853](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37176003853)
+[Windows run 37182385963](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37182385963)
 passed source checks, built the unsigned NSIS setup from commit
-`1fd9ceafa0949b2023ddf423c715a2acc75dea7a`, installed it silently into a
+`3ae5fb320b77b1c899af67bc6530e7ad1c07d9a6`, installed it silently into a
 fresh directory on the ephemeral Windows runner, and passed
 `affect-windows-suite-installed-audit-v1` with no issues and
-`launcherVerified: true`. The preceding diagnostic run `37174530590` proved
-that Tauri places the two resource-mapped receipts at the installation root;
-the NSIS hook now checks those actual paths.
+`launcherVerified: true`. Its [unqualified installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37182385963/artifacts/11296121762)
+is a 153,636,833-byte ZIP with SHA-256
+`b098a19a0e9fac2fb14228cc708f94fa6442622900494b2bf1178c0fd933c3a1`.
+That digest identifies the uploaded ZIP, not the setup executable inside.
 
-The uploaded [unqualified candidate artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37176003853/artifacts/11293408018)
-is a 153,635,460-byte ZIP with SHA-256
-`786c5ca9275210b2a9e911de6ea4b701f5b74b398c232b2ac72ff5481675d924`.
-This digest identifies the uploaded artifact ZIP, not the executable inside.
-The workflow retains it for 14 days; it is not a signed release.
+The same run independently verified all six pinned direct GStreamer component
+source archives against their bytes, SHA-256 values and published upstream
+checksums. Its [temporary source-review artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37182385963/artifacts/11295622049)
+is a 19,317,679-byte ZIP with SHA-256
+`f4d84e4329bc1cc87c080442a1ad5931ba595ba3b119c6168ee50537a45ae1fe`.
+Both artifacts have 14-day retention. The installer contains no GStreamer
+runtime; these source archives do not establish redistribution approval.
+
+The later R1 native-animation correspondence fix is merged after this artifact.
+An exact-source installer rebuild is required before treating that fix as
+present in the candidate.
 
 ## Claim boundary
 
