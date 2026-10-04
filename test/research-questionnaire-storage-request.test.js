@@ -92,16 +92,6 @@ test("native storage listener acknowledges only an exact workspace receipt and f
       if (command === "research_source_capabilities") return {};
       if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
       if (command === "research_input_status") return {};
-      if (command === "research_native_media_capability") return {
-        schema: "affect-research-native-media-capability", version: 2, backend: "html-video",
-        api: "webview-video", pinnedRuntimeVersion: "", bindingsVersion: "", target: "browser-webview",
-        runtimeInstallerSha256: "", runtimeTreeManifestSha256: "", defaultPlaybackMode: "unqualifiedWebview",
-        unqualifiedFallbackMode: "unqualifiedWebview", runtimeBundleState: "notStaged",
-        runtimeIntegrityVerified: false, runtimeFileCount: null, runtimeByteLength: null,
-        playerActorReady: false, qualifiedStartAvailable: false, qualifiedFormatMatrixReady: false,
-        redistributionReviewReady: false, ambientRuntimeAllowed: false, requiredForQualifiedRun: false,
-        rendererReceivesFilesystemPaths: false, reasonCode: "html-video-playback-selected",
-      };
       if (command !== "research_store_questionnaire_asset") throw new Error("Unexpected native command.");
       requests.push(args.request);
       return {

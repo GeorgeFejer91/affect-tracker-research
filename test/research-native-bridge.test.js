@@ -7,7 +7,6 @@ import {
   nativeInputPresetAvailability,
   nativeInputRegionRequest,
   probeAndAttestNativeVideo,
-  validateNativeMediaCapabilityV2,
 } from "../site/src/research/native-bridge.js";
 import { createInputBindingPreset } from "../site/src/research/contracts.js";
 import { RESEARCH_UI_EVENTS } from "../site/src/research/ui-contracts.js";
@@ -21,7 +20,6 @@ test("Planner native file requests acknowledge exact results without rescanning 
     setIntervalObject: () => 1, clearIntervalObject: () => {}, invoke: async (command, payload) => {
       calls.push({ command, payload });
       if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
-      if (command === "research_native_media_capability") return nativeMediaCapability();
       if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
       if (["research_load_planner_recipe", "research_save_planner_recipe"].includes(command)) {
         if (fail) throw Error("selected file failed");
@@ -74,7 +72,6 @@ test("Planner startup adopts an existing workspace and may rescan through HTML v
       if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
       if (command === "research_workspace_status") return workspace;
       if (command === "research_source_capabilities") return {};
-      if (command === "research_native_media_capability") return nativeMediaCapability();
       if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
       if (command === "research_input_status") return {};
       if (command === "research_rescan_stimuli") return { workspaceId: workspace.workspaceId, stimuli: [] };
@@ -102,7 +99,6 @@ test("native capture fences cancelled, rearmed, rejected and delayed results", a
     calls.push([command,payload]);
     if(command === "research_desktop_identity") return {schema:"affect-research-desktop-identity",version:1,program:"planner"};
     if(command === "research_workspace_status") return {selected:false};
-    if(command === "research_native_media_capability") return nativeMediaCapability();
     if(command === "research_input_capability") return {nativeAuthorityReady:true,supportsCustomKeyboard:true,supportedPresets:["arrowKeys","custom"]};
     if(command === "research_input_status") return deferredStatus ? deferredStatus.promise : {};
     if(command === "research_input_begin_capture") return deferredBegin ? deferredBegin.promise : {};
@@ -135,35 +131,6 @@ test("native capture fences cancelled, rearmed, rejected and delayed results", a
   assert.equal(projected.length,finalCount);assert.equal(captures.length,2);
   bridge.destroy();
 });
-
-function nativeMediaCapability(overrides = {}) {
-  return {
-    schema: "affect-research-native-media-capability",
-    version: 2,
-    backend: "html-video",
-    api: "webview-video",
-    pinnedRuntimeVersion: "",
-    bindingsVersion: "",
-    target: "browser-webview",
-    runtimeInstallerSha256: "",
-    runtimeTreeManifestSha256: "",
-    defaultPlaybackMode: "unqualifiedWebview",
-    unqualifiedFallbackMode: "unqualifiedWebview",
-    runtimeBundleState: "notStaged",
-    runtimeIntegrityVerified: false,
-    runtimeFileCount: null,
-    runtimeByteLength: null,
-    playerActorReady: false,
-    qualifiedStartAvailable: false,
-    qualifiedFormatMatrixReady: false,
-    redistributionReviewReady: false,
-    ambientRuntimeAllowed: false,
-    requiredForQualifiedRun: false,
-    rendererReceivesFilesystemPaths: false,
-    reasonCode: "html-video-playback-selected",
-    ...overrides,
-  };
-}
 
 test("Tauri projects each native input preset through explicit backend capabilities", () => {
   const capability = {
@@ -251,19 +218,6 @@ test("native input regions remain bounded to visible client coordinates", () => 
     purpose: "runFeedback", layoutEpoch: 7, left: 10, top: 20, width: 100, height: 200,
     viewportWidth: 800, viewportHeight: 600,
   });
-});
-
-test("native media capability v2 is exact for the HTML video contract", () => {
-  assert.deepEqual(validateNativeMediaCapabilityV2(nativeMediaCapability()), nativeMediaCapability());
-  assert.throws(() => validateNativeMediaCapabilityV2({
-    ...nativeMediaCapability(), extra: true,
-  }), /malformed/u);
-  assert.throws(() => validateNativeMediaCapabilityV2(nativeMediaCapability({
-    ambientRuntimeAllowed: true,
-  })), /malformed/u);
-  assert.throws(() => validateNativeMediaCapabilityV2(nativeMediaCapability({
-    qualifiedStartAvailable: true,
-  })), /malformed/u);
 });
 
 class ProbeVideo extends EventTarget {
@@ -449,7 +403,7 @@ test("desktop Planner entrypoint loads only its native authoring bridge", async 
     "research_import_stimuli", "research_rescan_stimuli",
     "research_workspace_media_url", "research_attest_workspace_decode",
     "research_store_questionnaire_asset", "research_save_planner_recipe",
-    "research_native_media_capability", "research_input_begin_capture",
+    "research_input_begin_capture",
   ]) assert.match(bridgeSource, new RegExp('"' + command + '"', "u"));
   assert.match(bridgeSource, /const decodeQualification = "attestedUnqualified"/u);
 });
@@ -493,7 +447,6 @@ async function preparedBridgeFixture() {
     setIntervalObject: () => 1, clearIntervalObject: () => {}, invoke: async (command, payload) => {
       calls.push({ command, payload });
       if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
-      if (command === "research_native_media_capability") return nativeMediaCapability();
       if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
       if (command === "research_rescan_stimuli") return structuredClone(scan);
       if (command === "research_workspace_media_url") {
@@ -561,15 +514,14 @@ test("prepared catalogue uses existing sequential authority without early state/
   f.bridge.destroy();
 });
 
-test("prepared catalogue guards caller, workspace, settings, capability, newer catalogue and destruction", async () => {
-  for (const change of ["caller", "workspace", "settings", "capability", "catalogue", "destroy"]) {
+test("prepared catalogue guards caller, workspace, settings, newer catalogue and destruction", async () => {
+  for (const change of ["caller", "workspace", "settings", "catalogue", "destroy"]) {
     const f = await preparedBridgeFixture(); f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
     let current = true;
     const prepared = await f.connector.prepareCatalogue(f.scan, { isCurrent: () => current });
     if (change === "caller") current = false;
     if (change === "workspace") f.connector.prepareWorkspace(preparedWorkspaceReceipt("22222222-2222-4222-8222-222222222222")).commit();
     if (change === "settings") f.root.researchUi.settings.stimuli.items.push({ stimulusId: "new", source: { relativePath: "new.mp4" } });
-    if (change === "capability") f.bridge.nativeMediaCapability = { ...f.bridge.nativeMediaCapability, reasonCode: "capability-replaced" };
     if (change === "catalogue") (await f.connector.prepareCatalogue({ workspaceId: preparedWorkspaceId, stimuli: [] })).commit();
     if (change === "destroy") f.bridge.destroy();
     const catalogue = f.bridge.catalog;

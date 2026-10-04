@@ -15,16 +15,6 @@ const WORKSPACE_LOCATIONS = new Set(["workspaceRoot", "videoLibrary", "experimen
 const QUESTIONNAIRE_ASSET_IDENTIFIER = /^[a-z0-9][a-z0-9_-]{0,127}$/u;
 const QUESTIONNAIRE_ASSET_FORMATS = new Set(["csv", "txt", "json"]);
 
-const NATIVE_MEDIA_CAPABILITY_KEYS = Object.freeze([
-  "ambientRuntimeAllowed", "api", "backend", "bindingsVersion", "defaultPlaybackMode",
-  "pinnedRuntimeVersion", "playerActorReady", "qualifiedFormatMatrixReady",
-  "qualifiedStartAvailable", "reasonCode", "redistributionReviewReady",
-  "rendererReceivesFilesystemPaths", "requiredForQualifiedRun", "runtimeBundleState",
-  "runtimeByteLength", "runtimeFileCount", "runtimeInstallerSha256",
-  "runtimeIntegrityVerified", "runtimeTreeManifestSha256", "schema", "target",
-  "unqualifiedFallbackMode", "version",
-]);
-
 function nativeQuestionnaireAssetRequest(detail) {
   if (!detail || typeof detail !== "object" || Array.isArray(detail)) {
     throw new TypeError("Questionnaire asset storage requires a typed request.");
@@ -68,41 +58,6 @@ function nativeQuestionnaireAssetRequest(detail) {
     bytes: Object.freeze(bytes),
   });
 }
-
-export function validateNativeMediaCapabilityV2(value) {
-  const keys = value && typeof value === "object" && !Array.isArray(value)
-    ? Object.keys(value).sort()
-    : [];
-  if (keys.length !== NATIVE_MEDIA_CAPABILITY_KEYS.length
-    || keys.some((key, index) => key !== NATIVE_MEDIA_CAPABILITY_KEYS[index])
-    || value.schema !== "affect-research-native-media-capability"
-    || value.version !== 2
-    || value.backend !== "html-video"
-    || value.api !== "webview-video"
-    || value.pinnedRuntimeVersion !== ""
-    || value.bindingsVersion !== ""
-    || value.target !== "browser-webview"
-    || value.runtimeInstallerSha256 !== ""
-    || value.runtimeTreeManifestSha256 !== ""
-    || value.defaultPlaybackMode !== "unqualifiedWebview"
-    || value.unqualifiedFallbackMode !== "unqualifiedWebview"
-    || value.runtimeBundleState !== "notStaged"
-    || value.runtimeIntegrityVerified !== false
-    || value.runtimeFileCount !== null
-    || value.runtimeByteLength !== null
-    || value.playerActorReady !== false
-    || value.qualifiedStartAvailable !== false
-    || value.qualifiedFormatMatrixReady !== false
-    || value.redistributionReviewReady !== false
-    || value.ambientRuntimeAllowed !== false
-    || value.requiredForQualifiedRun !== false
-    || value.rendererReceivesFilesystemPaths !== false
-    || typeof value.reasonCode !== "string" || value.reasonCode.length === 0) {
-    throw new TypeError("Native media capability v2 is malformed or does not match the HTML video contract.");
-  }
-  return Object.freeze({ ...value });
-}
-
 
 export function nativeInputPresetAvailability(capability) {
   const supported = new Set(capability?.supportedPresets ?? []);
@@ -277,7 +232,6 @@ export class NativeResearchRuntimeBridge {
     this.videoFactory = videoFactory;
     this.plannerOnly = true;
     this.workspace = null;
-    this.nativeMediaCapability = null;
     this.nativeInputCapability = null;
     this.catalog = new Map();
     this.workspacePublication = 0;
@@ -306,20 +260,18 @@ export class NativeResearchRuntimeBridge {
       throw new Error(`Experiment Planner requires the complete Planner/Runner suite (${identity.suite.issues.join(", ")}).`);
     }
     this.#bind();
-    const [workspace, sources, media, input, inputStatus] = await Promise.all([
+    const [workspace, sources, input, inputStatus] = await Promise.all([
       this.invoke("research_workspace_status"), this.invoke("research_source_capabilities"),
-      this.invoke("research_native_media_capability"), this.invoke("research_input_capability"),
+      this.invoke("research_input_capability"),
       this.invoke("research_input_status"),
     ]);
-    this.nativeMediaCapability = validateNativeMediaCapabilityV2(media);
     this.nativeInputCapability = input;
     this.#applyInputCapability();
     this.root.researchUi?.applyNativeInputStatus?.(inputStatus);
     this.#dispatch(RESEARCH_UI_EVENTS.capabilityStatus, {
       indexedDbReady: true, repositoryAssetsReady: sources?.repositoryAsset?.supported === true,
-      nativeMediaCapability: this.nativeMediaCapability,
       nativeInputReady: input?.nativeAuthorityReady === true,
-      timingWorkerReady: false, nativePlaybackReady: false, lslReady: false, manifestReady: false,
+      timingWorkerReady: false, lslReady: false, manifestReady: false,
       manifestReason: "Participant execution and recording belong to Experiment Runner.",
     });
     this.#startInputPolling();
@@ -612,9 +564,6 @@ export class NativeResearchRuntimeBridge {
   }
 
 
-  #selectedPlaybackMode() { return "unqualifiedWebview"; }
-
-
   #listen(target, type, listener, options) {
     target?.addEventListener(type, listener, options);
     this.listeners.push([target, type, listener, options]);
@@ -712,13 +661,10 @@ export class NativeResearchRuntimeBridge {
 
   #catalogueCurrent() {
     const workspace = this.workspace, catalog = this.catalog, publication = this.workspacePublication;
-    const playbackMode = this.#selectedPlaybackMode();
     const settingsSignature = JSON.stringify(this.root.researchUi?.settings?.stimuli ?? null);
-    const capabilitySignature = JSON.stringify(this.nativeMediaCapability);
     return () => !this.destroyed && this.workspace === workspace && this.catalog === catalog
-      && this.workspacePublication === publication && this.#selectedPlaybackMode() === playbackMode
-      && JSON.stringify(this.root.researchUi?.settings?.stimuli ?? null) === settingsSignature
-      && JSON.stringify(this.nativeMediaCapability) === capabilitySignature;
+      && this.workspacePublication === publication
+      && JSON.stringify(this.root.researchUi?.settings?.stimuli ?? null) === settingsSignature;
   }
 
   async #catalogue(result, { settings = this.root.researchUi?.settings } = {}) {

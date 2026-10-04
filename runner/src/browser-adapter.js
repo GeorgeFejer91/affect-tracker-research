@@ -237,8 +237,6 @@ export function createBrowserRunnerInvoke({ windowObject = window } = {}) {
           nativeStartReady: false,
           reasonCode: "browser-csv-runner",
         };
-      case "research_native_media_capability":
-        return { schema: "affect-research-native-media-capability", version: 1, playerActorReady: false, reasonCode: "browser-html-video" };
       case "research_input_cancel_setup":
         return { cancelled: true };
       case "research_input_set_region":

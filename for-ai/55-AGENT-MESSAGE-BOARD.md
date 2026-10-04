@@ -6213,8 +6213,8 @@ and its dedicated tests are deleted. Existing Planner entrypoint and Core9
 connector signatures remain intact. All 83 focused bridge, storage, preview,
 architecture, UI, and build-boundary tests pass after the source-only change;
 `git diff --check` passes. No package was built or installed, so this makes no
-installed qualification claim. The older capability schema remains in the
-bridge until the matching Rust contract is migrated in integration.
+installed qualification claim. The older capability schema was removed from
+the bridge and matching Rust contract during integration.
 
 ## Retired JavaScript player adapters — 2026-10-04
 
@@ -6261,8 +6261,28 @@ run. Master preflight still reads the saved plan and questionnaire assets, but
 always reports Start unavailable; it distinguishes saved video count from zero
 active media bindings. The now-orphaned native media service playback methods
 and command/status/viewport contracts are removed; its historical capability
-response remains. The exact saved-step HTML video URL, recipe parsing,
+response was left for integration. The exact saved-step HTML video URL, recipe parsing,
 history, and companion recorder registration remain. R1-03/04/05/06 and
 installed execution qualification remain open. Formatting and source scans
 are this pass's evidence; no Cargo build is attempted under the local disk
 constraint.
+
+## Integrated media retirement verification — 2026-10-04
+
+Integration branch `codex/segment-media-ffmpeg-cleanup` combines the P1, R1,
+build and documentation slices. A final cross-folder audit also removed the
+Planner startup's obsolete media capability RPC, its Rust capability shape,
+readiness polling module, and synthetic qualification replies. The desktop
+Planner now starts using its registered workspace, source and input commands;
+HTML video is the playback and representative-frame path. The source scan finds
+the former engine name only in the five intentional deletion alerts in the
+root and four core AI files. No matching path names or build dependencies remain.
+
+Evidence on the integrated source: the complete `test/research-*.test.js`
+suite, `cargo check --tests --locked --no-default-features`, desktop and Runner
+Vite builds plus their boundary verifiers, Rust formatting, and the real
+FFmpeg incompatible-import test pass. The focused import test verifies the
+original survives, the prepared sibling is reused, and an altered output is
+rejected. P1-08 and R1 execution/LSL/XDF remain open until save/Open,
+installed playback, and run evidence close their separate gates. The static
+browser still consumes prepared assets rather than launching local tools.

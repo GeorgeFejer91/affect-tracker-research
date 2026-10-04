@@ -26,7 +26,6 @@ const load=async id=>{if(held)await new Promise(r=>release=r);if(missing&&id===i
 const invoke=async(command,args)=>{calls.push({command,args});switch(command){
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
  case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:false,reasonCode:'not-qualified'};
- case 'research_native_media_capability':return{playerActorReady:false};
  case 'research_workspace_status':return{selected:false};
  case 'research_input_cancel_setup':return{};
  case 'research_recorder_status':return{available:true,active:recording,phase:recording?'recording':'idle'};

@@ -111,8 +111,6 @@ const rules = {
       || path === "research.css"
       || path === "experiment-template.json"
       || path === "src/math.js"
-      // Pure injected-capability guard, shared by the portable authoring owner.
-      || path === "src/research/native-media-readiness.js"
       || path === "questionnaires/questionnaire-template.csv"
       || path === "questionnaires/questionnaire-template.txt"
       || path === "questionnaires/questionnaire-template.json"

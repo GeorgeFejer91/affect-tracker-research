@@ -24,7 +24,6 @@ const invoke=async(command,args)=>{calls.push({command,args});switch(command){
  case 'research_runner_recent_experiments':return{schema:'affect-runner-recent-experiments',version:1,entries:[]};
  case 'research_desktop_identity':return{schema:'affect-research-desktop-identity',version:1,program:'runner'};
  case 'research_package_protocol_capability':return{schema:'affect-research-native-package-protocol-capability',version:1,backend:'html-video',rustOwnedProtocol:true,packageV1CompilationReady:true,protocolPlanV2Ready:true,questionnaireDraftsReady:true,recoveryJournalReady:true,manifestV4Ready:true,nativeStartReady:true,reasonCode:'ready'};
- case 'research_native_media_capability':return{playerActorReady:false};
  case 'research_runner_reveal_video':if(failReveal)throw Error('Video file is missing');return null;
  case 'research_workspace_status':case 'research_choose_workspace':return{selected:true,workspaceId:'workspace',displayName:'Test experiment'};
  case 'research_runner_previous':return{available:false};

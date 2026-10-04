@@ -1,13 +1,12 @@
 #[path = "research_native_media/contracts.rs"]
 mod contracts;
 
-pub use contracts::{NativeMediaCapability, PlaybackMode, PlaybackQualification};
+pub use contracts::{PlaybackMode, PlaybackQualification};
 
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_platform::NATIVE_ACQUISITION_UNSUPPORTED_REASON;
-use contracts::{RuntimeBundleState, NATIVE_MEDIA_CAPABILITY_SCHEMA};
 
-/// Compatibility capability for historical recipe readers. HTML video owns playback.
+/// Historical playback-mode compatibility for saved records; HTML video owns playback.
 pub struct NativeMediaService {
     native_acquisition_supported: bool,
 }
@@ -22,39 +21,6 @@ impl NativeMediaService {
     #[cfg(test)]
     pub fn unavailable_for_tests() -> Self {
         Self::unavailable(true)
-    }
-
-    pub fn capability(&self) -> NativeMediaCapability {
-        NativeMediaCapability {
-            schema: NATIVE_MEDIA_CAPABILITY_SCHEMA,
-            version: 2,
-            backend: "html-video",
-            api: "webview-video",
-            pinned_runtime_version: "",
-            bindings_version: "",
-            target: "browser-webview",
-            runtime_installer_sha256: "",
-            runtime_tree_manifest_sha256: "",
-            default_playback_mode: PlaybackMode::UnqualifiedWebview,
-            unqualified_fallback_mode: PlaybackMode::UnqualifiedWebview,
-            runtime_bundle_state: RuntimeBundleState::NotStaged,
-            runtime_integrity_verified: false,
-            runtime_file_count: None,
-            runtime_byte_length: None,
-            player_actor_ready: false,
-            qualified_start_available: false,
-            qualified_format_matrix_ready: false,
-            redistribution_review_ready: false,
-            ambient_runtime_allowed: false,
-            required_for_qualified_run: false,
-            renderer_receives_filesystem_paths: false,
-            reason_code: if self.native_acquisition_supported {
-                "html-video-playback-selected"
-            } else {
-                NATIVE_ACQUISITION_UNSUPPORTED_REASON
-            }
-            .to_owned(),
-        }
     }
 
     pub fn authorize_playback(
@@ -72,7 +38,11 @@ impl NativeMediaService {
 
     fn unavailable_result<T>(&self) -> ResearchResult<T> {
         Err(CommandError::native_media_unavailable(
-            &self.capability().reason_code,
+            if self.native_acquisition_supported {
+                "html-video-playback-selected"
+            } else {
+                NATIVE_ACQUISITION_UNSUPPORTED_REASON
+            },
         ))
     }
 }
@@ -82,13 +52,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn compatibility_service_never_claims_native_playback() {
+    fn compatibility_service_rejects_retired_native_playback() {
         let service = NativeMediaService::unavailable_for_tests();
-        let capability = service.capability();
-        assert_eq!(capability.backend, "html-video");
-        assert!(!capability.player_actor_ready);
-        assert!(!capability.qualified_start_available);
-        assert!(!capability.runtime_integrity_verified);
         assert!(service
             .authorize_playback(PlaybackMode::NativeLibvlc)
             .is_err());
@@ -103,10 +68,6 @@ mod tests {
     #[test]
     fn interface_only_platform_stays_unavailable() {
         let service = NativeMediaService::unavailable(false);
-        assert_eq!(
-            service.capability().reason_code,
-            NATIVE_ACQUISITION_UNSUPPORTED_REASON
-        );
         assert!(service
             .authorize_playback(PlaybackMode::UnqualifiedWebview)
             .is_err());
