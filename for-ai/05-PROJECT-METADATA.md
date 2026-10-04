@@ -120,8 +120,8 @@ Run, record, LSL, or qualification authority.
 - New Research data is never populated by automatic import from legacy
   application data.
 - Current Windows media targets exact prepared HTML-playable files. P1's
-  FFprobe/FFmpeg preparation after Segment 1 confirmation is an open target;
-  incompatible originals stay in a separate project source folder. Qualified
+  FFprobe/FFmpeg preparation after Segment 1 confirmation is implemented in
+  source; incompatible originals stay in `source-videos`. Qualified
   Start remains fail-closed pending installed evidence; consult `40-ROADMAP.md`.
 - Tauri keyboard, mouse-button/wheel, absolute pointer/trackpad, and XInput
   gamepad input is owned by one safe Rust service with focus/region fencing,

@@ -3,12 +3,15 @@
 ## Current media direction — 2026-10-04
 
 The former native-player prototype is retired. Current presentation uses HTML
-video; P1's FFprobe/FFmpeg preparation after Segment 1 confirmation is a new
-open target, not an implemented capability. Retain incompatible originals in a
-separate project source folder and publish only verified playable files beneath
-the strict `assets/stimuli` closure. The dated media receipts below describe
-older builds and cannot be used as current implementation or qualification
-evidence. Installed playback and full Runner/XDF validation remain open.
+video. The desktop Planner now imports originals into `source-videos`, probes
+them with FFprobe at Segment 1 confirmation, and uses FFmpeg to create a playable
+file in `assets/stimuli` when needed. Its fresh HTML frame check gates P1
+acceptance. The saved recipe and Runner URL bind the prepared file's exact
+identity. This is source and focused-test evidence; clean-install packaging,
+installed playback, full Runner/XDF validation and research qualification remain
+open. Static Chrome/Edge can consume prepared assets but cannot run local tools.
+The dated media receipts below describe older builds and cannot establish the
+current implementation or qualification.
 
 ## Web infrastructure — 2026-09-12
 
@@ -1401,19 +1404,20 @@ other-section improvements are explicitly outside this pass and recorded in
 label-layout persistence, optional-response output, demographics localization,
 LSL stream-versus-file ownership, and remaining native qualification.
 
-## Prepared HTML media status — target and evidence gap, 2026-10-04
+## Prepared HTML media status — source path and evidence gap, 2026-10-04
 
 The former native-player prototype and its dated receipts are superseded; Git
-history retains them. Current Runner presentation uses HTML video. P1 does not
-yet implement the requested background FFprobe inspection and FFmpeg conversion
-on Segment 1 confirmation. Incompatible originals will remain in a separate
-project source folder; only verified playable files will enter the strict
-`assets/stimuli` tree and P1/P3/P4/P6/P7/Runner references. Static browsers
-consume prepared assets and cannot launch local conversion tools.
+history retains them. Current Runner presentation uses HTML video. The Windows
+Planner source now performs background FFprobe inspection on Segment 1
+confirmation and FFmpeg conversion when needed. Originals remain in
+`source-videos`; only verified playable files enter `assets/stimuli` and the
+P1/P3/P4/P6/P7/Runner references. Static browsers consume prepared assets and
+cannot launch local conversion tools. Focused source tests pass; a clean-machine
+installed app and the actual Runner/XDF path have not passed their gates.
 
-Current native capability still reports qualified Start unavailable. This is
-truthful until exact prepared-file rebind, media lifecycle and installed
-playback, input, timing, recovery, questionnaire, LSL and XDF gates pass.
+Current native Runner Start remains unavailable. Exact prepared-file rebind is
+implemented in source; media lifecycle and installed playback, input, timing,
+recovery, questionnaire, LSL and XDF gates remain open.
 Conversion or an HTML preview alone does not qualify an experiment run.
 
 ## Open software work before candidate acceptance

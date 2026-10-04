@@ -3,8 +3,8 @@
 ## Prepared media handoff — 2026-10-04
 
 Runner consumes only P1's exact verified HTML-playable asset beneath
-`assets/stimuli`, as referenced by the saved recipe. P1's planned FFprobe
-inspection and FFmpeg conversion follow Segment 1 confirmation; incompatible
+`assets/stimuli`, as referenced by the saved recipe. P1's FFprobe inspection
+and FFmpeg conversion follow Segment 1 confirmation; incompatible
 originals remain in a separate project source folder outside the active media
 closure. Runner does not transcode or fall back to that original. Current HTML
 video presentation and installed playback/XDF correspondence need separate
@@ -102,7 +102,8 @@ Existing XDF markers cannot independently attest neutral coordinates or physical
 paint. Actual visible video-offset-to-next-onset time also includes frontend
 poll/rAF and native preparation overhead beyond authored ISI duration. The same
 document retains source inventory and a proposed bounded diagnostic/pre-ready
-native scheduling pass; neither that pass nor FFmpeg playback is implemented.
+native scheduling pass; that pass and installed HTML playback/XDF qualification
+remain open.
 
 ## Supported session composition — 2026-09-12
 

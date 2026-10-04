@@ -13,7 +13,7 @@ import { prepareSupportedBrowserPlannerRecipeSave } from "../site/src/research/p
 
 import { controlledCore } from "./fixtures/planner-recipe-v3-fixture.js";
 
-test("master3 preserves controlled provenance across canonical bytes, selection and both layout targets", async () => {
+test("master3 preserves HTML video geometry across canonical bytes, selection and both layout targets", async () => {
   for (const name of ["locations", "xr"]) {
     const { core, legacy } = await controlledCore(name);
     const recipe = await compilePlannerRecipeV3(core);
@@ -35,14 +35,14 @@ test("master3 preserves controlled provenance across canonical bytes, selection 
       if (name === "xr") assert.equal(`${canonicalJson(selected.layout)}\n`,
         await readFile(new URL("./fixtures/planner-recipe-v3-xr-layout.json", import.meta.url), "utf8"));
       assert.deepEqual(selected.assets, recipe.segments.P1.videoCatalogue.entries);
-      assert.equal(selected.assets[0].geometry.nativeDisplayMetadata.sourceOrientation.stream.status, "absent");
+      assert.equal(selected.assets[0].geometry.source, "browser-decoder");
       selectionHashes.push({ selector, sha256: await canonicalSha256(selected) });
     }
     assert.equal(`${canonicalJson(selectionHashes)}\n`, await readFile(new URL(`./fixtures/planner-recipe-v3-${name}-selection-hashes.json`, import.meta.url), "utf8"));
   }
 });
 
-test("provenance-only change changes master identity without changing P3 or P4 content", async () => {
+test("P1 catalogue revision changes master identity without changing P3 or P4 content", async () => {
   const absent = await compilePlannerRecipeV3((await controlledCore()).core);
   const explicit = await compilePlannerRecipeV3((await controlledCore("locations", true)).core);
   assert.notEqual(absent.integrity.definitionSha256, explicit.integrity.definitionSha256);
@@ -55,7 +55,7 @@ test("master3 rejects mixed chains and drift instead of repairing old sources", 
   const recipe = await compilePlannerRecipeV3((await controlledCore()).core);
   for (const mutate of [r => r.version = 2, r => r.segments.P1.version = 2,
     r => r.segments.P2.version = 1, r => r.integrity.algorithmVersion = "planner-recipe-reproduction-v3",
-    r => r.segments.P1.videoCatalogue.entries[0].geometry.nativeDisplayMetadata.renderer.readbackRotationDegrees = 90]) {
+    r => r.segments.P1.videoCatalogue.entries[0].geometry.source = "native-renderer"]) {
     const changed = structuredClone(recipe); mutate(changed);
     await assert.rejects(validatePlannerRecipeV3(changed));
   }

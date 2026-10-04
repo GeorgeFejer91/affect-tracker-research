@@ -451,18 +451,17 @@ test("Review and Start carries privacy, participant-state, format, and fail-clos
   assert.match(markup, /id="output-csv"[^>]*checked/u);
   assert.match(markup, /id="output-tsv"/u);
   assert.match(markup, /id="start-experiment"[^>]*disabled/u);
-  for (const id of ["settings-hash", "review-plan-hash", "storage-estimate", "timing-capability", "native-playback-mode", "native-media-capability", "lsl-capability"]) {
+  for (const id of ["settings-hash", "review-plan-hash", "storage-estimate", "timing-capability", "lsl-capability"]) {
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
-  assert.match(markup, /HTML video · desktop and browser/u);
-  assert.doesNotMatch(markup, /GStreamer \/ GstPlay · qualification required/u);
+  assert.match(markup, /Prepared HTML video · desktop and browser/u);
 });
 
 test("Run has mutually exclusive questionnaire and stimulus stages with bounded controls", () => {
   const markup = renderResearchUiMarkup();
   const run = markup.slice(markup.indexOf('<section class="run-mode"'), markup.indexOf("</main>"));
   assert.ok(run.indexOf('class="stimulus-stage"') < run.indexOf('class="run-feedback-stage"'));
-  for (const id of ["run-native-video-host", "run-video", "run-pause", "run-stop-early", "run-stimulus-status", "run-timing-status", "run-write-status", "run-lsl-status", "run-transition", "run-continue", "run-questionnaire-stage", "run-questionnaire-form", "run-questionnaire-previous", "run-questionnaire-next", "run-questionnaire-submit"]) {
+  for (const id of ["run-video", "run-pause", "run-stop-early", "run-stimulus-status", "run-timing-status", "run-write-status", "run-lsl-status", "run-transition", "run-continue", "run-questionnaire-stage", "run-questionnaire-form", "run-questionnaire-previous", "run-questionnaire-next", "run-questionnaire-submit"]) {
     assert.match(run, new RegExp(`id="${id}"`, "u"));
   }
   assert.match(run, /id="run-pause"[^>]*hidden disabled/u,
@@ -589,7 +588,7 @@ test("manifest readiness is fail-closed and the adapter exposes authoritative ne
   assert.match(source, /manifestReady: capabilities\.manifestReady/u);
   assert.match(source, /resetAffect\(reason = "safe-boundary"\)/u);
   assert.match(source, /inputController\.resetNeutral\(reason\)/u);
-  assert.match(source, /representative WebView frames attested \(unqualified playback\)/u);
+  assert.match(source, /representative HTML video frames verified/u);
   assert.match(source, /installed-hardware qualification pending/u);
   assert.equal((source.match(/new CustomEvent\(RESEARCH_UI_EVENTS\.workspaceReady/gu) ?? []).length, 2, "selection and permission renewal both request a manifest rescan");
   for (const event of ["pointerup", "pointercancel", "lostpointercapture"]) {

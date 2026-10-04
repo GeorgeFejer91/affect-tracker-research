@@ -45,14 +45,11 @@ test("CLI explicitly builds one hidden native WebView with its owned profile", a
   assert.match(source, /if let Some\(profile\) = &cli_profile[\s\S]*?WebviewWindowBuilder::from_config\(app, config\)\?[\s\S]*?\.data_directory\(profile\.join\("webview"\)\)[\s\S]*?\.visible\(false\)[\s\S]*?\.focused\(false\)/u);
 });
 
-test("fallible setup finishes before starting the UI-dependent native actor", async () => {
+test("setup creates no retired video actor", async () => {
   const source = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
   const setup = source.slice(source.indexOf(".setup("), source.indexOf(".on_window_event("));
-  const start = setup.indexOf("NativeMediaService::start_async(");
-  assert.ok(start > 0);
-  assert.ok(setup.indexOf(".start(app.handle().clone())") < start);
-  assert.ok(setup.lastIndexOf("app.path().app_data_dir()?") < start);
-  assert.doesNotMatch(setup.slice(start), /\?/u);
+  assert.doesNotMatch(setup, /NativeMediaService::start_async\(/u);
+  assert.match(setup, /NativeMediaService::unavailable\(/u);
 });
 
 test("video effect readiness is between revision barriers and retains its request budget", async () => {

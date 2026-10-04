@@ -5,8 +5,9 @@
 > root; coordinate other owners' files rather than leaving a stale solution.
 > Use HTML video with P1 FFprobe inspection and FFmpeg preparation. Preserve
 > incompatible originals in a separate project source folder and publish only
-> verified playable files beneath `assets/stimuli`. Treat the new
-> workflow as unimplemented until source and tests prove each layer.
+> verified playable files beneath `assets/stimuli`. The Planner source path
+> and focused checks now exist; installed playback and Runner/XDF qualification
+> remain open.
 
 ## Planner CLI amendment — 2026-09-12
 
