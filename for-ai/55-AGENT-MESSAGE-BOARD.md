@@ -6496,3 +6496,8 @@ supplying complete form answers, expiring saved intervals and sending matching
 grant/play/end observations; it requires a durable completed receipt and exact
 completed-step count. Local Rust test compilation passes; execution is queued
 in Windows CI because this sparse checkout has limited linker disk headroom.
+
+Windows run 37211710131 caught a master5 action-wire field mismatch before
+installer assembly: `mediaGrantId` was rejected as `media_grant_id`. The four
+HTML observation variants now explicitly deserialize camel-case fields, as
+the focused ingress test requires. The failed candidate was not installed.

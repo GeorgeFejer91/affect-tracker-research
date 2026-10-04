@@ -173,18 +173,22 @@ pub enum MasterActionV5 {
     Pause,
     Resume,
     Stop,
+    #[serde(rename_all = "camelCase")]
     VideoPlaying {
         position: u32,
         media_grant_id: String,
     },
+    #[serde(rename_all = "camelCase")]
     VideoPaused {
         position: u32,
         media_grant_id: String,
     },
+    #[serde(rename_all = "camelCase")]
     VideoEnded {
         position: u32,
         media_grant_id: String,
     },
+    #[serde(rename_all = "camelCase")]
     VideoFailed {
         position: u32,
         media_grant_id: String,
