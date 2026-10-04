@@ -6231,3 +6231,17 @@ Rust command/capability cleanup belongs to its owner; no package or installed
 qualification is claimed by this source-only pass. Nineteen focused adapter,
 Planner, architecture and build-boundary tests plus eleven Runner HTML and
 recipe tests pass; changed JavaScript parses and `git diff --check` is clean.
+
+## Historical package Rust Start removal — 2026-10-04
+
+R1 interface follow-up on `codex/segment-package-v1-rust-retirement` from
+integrated `d5d433b`. The old package Start/Resume commands and player action
+commands are unregistered and removed. The package runtime now retains only
+the companion lease and Recorder idle gate, strict historical preflight and
+recovery reads, pending finalization, and an idle status. Its worker, input
+sampling, media lifecycle and new/resumed attempt storage are removed.
+The current Runner master and HTML playback path keep their existing runtime
+constructor and companion lease signatures. `cargo fmt --all --check`, source
+reference scans and `git diff --check` pass. Full Rust compilation is deferred
+to CI because local disk space is limited; no installed qualification is
+claimed.
