@@ -6314,7 +6314,8 @@ runtime pin now names the six direct GStreamer 1.28.6 component archives, exact
 upstream URLs, byte lengths, and existing SHA-256 values. Upstream checksum
 files match all six pinned hashes; HEAD lengths match the recorded bytes.
 `verify-gstreamer-sources.ps1` validates the pin without downloads locally and
-on manual Windows CI downloads, hashes, checks published sums, and emits a
+the manual Windows `component-sources` job downloads, hashes, checks published
+sums, and emits a
 commit-bound source receipt with the archives for 14-day review. The CI archive
 run is pending at this checkpoint. No runtime enters the suite, no new JSON
 experiment field or unsafe native boundary is introduced, and redistribution
