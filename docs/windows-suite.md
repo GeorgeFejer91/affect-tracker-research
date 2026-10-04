@@ -53,8 +53,22 @@ CI passed the source tests, frontend builds and native checks, then performed
 fresh and same-path repeat silent installs. Both installed audits reported
 `result: pass` with the exact source commit, launcher and tool hashes, and
 successful launcher/tool startup. Start Menu targets and an installed
-AVI-to-H.264 MP4 preparation smoke also passed. The last local install is
-still an earlier internal candidate and is not evidence for this source.
+AVI-to-H.264 MP4 preparation smoke also passed.
+
+That candidate was superseded by source commit
+`735628655b616e2e9d3c58cfb9b328595955457e` in
+[Windows CI run 37202963450](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37202963450).
+The [exact suite artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37202963450/artifacts/11304322446)
+contains one 209,917,967-byte setup EXE, SHA-256
+`1447e01995c77c3bb26caae6513bcad90a54954160fc78295a0d9e05db10eaed`.
+Its Windows jobs passed source tests and builds, 21 independent native/JS
+saved-plan selections, fresh and repeat silent installation, installed-file
+audits, launcher/tool startup and Start Menu target checks. This exact EXE was
+also silently installed on the local Windows machine at
+`C:\Users\gfeje\AppData\Local\Programs\AffectResearchSuite` with exit code 0.
+The local installed-file audit passed with the exact source commit, launcher
+and media-tool checks; both local Start Menu shortcuts target the two installed
+programs. The installed build receipt reports `researchQualified: false`.
 
 A passing file audit establishes layout, hashes, and tool startup only. It does
 not establish Planner video preparation, participant playback, questionnaire

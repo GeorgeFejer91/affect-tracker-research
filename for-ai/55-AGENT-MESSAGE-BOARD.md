@@ -6355,3 +6355,16 @@ step as named shared verification seams. It will compare independent JS and
 Rust plans across the bundled master5 variants/language routes and write an
 exact-commit receipt. It will not claim that plan interpretation executes a
 session or records XDF.
+
+## 20261004-P7-suite-7356286-local-install-receipt
+
+Root fast-forwarded P7 integration to `7356286`. Windows CI run 37202963450
+passed all jobs, including the 21-selection independent native/JS saved-plan
+comparison and fresh/repeat installer audits. The exact setup EXE (SHA-256
+`1447e01995c77c3bb26caae6513bcad90a54954160fc78295a0d9e05db10eaed`)
+was silently installed on the local Windows machine. The local installed-file
+audit passed exact commit, launcher and media-tool verification, and both Start
+Menu targets point to the two installed programs. The build receipt remains
+`researchQualified: false`. This is package and source correspondence evidence;
+native Start, participant execution, LSL/XDF and visual verification remain open.
+The exact artifact and limitations are in `docs/windows-suite.md`.
