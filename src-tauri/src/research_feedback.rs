@@ -24,6 +24,10 @@ pub struct FeedbackPresentationV2 {
     pub color_anchors: ColorAnchorPlacementV2,
     pub labels: FeedbackLabelsV2,
     pub halo: FeedbackHaloV2,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_pack_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub face_pack_sha256: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -32,6 +36,7 @@ pub enum FeedbackRendererV2 {
     Flubber,
     Grid,
     ProceduralFace,
+    PhotoFaceMatrix21,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -135,8 +140,35 @@ impl FeedbackContributionV2 {
     /// Normalizes only the unchanged legacy components just as their v1 readers do.
     /// Every successor field is explicit: never initialize or clamp while reading.
     pub fn normalize_and_validate(&mut self) -> ResearchResult<()> {
-        if self.schema != "affect-research-feedback" || self.version != 2 {
+        if self.schema != "affect-research-feedback" || ![2, 3].contains(&self.version) {
             return Err(invalid("Unsupported feedback settings schema or version."));
+        }
+        if self.version == 2 {
+            if self.presentation.face_pack_id.is_some()
+                || self.presentation.face_pack_sha256.is_some()
+                || self.presentation.renderer == FeedbackRendererV2::PhotoFaceMatrix21
+            {
+                return Err(invalid("V2 cannot select a photoreal face pack."));
+            }
+        } else {
+            if self.presentation.renderer == FeedbackRendererV2::ProceduralFace {
+                return Err(invalid("V3 cannot select the historical procedural Face."));
+            }
+            let catalogue: serde_json::Value = serde_json::from_str(include_str!(
+                "../../site/assets/affect-face/photo-atlas-packs-v1.json"
+            ))
+            .map_err(|_| invalid("Face catalogue is unreadable."))?;
+            let matches = catalogue["packs"].as_array().is_some_and(|packs| {
+                packs.iter().any(|pack| {
+                    pack["id"].as_str() == self.presentation.face_pack_id.as_deref()
+                        && pack["atlasSha256"].as_str()
+                            == self.presentation.face_pack_sha256.as_deref()
+                        && pack["gridSize"].as_u64() == Some(21)
+                })
+            });
+            if !matches {
+                return Err(invalid("Saved face pack identity or hash is unsupported."));
+            }
         }
         self.input.normalize_and_validate()?;
         self.visual.normalize_and_validate()?;
@@ -276,7 +308,11 @@ pub fn resolve_feedback_envelope_v2(
     } else {
         None
     };
-    let face = if value.presentation.renderer == FeedbackRendererV2::ProceduralFace
+    let face = if [
+        FeedbackRendererV2::ProceduralFace,
+        FeedbackRendererV2::PhotoFaceMatrix21,
+    ]
+    .contains(&value.presentation.renderer)
         && !visual.hide_feedback
     {
         Some(FeedbackPaintBoundV2 {

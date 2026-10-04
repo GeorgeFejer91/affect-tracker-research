@@ -2,12 +2,21 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { resolve, relative } from "node:path";
 import { build } from "esbuild";
+import { createHash } from "node:crypto";
 
 const root = resolve(import.meta.dirname, "..");
 const dist = resolve(root, "runner/dist");
 const files = (await readdir(dist, { recursive: true, withFileTypes: true })).filter((item) => item.isFile())
   .map((item) => relative(dist, resolve(item.parentPath, item.name)).replaceAll("\\", "/"));
 const expectedKinds = ["index.html", "surveyjs-notices.txt", "runner.js", "runner.css", "runner-symbol.svg", "app-symbol.svg", "professor-qr.svg", "controller-qr.svg", "professor-widget.svg", "input-widget.svg", "remote-widget.svg"];
+const faceCatalog = JSON.parse(await readFile(resolve(root, "site/assets/affect-face/photo-atlas-packs-v1.json")));
+const faceFiles = files.filter(file => /^assets\/(?:affect-face-atlas-v3|atlas-v1)-[\w-]+\.webp$/u.test(file));
+assert.equal(faceFiles.length, faceCatalog.packs.length, "Every selectable face must be bundled.");
+const bundledHashes = await Promise.all(faceFiles.map(async file => createHash("sha256")
+  .update(await readFile(resolve(dist, file))).digest("hex")));
+assert.deepEqual(bundledHashes.sort(), faceCatalog.packs.map(pack => pack.atlasSha256).sort(),
+  "Bundled faces must match the saved catalogue identities.");
+expectedKinds.push(...faceFiles.map(() => "face-atlas.webp"));
 const sharedCss = await readFile(resolve(root, "site/research.css"), "utf8");
 for (const theme of ["dark", "light"]) {
   if (sharedCss.includes(`flubber-input-${theme}.svg`)) {
@@ -18,7 +27,7 @@ for (const theme of ["dark", "light"]) {
     if (!source.equals(runnerInput)) expectedKinds.push(`flubber-input-${theme}.svg`);
   }
 }
-const actualKinds = files.map(file => file === "index.html" ? file : file.replace(/^assets\/(professor-widget|input-widget|remote-widget|professor-qr|controller-qr|runner-symbol|app-symbol|flubber-input-dark|flubber-input-light|runner)-[\w-]+\.(js|css|svg)$/u, "$1.$2"));
+const actualKinds = files.map(file => faceFiles.includes(file) ? "face-atlas.webp" : file === "index.html" ? file : file.replace(/^assets\/(professor-widget|input-widget|remote-widget|professor-qr|controller-qr|runner-symbol|app-symbol|flubber-input-dark|flubber-input-light|runner)-[\w-]+\.(js|css|svg)$/u, "$1.$2"));
 assert.deepEqual(actualKinds.sort(), expectedKinds.sort(), "Runner build must contain exactly the declared entry and referenced shared CSS assets.");
 const graph = await build({ entryPoints: [resolve(root, "runner/src/entry.js")], bundle: true, write: false, metafile: true, format: "esm", loader: { ".svg": "dataurl" }, logLevel: "silent" });
 const sharedRecipeReaders = new Set(["planner-recipe.js", "planner-recipe-wire.js", "planner-recipe-policy.js", "planner-recipe-questionnaires.js", "planner-recipe-reproduction.js", "planner-recipe-assets.js", "planner-recipe-transport.js"]);

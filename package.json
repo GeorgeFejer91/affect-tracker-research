@@ -10,6 +10,8 @@
   },
   "homepage": "https://GeorgeFejer91.github.io/affect-tracker-research/",
   "scripts": {
+    "pretext:build": "node scripts/build-pretext-vendor.js",
+    "pretext:check": "node scripts/build-pretext-vendor.js --check",
     "surveyjs:build": "node scripts/build-surveyjs-vendor.js && node scripts/build-surveyjs-native.js",
     "surveyjs:check": "node scripts/build-surveyjs-vendor.js --check && node scripts/build-surveyjs-native.js --check && node scripts/build-surveyjs-fixture.js --check",
     "test": "node --test test/math.test.js test/app-logo-concepts.test.js test/axis-bloom-variants.test.js test/research-*.test.js",
@@ -45,6 +47,7 @@
     "vite": "8.2.2"
   },
   "dependencies": {
+    "@chenglou/pretext": "0.0.9",
     "dompurify": "3.4.15",
     "survey-core": "3.0.4",
     "survey-js-ui": "3.0.4"

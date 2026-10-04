@@ -145,6 +145,9 @@ impl PlannerRecipeV1 {
         }
         self.policy.validate()?;
         self.segments.p2.validate()?;
+        if self.segments.p5.version != 2 {
+            return Err(invalid("Master v1 requires feedback v2."));
+        }
         self.segments.p5.validate()?;
         if !matches!(self.segments.p1["version"].as_u64(), Some(1 | 2)) {
             return Err(CommandError::invalid_contract(

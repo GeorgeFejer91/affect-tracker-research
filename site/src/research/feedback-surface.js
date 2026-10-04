@@ -11,7 +11,8 @@ export function previewOverlayMarkup({ includeFace = false } = {}) {
         <circle data-preview-face-pupil="right" class="preview-face-pupil" cx="127" cy="91" r="5"></circle>
         <path data-preview-face-mouth-shape class="preview-face-mouth-shape" d="M62 128 Q100 152 138 128 Q100 168 62 128 Z"></path>
         <path data-preview-face-mouth-line class="preview-face-mouth-line" d="M62 128 Q100 152 138 128"></path>
-      </svg>` : "";
+      </svg>
+      <canvas data-preview-photo-face class="preview-face-photo" width="320" height="320" aria-hidden="true" hidden></canvas>` : "";
   return `
     <div
       class="preview-overlay"
@@ -45,4 +46,3 @@ export function previewOverlayMarkup({ includeFace = false } = {}) {
       ${faceMarkup}
     </div>`;
 }
-

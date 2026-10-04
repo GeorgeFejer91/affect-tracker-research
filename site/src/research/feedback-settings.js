@@ -1,4 +1,5 @@
 import { validateFeedbackContributionV1 } from "./feedback-contribution.js";
+import { faceAtlasPack } from "./face-atlas.js";
 
 export const FEEDBACK_SETTINGS_SCHEMA = "affect-research-feedback";
 export const FEEDBACK_SETTINGS_VERSION = 2;
@@ -72,7 +73,32 @@ export function validateFeedbackContributionV2(value) {
 
 export function validateFeedbackContribution(value) {
   return value && (Object.hasOwn(value, "schema") || Object.hasOwn(value, "version"))
-    ? validateFeedbackContributionV2(value) : validateFeedbackContributionV1(value);
+    ? value.version === 3 ? validateFeedbackContributionV3(value) : validateFeedbackContributionV2(value)
+    : validateFeedbackContributionV1(value);
+}
+
+/** New face packs are explicit; old V2 procedural Face remains byte-for-byte distinct. */
+export function validateFeedbackContributionV3(value) {
+  exact(value, ["schema", "version", "input", "visual", "mappings", "presentation", "response"], "Feedback settings");
+  if (value.schema !== FEEDBACK_SETTINGS_SCHEMA || value.version !== 3) {
+    throw new TypeError("Unsupported feedback settings schema or version.");
+  }
+  const p = value.presentation;
+  exact(p, ["renderer", "colorAnchors", "labels", "halo", "facePackId", "facePackSha256"], "Feedback presentation");
+  choice(p.renderer, ["flubber", "grid", "photo-face-matrix21"], "Feedback renderer");
+  faceAtlasPack(p.facePackId, p.facePackSha256);
+  const { facePackId, facePackSha256, ...previousPresentation } = p;
+  const previous = validateFeedbackContributionV2({ ...value, version: 2,
+    presentation: { ...previousPresentation, renderer: p.renderer === "photo-face-matrix21" ? "procedural-face" : p.renderer } });
+  return Object.freeze({ ...previous, version: 3,
+    presentation: Object.freeze({ ...previous.presentation, renderer: p.renderer, facePackId, facePackSha256 }) });
+}
+
+export function createFeedbackAuthoringSettingsV3(legacy) {
+  const previous = createFeedbackAuthoringSettingsV2(legacy);
+  const pack = faceAtlasPack("photo-reference-v3");
+  return validateFeedbackContributionV3({ ...previous, version: 3,
+    presentation: { ...previous.presentation, facePackId: pack.id, facePackSha256: pack.atlasSha256 } });
 }
 
 /** Explicit NEW-authoring initialization, never called by a V2 reader. */

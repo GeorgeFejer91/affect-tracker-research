@@ -125,7 +125,9 @@ const rules = {
       || path === "assets/questionnaires/demographics/en.json"
       || path === "assets/questionnaires/demographics/de.json"
       || path === "assets/runner-symbol.svg"
+      || path.startsWith("assets/affect-face/")
       || /^runner\/assets\/(?:browser|runner-symbol|app-symbol|professor-qr|controller-qr|professor-widget|input-widget|remote-widget|flubber-input-light)-[A-Za-z0-9_-]+\.(?:js|css|svg)$/u.test(path)
+      || /^runner\/assets\/(?:affect-face-atlas-v3|atlas-v1)-[A-Za-z0-9_-]+\.webp$/u.test(path)
       || /^assets\/app-icons\/(?:32x32|180x180|192x192|512x512)\.png$/u.test(path)
       || path.startsWith("assets/research-stimuli/")
       || (path.startsWith("src/research/") && !/^src\/research\/native-/u.test(path)),
@@ -140,6 +142,7 @@ const rules = {
       || /^assets\/experiment-template-[A-Za-z0-9_-]+\.json$/u.test(path)
       || /^assets\/app-(?:logo|symbol)-[A-Za-z0-9_-]+\.svg$/u.test(path)
       || /^assets\/flubber-input-(?:dark|light)-[A-Za-z0-9_-]+\.svg$/u.test(path)
+      || /^assets\/(?:affect-face-atlas-v3|atlas-v1)-[A-Za-z0-9_-]+\.webp$/u.test(path)
   },
 };
 

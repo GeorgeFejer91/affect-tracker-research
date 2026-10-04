@@ -7,7 +7,7 @@ import { reconstructPreparedPlannerRecipeSelectionV4 } from "./planner-recipe-re
 import { validatePlannerRecipeStructureV4 } from "./planner-recipe-wire.js";
 import { validateVariantDesign } from "./variant-design.js";
 import { projectSavedVariantCatalogue, projectSupportedSavedVariantCatalogue } from "./variant-catalogue-adapter.js";
-import { validateFeedbackContributionV2 } from "./feedback-settings.js";
+import { validateFeedbackContribution } from "./feedback-settings.js";
 import { resolveDesktopLayoutContribution, resolveSupportedDesktopLayoutContribution } from "./desktop-layout-contribution.js";
 import { validateXrLayoutSelection, resolveSavedXrLayoutContribution, resolveSupportedSavedXrLayoutContribution } from "./xr-layout-recipe.js";
 import { compilePlannerQuestionnaireRoutesV1, PlannerRecipeIssue } from "./planner-recipe-questionnaires.js";
@@ -61,7 +61,13 @@ async function prepareCore(input, version = 1) {
   }));
   const variantCatalogue = await owned("P3", () => (version >= 3 ? projectSupportedSavedVariantCatalogue : projectSavedVariantCatalogue)(workspace));
   const variants = await owned("P3", () => validateVariantDesign(source.P3, variantCatalogue.library));
-  const feedback = await owned("P5", () => validateFeedbackContributionV2(source.P5));
+  const feedback = await owned("P5", () => {
+    const parsed = validateFeedbackContribution(source.P5);
+    if (![2, 3].includes(parsed.version) || (parsed.version === 3 && version < 4)) {
+      throw new TypeError("This Planner version does not support the saved feedback generation.");
+    }
+    return parsed;
+  });
   const desktopLayout = await owned("P4", () => (version >= 3 ? resolveSupportedDesktopLayoutContribution : resolveDesktopLayoutContribution)(source.P4, { workspace, feedback }));
   const selection = await owned("P6", () => validateXrLayoutSelection(source.P6));
   const xrLayout = selection.status === "included" ? await owned("P6", () => (version >= 3 ? resolveSupportedSavedXrLayoutContribution : resolveSavedXrLayoutContribution)(selection.profile, {

@@ -1,5 +1,6 @@
 import { MAPPING_FIELDS, UI_PRESET_IDS } from "./ui-contracts.js";
 import { COLOR_FIELDS } from "./feedback-controls-view.js";
+import { faceAtlasPack } from "./face-atlas.js";
 
 // Fixed owner controls, never selectors supplied by a command or another owner.
 const numbers = {
@@ -50,7 +51,7 @@ export function createPlannerAuthoringP5Controls({ root, getModel, commitModel, 
       return control;
     };
     for (const id of [...Object.values(numbers), ...Object.values(booleans), "input-preset", "input-step-size",
-      "preview-tile-count", "preview-tile-columns", "preview-tile-rows"]) find(`#${id}`);
+      "preview-tile-count", "preview-tile-columns", "preview-tile-rows", "preview-face-pack"]) find(`#${id}`);
     for (const { id } of COLOR_FIELDS) { find(`#color-${id}`); find(`#color-${id}-hex`); }
     for (const spec of MAPPING_FIELDS) for (const part of ["min", "max", "driver", "reverse"]) {
       find(`[data-mapping="${spec.id}"] [data-mapping-${part}]`);
@@ -71,27 +72,30 @@ export function createPlannerAuthoringP5Controls({ root, getModel, commitModel, 
       input.preset = `mismatched-ui-preset:${preset}`;
     }
     const draft = { input, visual: { overlayPosition: {}, flubber: {}, grid: {}, colors: {} }, mappings: {} };
-    if (model.feedbackSettingsVersion === 2) Object.assign(draft, { schema: "affect-research-feedback", version: 2,
-      presentation: { renderer: model.feedbackPreviewMode === "face" ? "procedural-face" : model.feedbackPreviewMode,
+    if (model.feedbackSettingsVersion >= 2) Object.assign(draft, { schema: "affect-research-feedback", version: model.feedbackSettingsVersion,
+      presentation: { renderer: model.feedbackPreviewMode === "face"
+        ? model.feedbackSettingsVersion === 3 ? "photo-face-matrix21" : "procedural-face" : model.feedbackPreviewMode,
         colorAnchors: selection("previewColorAnchors"), labels: { axes: Object.fromEntries(model.previewAxisLabels),
-          corners: Object.fromEntries(model.previewCornerLabels) }, halo: {} },
+          corners: Object.fromEntries(model.previewCornerLabels) }, halo: {},
+        ...(model.feedbackSettingsVersion === 3 ? { facePackId: controls.id("preview-face-pack").value,
+          facePackSha256: faceAtlasPack(controls.id("preview-face-pack").value).atlasSha256 } : {}) },
       response: { mode: model.responsePreviewMode, grid: {}, holdRule: selection("previewHoldRule") } });
     for (const [path, id] of Object.entries(numbers)) {
-      if (v2(path) && model.feedbackSettingsVersion !== 2) continue;
+      if (v2(path) && model.feedbackSettingsVersion < 2) continue;
       let value = numeric(controls.id(id).value);
       if (path === "visual.transparency") value = model.restoredTransparency?.raw === controls.id(id).value
         ? model.restoredTransparency.value : typeof value === "number" ? value / 100 : value;
       put(draft, path, value);
     }
     for (const [path, id] of Object.entries(booleans)) {
-      if (!v2(path) || model.feedbackSettingsVersion === 2) put(draft, path, controls.id(id).checked);
+      if (!v2(path) || model.feedbackSettingsVersion >= 2) put(draft, path, controls.id(id).checked);
     }
     for (const { id } of COLOR_FIELDS) draft.visual.colors[id] = color(controls.id(`color-${id}-hex`).value);
     for (const spec of MAPPING_FIELDS) draft.mappings[spec.contractId] = {
       min: numeric(controls.mapping(spec, "min").value), max: numeric(controls.mapping(spec, "max").value),
       drivenBy: controls.mapping(spec, "driver").value, reverse: controls.mapping(spec, "reverse").checked,
     };
-    if (model.feedbackSettingsVersion === 2) {
+    if (model.feedbackSettingsVersion >= 2) {
       const mode = selection("previewGridSizing"), steps = numeric(controls.id("preview-tile-count").value);
       for (const axis of ["columns", "rows"]) draft.response.grid[axis] = mode === "square"
         ? typeof steps === "number" ? 2 * steps + 1 : steps
@@ -107,7 +111,7 @@ export function createPlannerAuthoringP5Controls({ root, getModel, commitModel, 
   function prepareCommit(candidate, context) {
     if (!isCurrent() || !context.isCurrent() || context.signal?.aborted) throw new TypeError("P5 owner is no longer current.");
     const controls = locate(), previous = getModel(), draft = structuredClone(candidate), writes = [];
-    const model = { feedbackSettingsVersion: draft.version === 2 ? 2 : 1, inputBinding: structuredClone(draft.input),
+    const model = { feedbackSettingsVersion: draft.version >= 2 ? draft.version : 1, inputBinding: structuredClone(draft.input),
       feedbackPreviewMode: previous.feedbackPreviewMode, responsePreviewMode: previous.responsePreviewMode,
       previewAxisLabels: new Map(previous.previewAxisLabels), previewCornerLabels: new Map(previous.previewCornerLabels),
       restoredTransparency: previous.restoredTransparency ? { ...previous.restoredTransparency } : null };
@@ -128,13 +132,13 @@ export function createPlannerAuthoringP5Controls({ root, getModel, commitModel, 
     } else setValue("input-preset", UI_PRESET_IDS[draft.input.preset] ?? (draft.input.preset === "custom" ? "custom" : ""));
     if (draft.input.kind === "digital") setValue("input-step-size", draft.input.stepSize);
     for (const [path, id] of Object.entries(numbers)) {
-      if (v2(path) && model.feedbackSettingsVersion !== 2) continue;
+      if (v2(path) && model.feedbackSettingsVersion < 2) continue;
       const value = at(draft, path), display = path === "visual.transparency" && typeof value === "number" ? value * 100 : value;
       const raw = setValue(id, display, controls.id(id).type === "range" ? id.endsWith("duration") || id === "preview-repeat-delay" ? "1" : "any" : undefined);
       if (path === "visual.transparency") model.restoredTransparency = typeof value === "number" ? { raw, value } : null;
     }
     for (const [path, id] of Object.entries(booleans)) {
-      if (!v2(path) || model.feedbackSettingsVersion === 2) write(controls.id(id), "checked", at(draft, path));
+      if (!v2(path) || model.feedbackSettingsVersion >= 2) write(controls.id(id), "checked", at(draft, path));
     }
     for (const { id } of COLOR_FIELDS) {
       const value = draft.visual.colors[id];
@@ -148,9 +152,10 @@ export function createPlannerAuthoringP5Controls({ root, getModel, commitModel, 
         write(controls.mapping(spec, part), part === "reverse" ? "checked" : "value", part === "reverse" ? mapping[key] : String(mapping[key]));
       }
     }
-    if (model.feedbackSettingsVersion === 2) {
+    if (model.feedbackSettingsVersion >= 2) {
       const { presentation, response } = draft;
-      model.feedbackPreviewMode = presentation.renderer === "procedural-face" ? "face" : presentation.renderer;
+      model.feedbackPreviewMode = ["procedural-face", "photo-face-matrix21"].includes(presentation.renderer) ? "face" : presentation.renderer;
+      if (model.feedbackSettingsVersion === 3) setValue("preview-face-pack", presentation.facePackId);
       model.responsePreviewMode = response.mode;
       model.previewAxisLabels = new Map(Object.entries(presentation.labels.axes));
       model.previewCornerLabels = new Map(Object.entries(presentation.labels.corners));

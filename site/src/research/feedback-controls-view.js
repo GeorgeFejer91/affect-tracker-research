@@ -111,10 +111,10 @@ export function feedbackAppearanceMarkup() {
         <div class="field-grid">
           <label class="check-field"><input id="visual-hide-feedback" type="checkbox"><span><strong>Hide Visual Feedback</strong><br><span class="field-help">Acquisition continues while Grid and Flubber are hidden.</span></span></label>
           <label class="field"><span>Transparency</span><div class="range-field"><input id="visual-transparency" type="range" min="0" max="100" step="1" value="${DEFAULT_SETTINGS.visual.transparency * 100}"><output for="visual-transparency">${DEFAULT_SETTINGS.visual.transparency * 100}%</output></div></label>
-          <label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label>
-          <label class="field"><span>Halo width (%)</span><input id="preview-halo-size" data-preview-appearance-input type="number" min="0" max="10000" step="any" value="150" aria-describedby="preview-halo-help"><output id="preview-halo-help" class="field-help">Saved width relative to the base halo stroke; 0 hides it.</output></label>
-          <label class="check-field"><input id="preview-halo-gradient" type="checkbox" checked><span>Fade halo outward</span></label>
-          <label class="field"><span>Gradient steepness</span><input id="preview-halo-steepness" data-preview-appearance-input type="number" min="0.1" max="10" step="0.1" value="1" aria-describedby="preview-halo-steepness-help"><output id="preview-halo-steepness-help" class="field-help">1 = normal; higher values fade faster. Does not change halo width.</output></label>
+          <div data-feedback-options="flubber"><label class="check-field"><input id="flubber-halo-visible" type="checkbox" checked><span><strong>Show Halo</strong><br><span class="field-help">The halo stays centered behind Flubber.</span></span></label></div>
+          <div data-feedback-options="flubber"><label class="field"><span>Halo width (%)</span><input id="preview-halo-size" data-preview-appearance-input type="number" min="0" max="10000" step="any" value="150" aria-describedby="preview-halo-help"><output id="preview-halo-help" class="field-help">Saved width relative to the base halo stroke; 0 hides it.</output></label></div>
+          <div data-feedback-options="flubber"><label class="check-field"><input id="preview-halo-gradient" type="checkbox" checked><span>Fade halo outward</span></label></div>
+          <div data-feedback-options="flubber"><label class="field"><span>Gradient steepness</span><input id="preview-halo-steepness" data-preview-appearance-input type="number" min="0.1" max="10" step="0.1" value="1" aria-describedby="preview-halo-steepness-help"><output id="preview-halo-steepness-help" class="field-help">1 = normal; higher values fade faster. Does not change halo width.</output></label></div>
         </div>
       </section>
 
@@ -139,14 +139,14 @@ export function feedbackAdvancedMarkup() {
               <label class="field"><span>Normalized vertical position</span><input id="visual-position-y" type="number" min="0" max="1" step="0.01" value="${DEFAULT_SETTINGS.visual.overlayPosition.y}" required></label>
             </div>
           </section>
-          <details class="inner-disclosure" open>
+          <details class="inner-disclosure" data-feedback-options="flubber" open>
             <summary>Flubber outline</summary>
             <div class="disclosure-content field-grid">
               <label class="check-field"><input id="flubber-outline-visible" type="checkbox" checked><span>Show Outline</span></label>
               <label class="field"><span>Outline Thickness</span><div class="range-field"><input id="flubber-outline-thickness" type="range" min="0" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.flubber.outlineThickness}"><output for="flubber-outline-thickness">${DEFAULT_SETTINGS.visual.flubber.outlineThickness.toFixed(2)}</output></div></label>
             </div>
           </details>
-          <details class="inner-disclosure">
+          <details class="inner-disclosure" data-feedback-options="grid">
             <summary>Grid appearance</summary>
             <div class="disclosure-content field-grid">
               <label class="field"><span>Grid Line Thickness</span><div class="range-field"><input id="grid-line-thickness" type="range" min="0.25" max="20" step="0.25" value="${DEFAULT_SETTINGS.visual.grid.lineThickness}"><output for="grid-line-thickness">${DEFAULT_SETTINGS.visual.grid.lineThickness.toFixed(2)}</output></div></label>
@@ -162,7 +162,7 @@ export function feedbackAdvancedMarkup() {
               <div class="color-list">${colorRows()}</div>
             </div>
           </details>
-          <section aria-labelledby="preview-mapping-title">
+          <section data-feedback-options="flubber" aria-labelledby="preview-mapping-title">
             <h3 id="preview-mapping-title" class="mapping-title">Flubber–Affect Mapping</h3>
             <p class="field-help">x-axis and y-axis normalize from [−1, 1], radius from [0, 1], and angle from [0°, 360°). Neutral angle is zero. Reverse changes t to 1−t before interpolation.</p>
             ${MAPPING_FIELDS.map(mappingDisclosure).join("")}

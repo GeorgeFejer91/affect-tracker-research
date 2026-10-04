@@ -1,6 +1,6 @@
 import { canonicalJson } from "./canonical.js";
 import { deriveFeedbackEnvelopeV1, resolveFeedbackEnvelopeV1 } from "./feedback-envelope.js";
-import { validateFeedbackContribution, validateFeedbackContributionV2 } from "./feedback-settings.js";
+import { validateFeedbackContribution } from "./feedback-settings.js";
 
 export const FEEDBACK_ENVELOPE_V2_ALGORITHM = "feedback-envelope-v2";
 
@@ -10,14 +10,15 @@ export function resolveFeedbackEnvelopeV2(value, overlaySideCssPx) {
   if (!Number.isFinite(overlaySideCssPx) || overlaySideCssPx <= 0) {
     throw new RangeError("An explicit positive SVG viewport side in CSS pixels is required.");
   }
-  const configuration = validateFeedbackContributionV2(value);
+  const configuration = validateFeedbackContribution(value);
+  if (configuration.version !== 2 && configuration.version !== 3) throw new TypeError("Current feedback settings are required.");
   const { visual, presentation, response, mappings } = configuration;
   const selected = { ...visual, gridEnabled: presentation.renderer === "grid", flubberEnabled: presentation.renderer === "flubber" };
   const legacy = deriveFeedbackEnvelopeV1({ visual: selected, mappings });
   let flubber = legacy.flubber, grid = legacy.grid;
   // Project-authored procedural Face: head and every feature, including scaled
   // strokes, stay inside the 200-unit square for all x/y in [-1,1].
-  const face = !visual.hideFeedback && presentation.renderer === "procedural-face"
+  const face = !visual.hideFeedback && ["procedural-face", "photo-face-matrix21"].includes(presentation.renderer)
     ? Object.freeze({ halfExtentAtUnitWidth: 0.5, paddingCssPx: 0 }) : null;
   if (flubber) {
     const outline = visual.flubber.showOutline ? visual.flubber.outlineThickness : 0;
@@ -46,6 +47,6 @@ export function resolveFeedbackEnvelopeV2(value, overlaySideCssPx) {
 
 export function resolveFeedbackEnvelope(value, overlaySideCssPx) {
   const validated = validateFeedbackContribution(value);
-  return validated.version === 2 ? resolveFeedbackEnvelopeV2(validated, overlaySideCssPx)
+  return validated.version >= 2 ? resolveFeedbackEnvelopeV2(validated, overlaySideCssPx)
     : resolveFeedbackEnvelopeV1(validated, overlaySideCssPx);
 }

@@ -131,6 +131,9 @@ impl PlannerRecipeV2 {
         } else {
             self.segments.p2.validate()?;
         }
+        if version < 4 && self.segments.p5.version != 2 {
+            return Err(invalid("Master v2/v3 requires feedback v2."));
+        }
         self.segments.p5.validate()?;
         if version == 2 && !matches!(self.segments.p1["version"].as_u64(), Some(1 | 2)) {
             return Err(invalid("Planner recipe v2 requires workspace v1/v2."));

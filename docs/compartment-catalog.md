@@ -7,7 +7,7 @@ Source snapshot: `7088860` on 2026-10-04. This is a function and handoff index f
 | Compartment | Role | Authoritative data |
 | --- | --- | --- |
 | Experiment Planner ledger | Collects and validates P1–P4 and P6, then P7 saves the accepted design | `affect-research-planner-recipe` master JSON, `segments.P1`–`P6`, top-level policy and integrity |
-| Persistent Flubber & Controls window | P5 edits the selected Flubber, 2D Grid or procedural Face and the response/input behavior; the live x/y test position is temporary | `segments.P5`; `presentation.renderer` is the saved three-way choice |
+| Persistent Flubber & Controls window | P5 edits the selected Flubber, 2D Grid or photoreal 21 × 21 Face and the response/input behavior; the live x/y test position is temporary | `segments.P5`; `presentation.renderer` and the Face pack identity/hash are saved |
 | Experiment Runner | Reads exact saved recipe bytes, binds files, selects a participant, route and variant, executes the protocol, and records evidence | Immutable recipe copy, attempt/selection receipts, response and rating rows, lifecycle events and Runner-owned XDF |
 
 Fresh Planner saves currently use **master version 5**. Its JSON contains the six named segment contributions and a hash-bound questionnaire asset registry. The SurveyJS questionnaire bodies are separate declared files under `assets/questionnaires/`. Video bytes are separate under `assets/stimuli/`. Thus the current output is one authoritative JSON **manifest plus referenced assets**, rather than a single self-contained JSON file. Moving the project requires moving the JSON and all referenced assets together. [Questionnaire asset contract](planner-questionnaire-assets.md) and [compatibility map](../for-ai/66-PLANNER-RUNNER-COMPATIBILITY.md) define this existing boundary. Making questionnaire content self-contained in one JSON would require a versioned P2/P7/Runner contract change.
@@ -29,17 +29,17 @@ Confirmation and open/closed accordion state are editor state. They do not creat
 
 ## Persistent feedback window (P5)
 
-The right window stays visible while a ledger segment changes. Its controls have one saved owner, `segments.P5` (`affect-research-feedback` version 2); the pointer/key test position, animation phase, temporary held input, focus and scroll are excluded from the recipe. [P5 field contract](planner-p5-feedback-v2.md), [saved validator](../site/src/research/feedback-settings.js), [editor](../site/src/research/planner-authoring-p5-controls.js) and [shared renderer](../site/src/research/preview.js) define the current implementation.
+The right window stays visible while a ledger segment changes. Its controls have one saved owner, `segments.P5` (`affect-research-feedback` version 3 for new authoring); the pointer/key test position, animation phase, temporary held input, focus and scroll are excluded from the recipe. [P5 v3 field contract](planner-p5-feedback-v3.md), [saved validator](../site/src/research/feedback-settings.js), [editor](../site/src/research/planner-authoring-p5-controls.js) and [shared renderer](../site/src/research/preview.js) define the current implementation. Historical version 2 still opens with its prior procedural Face semantics.
 
 | Function group | Researcher input / prior state | Saved output and Runner use |
 | --- | --- | --- |
-| Three-way display | Flubber, 2D Grid or Face button; one shared live valence/arousal test point | `presentation.renderer` = `flubber`, `grid` or `procedural-face`; Runner projects that choice, not the temporary test coordinates |
+| Three-way display | Flubber, 2D Grid or Face button; Face portrait selector offers all nine local 21 × 21 packs; one shared live valence/arousal test point | `presentation.renderer` = `flubber`, `grid` or `photo-face-matrix21`; `facePackId` and `facePackSha256` bind the selected pack. Runner projects the selected mode/pack, not the temporary test coordinates |
 | Appearance | Visibility, opacity, outline, halo width/falloff, grid lines/cursor, eight colors, axes/corners and display labels | `visual` and `presentation` specify painted feedback; literal recolor results persist, random seed does not |
 | Response behavior | Continuous/stepwise choice, odd grid dimensions, full-span duration and hold/repeat rule | `response` defines native and browser coordinate updates during an active video |
 | Input | Preset or custom physical directions; inert setup test | `input` is the saved binding; Runner retests its actual device and has a separate session override boundary |
 | Advanced mapping | Six min/max, driver and reverse choices | `mappings` derive oscillation frequency, edge smoothness, projection amplitude, pulse synchrony, wave-size variation and saturation from one x/y snapshot |
 
-For a master recipe, [Runner's projection](../runner/src/recipe.js) maps `presentation.renderer` to the participant surface. [Runner app](../runner/src/app.js) replaces its initial legacy preview with a three-mode surface after a master is loaded. The current focused software suite includes an authored Grid case; full Flubber/Grid/Face installed visual correspondence is still a verification task. Legacy package-v1 feedback retains its separate Grid/Flubber semantics.
+For a master recipe, [Runner's projection](../runner/src/recipe.js) maps `presentation.renderer` to the participant surface. [Runner app](../runner/src/app.js) verifies Face pack bytes at selection and Start, and [the shared preview](../site/src/research/preview.js) paints only the selected mode on the participant surface. The nine-pack source/hash and picker screenshot check passed; complete installed Flubber/Grid/Face visual correspondence is still a verification task. Legacy package-v1 feedback retains its separate Grid/Flubber semantics.
 
 ## Runner execution and evidence
 

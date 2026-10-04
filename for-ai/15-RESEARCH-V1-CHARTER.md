@@ -1,5 +1,28 @@
 # Affect Tracker Research v1 charter
 
+## Photoreal face matrix amendment — 2026-10-04
+
+The researcher supersedes the procedural circular Face for new experiments.
+The Face choice in the three-way Flubber / 2D Grid / Face selector uses the
+Playground's local 21 × 21 photoreal portrait atlas, with continuous interpolation
+between neighboring cells. Planner preview and Runner participant display must
+consume the same saved face pack and affect coordinates. Selecting a display
+also selects its relevant editor controls; Flubber-only controls are not Face
+controls. Historical saved procedural-Face recipes keep their original meaning
+under their existing version and must never be silently rendered as an atlas.
+
+The Playground pack catalogue declares fictional synthetic portraits, creator
+selected presentation styles and regional design inspirations; it explicitly
+does not assert verified gender or ethnicity. The researcher's requested face
+picker needs an explicit labeling decision before such claims are shown. Pack
+IDs, local asset hashes, licensing and the selected identity belong in a
+versioned saved contract and strict Runner intake. Missing or altered face
+assets block the corresponding Face display; a circular-face fallback is not
+permitted. This amendment authorizes that bounded Face capability and its
+local assets, without camera access, inference, diagnosis, or other Playground
+features. Installed visual correspondence and research qualification still
+follow the release gates in `30`.
+
 ## Questionnaire asset amendment — 2026-09-13
 
 Direct user approval changes fresh Planner saves to a master5 manifest and

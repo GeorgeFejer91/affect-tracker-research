@@ -5,6 +5,17 @@ exact contracts; it does not define another schema.
 The [prior ledger](../docs/history/66-PLANNER-RUNNER-COMPATIBILITY-2026-09-13.md)
 is historical evidence, not current implementation status.
 
+## P5 Face successor in progress — 2026-10-04
+
+New P5 v3 authoring selects Flubber, Grid or `photo-face-matrix21` and pins one
+of nine bundled 21 × 21 Face packs by ID and SHA-256. The [P5 v3 contract](../docs/planner-p5-feedback-v3.md)
+lists exact inputs and consumers. Historical v2 `procedural-face` remains a
+strict read-only compatibility path when its recipe is opened. The shared
+participant renderer now uses the saved mode, and Runner checks the selected
+pack bytes before execution. Source/asset and synthetic browser evidence exists;
+installed paint, native Start and complete research output qualification remain
+open. This is a progress entry, not a release claim.
+
 ## Questionnaire asset amendment — 2026-09-13
 
 Direct user approval changes fresh Planner saves to a master5 manifest and
@@ -66,7 +77,7 @@ See [master](../docs/planner-master-recipe-v1.md),
 | P2 Questionnaires/languages | Definitions/SurveyJS assets, exact reference metadata, provenance, modules, language tree and presentation | Form sequence, pinned renderer, native answer validation, durable responses/information stream |
 | P3 Versions/ISIs | Named ISIs, variants, ordered occurrences, library identity and marker meaning | Exact selected chronology. `allocation:{kind:"runnerAssigned"}` declares ownership, not a repeating/cyclic algorithm |
 | P4 Desktop layout | Target viewport/calibration, units, sizes, video centre, Flubber centre and fit | Shared geometry, Planner warnings, Runner smart viewport fallback and participant rendering |
-| P5 Feedback/input | Bindings, renderer, colors/labels, halo, mappings and response grid/timing/hold | Shared feedback projection and native response reducer. Legacy step/geometry fields remain inactive compatibility data |
+| P5 Feedback/input | Bindings, renderer, Face pack ID/hash in v3, colors/labels, halo, mappings and response grid/timing/hold | Shared feedback projection and native response reducer; Runner verifies selected Face bytes. Legacy step/geometry fields remain inactive compatibility data |
 | P6 XR | Explicit exclusion or complete spatial profile/target | Editable authoring; desktop Runner rejects XR |
 | P7 / root | Sampling, output, playback/audio, authored LSL convention and integrity | Compiler/intake/native worker. Session/recording choices belong to Runner |
 

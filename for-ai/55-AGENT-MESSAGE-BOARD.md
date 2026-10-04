@@ -1,5 +1,27 @@
 # Agent message board
 
+## 20261004 P5-09 photoreal 21 × 21 Face successor
+
+Owner: current task, worktree `affect-tracker-research-photo-face`, branch
+`codex/p5-photo-face`, base `058694c`; stage: Backend Verification. Scope is
+P5-09 plus named P5→Runner renderer/intake seams. New P5v3 writes the chosen
+renderer and one of nine local Face pack IDs/SHA-256s; v2 procedural Face remains
+strictly historical. The shared participant surface now uses the selected
+master renderer, and Runner checks Face bytes before Start. Complete Planner
+save → independent Runner selection passed for one pack; all nine pass strict
+selection/hash tests and a browser rendering/picker check. Live Chrome showed
+Flubber, Grid and the chosen synthetic Face as separate participant surfaces.
+Planner visibly listed all nine and accepted the ninth. Fresh Planner, Runner
+and Pages builds verified all nine bundled atlases; `cargo check --locked --bins`
+passed after C: space recovered. Installed paint, a linked release build, full
+session and minimum/expanded accordion-stretch qualification remain open.
+
+Cross-owner dependency: P7/R1 packaging must bundle all nine pinned WebPs and
+publish one suite only after installed native video, input, LSL and XDF gates.
+No gender/ethnicity claim is inferred from synthetic appearance; the user
+requested demographic choice, but the catalogue explicitly disallows treating
+creator prompts as demographic facts. Preserve individual pack selection.
+
 ## 20261004 Compartment and JSON handoff catalog
 
 Owner: current task; branch `codex/segment-contracts-compartment-catalog`,
@@ -6141,3 +6163,20 @@ The focused headless Chrome check passed 13 synthetic master5 renderer assertion
 and a screenshot was inspected. Reproduction command, screenshot, and claim limit
 are in `docs/runner-master5-display-modes-qualification.md`. There was no
 participant execution or native recording in this pass.
+
+## P5 photoreal face matrix — 2026-10-04
+
+Direct researcher correction: Face means the Playground's continuously blended
+21 × 21 photoreal atlas, with selectable synthetic portrait packs and controls
+specific to the selected Flubber/Grid/Face display. Root owns P5-09 in isolated
+`codex/p5-photo-face`, with named P7 and RR-05/RR-10 contract seams. Source is
+Playground `2023af03a4ca3231fe2968f4f3ddd523d25c5c98`; its atlas v3 SHA-256
+is `02cca9d9cf9b4d5e3107147b4ed273404700ede445d05da66698e537ceb2ef62`.
+The frozen pack catalogue has nine 21 × 21 synthetic packs, but explicitly calls
+its style and regional labels creator-selected inspirations, not gender or
+ethnicity. An async labeling clarification is pending. Historical P5 v2
+`procedural-face` must not change meaning; a new saved version and matching
+strict JS/Rust/Runner readers are required before declaring the new option
+runnable. Baseline focused tests: 11/11 passed. Windows package work is isolated
+in `codex/p7-windows-suite`; linker installed, release compile currently stopped
+at low C: space, with no new installer claim.

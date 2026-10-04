@@ -5,13 +5,14 @@ import {
   createProjectionOffsets,
 } from "../math.js";
 import { createResponsiveFaceGeometry } from "./responsive-face.js";
+import { drawFaceAtlas, faceAtlasPack, loadFaceAtlas } from "./face-atlas.js";
 import { previewPaletteColor, MAX_RENDERED_HALO_PERCENT } from "./preview-appearance.js";
 import { DEFAULT_PREVIEW_TILE_COUNT, parsePreviewTileCount, previewTileGeometry, previewTileLines } from "./preview-tiles.js";
 
 const profiles = createProfiles();
 const offsets = createProjectionOffsets("affect-research-v1-preview");
 const TWO_PI = Math.PI * 2;
-const PREVIEW_MODES = new Set(["legacy", "flubber", "grid", "face"]);
+const PREVIEW_MODES = new Set(["legacy", "flubber", "grid", "face", "photo-face"]);
 const RESPONSE_MODES = new Set(["continuous", "stepwise"]);
 const DEFAULT_COLORS = Object.freeze({
   up: "#f2c94c",
@@ -60,6 +61,7 @@ function normalizedState(source = {}) {
     },
     lockPosition: source.lockPosition === true,
     displayMode: PREVIEW_MODES.has(source.displayMode) ? source.displayMode : "legacy",
+    facePackId: source.facePackId ?? "photo-reference-v3",
     responseMode: RESPONSE_MODES.has(source.responseMode) ? source.responseMode : "stepwise",
     colorAnchorMode: source.colorAnchorMode === "corners" ? "corners" : "axes",
     tileCount: parsePreviewTileCount(source.tileCount) ?? DEFAULT_PREVIEW_TILE_COUNT,
@@ -159,6 +161,7 @@ export function createResearchPreview(root, options = {}) {
   const controlOutline = stage.querySelector("[data-preview-control-outline]");
   const controlCursor = stage.querySelector("[data-preview-control-cursor]");
   const faceSvg = stage.querySelector("[data-preview-face]");
+  const photoCanvas = stage.querySelector("[data-preview-photo-face]");
   const faceHead = stage.querySelector("[data-preview-face-head]");
   const faceBrows = {
     left: stage.querySelector('[data-preview-face-brow="left"]'),
@@ -174,7 +177,7 @@ export function createResearchPreview(root, options = {}) {
   };
   const faceMouthShape = stage.querySelector("[data-preview-face-mouth-shape]");
   const faceMouthLine = stage.querySelector("[data-preview-face-mouth-line]");
-  const studio = stage.getAttribute("data-preview-variant") === "studio";
+  const authoringStage = stage.getAttribute("data-preview-variant") === "studio";
 
   if (!(overlay instanceof HTMLElement) || !(gridCanvas instanceof HTMLCanvasElement)
     || !(gridSvg instanceof SVGElement) || !(gridCursor instanceof SVGElement)
@@ -184,12 +187,43 @@ export function createResearchPreview(root, options = {}) {
   }
 
   let state = normalizedState(options.initialState);
+  let studio = authoringStage || state.displayMode !== "legacy";
   let frameId = 0;
   let lastFrame = performance.now();
   let phase = 0;
   let paletteFingerprint = "";
   let renderedTileCount = null;
   let draggingPointer = null;
+  let photoImage = null, photoImageId = null, photoLoadId = null, photoLoadGeneration = 0;
+
+  function preparePhotoFace() {
+    if (state.displayMode !== "photo-face" || !(photoCanvas instanceof HTMLCanvasElement)) return;
+    const id = state.facePackId;
+    if (photoImageId === id || photoLoadId === id) return;
+    photoImage = null;
+    photoImageId = null;
+    photoLoadId = id;
+    const generation = ++photoLoadGeneration;
+    try {
+      const pack = faceAtlasPack(id);
+      void loadFaceAtlas(pack).then(image => {
+        if (generation !== photoLoadGeneration) return;
+        photoImage = image;
+        photoImageId = id;
+        photoLoadId = null;
+        delete stage.dataset.faceAtlasError;
+        renderStatic();
+      }).catch(error => {
+        if (generation !== photoLoadGeneration) return;
+        photoLoadId = null;
+        stage.dataset.faceAtlasError = String(error.message);
+        setElementHidden(photoCanvas, true);
+      });
+    } catch (error) {
+      photoLoadId = null;
+      stage.dataset.faceAtlasError = String(error.message);
+    }
+  }
 
   function setPositionFromPointer(event) {
     const bounds = primaryStage.getBoundingClientRect();
@@ -214,7 +248,7 @@ export function createResearchPreview(root, options = {}) {
     const outputMode = studio ? state.displayMode : "legacy";
     const gridVisible = outputMode === "grid" || (outputMode === "legacy" && state.gridVisible);
     const flubberVisible = outputMode === "flubber" || (outputMode === "legacy" && state.flubberVisible);
-    const faceVisible = outputMode === "face";
+    const faceVisible = outputMode === "face" || outputMode === "photo-face";
     const tiled = studio && state.responseMode === "stepwise";
     overlay.hidden = state.hideFeedback || (!gridVisible && !flubberVisible && !faceVisible);
     overlay.dataset.locked = String(state.lockPosition);
@@ -230,7 +264,14 @@ export function createResearchPreview(root, options = {}) {
     setElementHidden(gridCanvas, !gridVisible);
     setElementHidden(gridSvg, !gridVisible);
     setElementHidden(flubberSvg, !flubberVisible);
-    setElementHidden(faceSvg, !faceVisible);
+    setElementHidden(faceSvg, outputMode !== "face");
+    setElementHidden(photoCanvas, outputMode !== "photo-face" || photoImageId !== state.facePackId);
+    if (outputMode === "photo-face") {
+      preparePhotoFace();
+      if (photoImage && photoImageId === state.facePackId) {
+        drawFaceAtlas(photoCanvas.getContext("2d"), photoImage, state.x, state.y, photoCanvas.width);
+      }
+    }
     for (const line of gridLines) {
       setElementHidden(line, tiled);
       line.style.strokeWidth = String(state.grid.lineThickness);
@@ -332,7 +373,7 @@ export function createResearchPreview(root, options = {}) {
     }
     stage.setAttribute(
       "aria-label",
-      `${studio ? `${outputMode === "grid" ? "2D Grid" : outputMode === "face" ? "Responsive Face" : "Classic Flubber"} design preview.` : "Visual feedback preview."} Position ${Math.round(state.position.x * 100)} percent across and ${Math.round(state.position.y * 100)} percent down. ${state.lockPosition ? "Position locked." : "Pointer dragging is available; keyboard users can set the two normalized position fields."}`,
+      `${studio ? `${outputMode === "grid" ? "2D Grid" : outputMode === "photo-face" ? "Photoreal Face" : outputMode === "face" ? "Historical Face" : "Classic Flubber"} design preview.` : "Visual feedback preview."} Position ${Math.round(state.position.x * 100)} percent across and ${Math.round(state.position.y * 100)} percent down. ${state.lockPosition ? "Position locked." : "Pointer dragging is available; keyboard users can set the two normalized position fields."}`,
     );
     root.querySelectorAll("[data-preview-x]").forEach((output) => { output.textContent = formatCoordinate(state.x); });
     root.querySelectorAll("[data-preview-y]").forEach((output) => { output.textContent = formatCoordinate(state.y); });
@@ -407,6 +448,7 @@ export function createResearchPreview(root, options = {}) {
       const square = Object.hasOwn(nextState, "tileCount") && !Object.hasOwn(nextState, "tileRows")
         ? { tileRows: nextState.tileCount } : {};
       state = normalizedState({ ...state, ...nextState, ...square });
+      studio = authoringStage || state.displayMode !== "legacy";
       renderStatic();
     },
     snapshot() {
@@ -419,6 +461,7 @@ export function createResearchPreview(root, options = {}) {
       lastFrame = performance.now();
     },
     destroy() {
+      photoLoadGeneration += 1;
       if (draggingPointer !== null) finishPointer({ pointerId: draggingPointer });
       cancelAnimationFrame(frameId);
       overlay.removeEventListener("pointerdown", onPointerDown);

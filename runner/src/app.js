@@ -20,6 +20,7 @@ import { assertMasterPlanParity, applyMasterDesktopLayout, clearMasterDesktopLay
 import { surveyRandomSeed } from "../../site/src/research/surveyjs-engine.js";
 import { NativeMasterProtocolAdapter } from "./master-protocol.js";
 import { previewOverlayMarkup } from "../../site/src/research/feedback-surface.js";
+import { faceAtlasPack, loadFaceAtlas } from "../../site/src/research/face-atlas.js";
 import { browserAffectState, browserRunCsv } from "./browser-csv.js";
 
 const messageOf = (error) => error?.message ?? String(error);
@@ -35,6 +36,11 @@ const downloadText = (windowObject, fileName, text, type = "text/csv;charset=utf
   windowObject.setTimeout(() => windowObject.URL.revokeObjectURL(url), 1000);
 };
 const safeName = (value) => String(value ?? "run").replace(/[^A-Za-z0-9._-]+/gu, "-").replace(/^-+|-+$/gu, "").slice(0, 96) || "run";
+async function verifySelectedFace(feedback) {
+  if (feedback?.presentation?.renderer !== "photo-face-matrix21") return;
+  const { facePackId, facePackSha256 } = feedback.presentation;
+  await loadFaceAtlas(faceAtlasPack(facePackId, facePackSha256));
+}
 
 export async function bootRunner(root, { invoke, windowObject = window, pollMs = 250, subscribeAbort = () => () => {} } = {}) {
   if (!(root instanceof HTMLElement) || typeof invoke !== "function") throw new TypeError("Runner needs its root and native adapter.");
@@ -492,6 +498,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       throw new Error("Open Session settings and choose the experiment project folder before browser video playback.");
     }
     const plan = await resolveRunnerSelection(recipe, participantId(), path, value("runner-variant"));
+    await verifySelectedFace(plan.selected.feedback);
     selection = plan;
     const runId = windowObject.crypto?.randomUUID?.() ?? `browser-${Date.now().toString(16)}`;
     browserAttempt = {
@@ -972,6 +979,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     preflight = null; inputReceipt = null;
     const candidate = await resolveRunnerSelection(currentRecipe, participantId(), path, value("runner-variant"));
     if (currentRecipe.recipe) {
+      await verifySelectedFace(candidate.selected.feedback);
       const native = await invoke("research_runner_master_plan", { sourceText: plannerRecipeTransportText(currentRecipe),
         participantId: participantId(), selector: candidate.selector });
       if (destroyed || generation !== revision) return;
@@ -1246,6 +1254,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const participant = ![2, 3, 4, 5].includes(recipe.recipe?.version) && disposition === "new-attempt" ? participantRecord() : null;
     query("runner-first").value = ""; query("runner-last").value = "";
     if (recipe.recipe) {
+      await verifySelectedFace(selection.selected.feedback);
       const request = {workspaceId:workspace.workspaceId,sourceText:plannerRecipeTransportText(recipe),selector:selection.selector,
         inputTestReceiptId:inputReceipt.receiptId,rerunConfirmed:query("runner-rerun").checked};
       if ([2, 3, 4, 5].includes(selection.version)) Object.assign(request, {version:selection.version,participantId:participantId()});

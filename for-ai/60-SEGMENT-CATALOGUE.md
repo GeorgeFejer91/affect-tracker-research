@@ -519,6 +519,7 @@ renderer/labels/halo presentation and response grid/timing/hold behavior.
 - [x] **P5-06 — Implemented Planner:** Version2 serializes input, visual, mappings, presentation and response, including renderer/labels, halo width/gradient/steepness, grid dimensions, full-span timing and hold/repeat behavior.
 - [x] **P5-07 — Implemented Planner:** P4/P6 consume complete P5 bounds; accepted contributions invalidate on edits, including color Reset. V2 atomic restoration and explicit historical conversion preserve configured values.
 - [x] **P5-08 — Implemented Planner:** Consolidated UI, expanded Advanced/Response, labels/dialogs, invalid focus and full configuration restore have source-bound rendered/software evidence. Physical input and installed accessibility qualification remain later gates.
+- [ ] **P5-09 — Photoreal Face successor:** Replace new Face authoring with the Playground 21 × 21 continuous atlas, a pack picker, mode-specific controls, versioned saved pack identity/hash, strict Planner/Runner parity and no circular fallback. Historical P5 v2 procedural Face retains its original semantics. Verify the rendered minimum/normal/expanded panels with Pretext and accordion stretch. The pack catalogue's appearance labels are not verified demographic labels; resolve the researcher's requested wording before showing gender/ethnicity claims.
 
 **Acceptance:** saved edits survive preview/export/reopen; temporary test movement
 does not become participant data or stored response rules. Animation speed is

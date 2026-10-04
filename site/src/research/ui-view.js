@@ -1,4 +1,5 @@
 import { previewOverlayMarkup } from "./feedback-surface.js";
+import { faceAtlasCatalogue, faceAtlasPickerLabel } from "./face-atlas.js";
 import { createDefaultResearchSettings } from "./contracts.js";
 import { xrLayoutEditorMarkup } from "./xr-layout-view.js";
 import { STIMULUS_INSPIRATION_GROUPS } from "./stimulus-inspiration.js";
@@ -571,6 +572,13 @@ export function renderResearchUiMarkup(surface = "browser") {
                     <button type="button" data-feedback-preview-mode="grid" aria-pressed="false">2D Grid</button>
                     <button type="button" data-feedback-preview-mode="face" aria-pressed="false">Face</button>
                   </div>
+                  <section class="preview-face-options" data-feedback-options="face" hidden aria-label="Face portrait">
+                    <label class="field" for="preview-face-pack"><span>Portrait preset</span>
+                      <select id="preview-face-pack">${faceAtlasCatalogue().packs.map(pack => `<option value="${escapeAttribute(pack.id)}">${escapeAttribute(faceAtlasPickerLabel(pack))}</option>`).join("")}</select>
+                    </label>
+                    <output id="preview-face-pack-full-label" class="field-help" aria-live="polite"></output>
+                    <p class="field-help">Synthetic portraits · style and regional cues describe the artwork, not identity · continuous 21 × 21 transition</p>
+                  </section>
                 </div>
               </header>
               ${previewMarkup("Interactive live feedback settings preview", { studio: true })}

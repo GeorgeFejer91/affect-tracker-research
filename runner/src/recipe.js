@@ -55,7 +55,9 @@ export function runnerMasterFeedbackState(feedback, x = 0, y = 0) {
     x, y, gridVisible: false, flubberVisible: false, hideFeedback: feedback.visual.hideFeedback,
     sizePercent: 100, position: { x: 0.5, y: 0.5 }, lockPosition: true,
     transparencyPercent: feedback.visual.transparency * 100,
-    displayMode: feedback.presentation.renderer === "procedural-face" ? "face" : feedback.presentation.renderer,
+    displayMode: feedback.presentation.renderer === "procedural-face" ? "face"
+      : feedback.presentation.renderer === "photo-face-matrix21" ? "photo-face" : feedback.presentation.renderer,
+    facePackId: feedback.presentation.facePackId,
     responseMode: feedback.response.mode, tileCount: feedback.response.grid.columns, tileRows: feedback.response.grid.rows,
     colorAnchorMode: feedback.presentation.colorAnchors,
     colors: { ...feedback.visual.colors }, grid: { ...feedback.visual.grid },

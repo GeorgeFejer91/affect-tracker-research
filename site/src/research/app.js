@@ -39,7 +39,9 @@ import {
 } from "./mappings.js";
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createFeedbackContributionSource, validateFeedbackContributionV1 } from "./feedback-contribution.js";
-import { validateFeedbackContribution, validateFeedbackContributionV2, createFeedbackAuthoringSettingsV2 } from "./feedback-settings.js";
+import { validateFeedbackContribution, validateFeedbackContributionV2, validateFeedbackContributionV3, createFeedbackAuthoringSettingsV2 } from "./feedback-settings.js";
+import { faceAtlasPack } from "./face-atlas.js";
+import { measureFacePickerText } from "./face-picker-text.js";
 import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
@@ -287,7 +289,7 @@ function bindResearchInteractions(root, { surface }) {
   let previewResponseSimulator = null;
   let previewInteraction = null;
   let feedbackPreviewMode = "flubber";
-  let feedbackSettingsVersion = 2;
+  let feedbackSettingsVersion = 3;
   let restoredTransparency = null;
   let responsePreviewMode = "stepwise";
   let previewColorAnchor = null;
@@ -1048,13 +1050,14 @@ function bindResearchInteractions(root, { surface }) {
       gridVisible: checked("visual-grid-visible"),
       flubberVisible: checked("visual-flubber-visible"),
       hideFeedback: checked("visual-hide-feedback"),
-      sizePercent: design && feedbackSettingsVersion === 2 ? 42 : numberValue("visual-size", 42),
+      sizePercent: design && feedbackSettingsVersion >= 2 ? 42 : numberValue("visual-size", 42),
       transparencyPercent: numberValue("visual-transparency", 0),
-      position: design && feedbackSettingsVersion === 2 ? { x: 0.5, y: 0.5 }
+      position: design && feedbackSettingsVersion >= 2 ? { x: 0.5, y: 0.5 }
         : { x: numberValue("visual-position-x", 0.5), y: numberValue("visual-position-y", 0.5) },
-      lockPosition: locked || (design && feedbackSettingsVersion === 2) || checked("visual-lock-position"),
+      lockPosition: locked || (design && feedbackSettingsVersion >= 2) || checked("visual-lock-position"),
       ...(design ? {
-        displayMode: feedbackSettingsVersion === 2 ? feedbackPreviewMode : "legacy",
+        displayMode: feedbackSettingsVersion >= 2 ? feedbackPreviewMode === "face" && feedbackSettingsVersion === 3 ? "photo-face" : feedbackPreviewMode : "legacy",
+        facePackId: value("preview-face-pack"),
         responseMode: responsePreviewMode,
         tileCount: previewResponseSimulator?.snapshot().tileCount ?? DEFAULT_PREVIEW_TILE_COUNT,
         tileRows: previewResponseSimulator?.snapshot().tileRows ?? DEFAULT_PREVIEW_TILE_COUNT,
@@ -1156,6 +1159,9 @@ function bindResearchInteractions(root, { surface }) {
     root.querySelectorAll("[data-feedback-preview-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.getAttribute("data-feedback-preview-mode") === feedbackPreviewMode));
     });
+    root.querySelectorAll("[data-feedback-options]").forEach(panel => {
+      panel.hidden = panel.getAttribute("data-feedback-options") !== feedbackPreviewMode;
+    });
     root.querySelectorAll("[data-response-preview-mode]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.getAttribute("data-response-preview-mode") === responsePreviewMode));
     });
@@ -1171,7 +1177,7 @@ function bindResearchInteractions(root, { surface }) {
     if (modeLabel) {
       modeLabel.textContent = feedbackPreviewMode === "grid"
         ? "2D Grid"
-        : feedbackPreviewMode === "face" ? "Responsive Face" : "Classic Flubber";
+        : feedbackPreviewMode === "face" ? "Photoreal Face" : "Classic Flubber";
     }
     const simulatorHelp = query("#preview-response-simulator-help");
     if (simulatorHelp) {
@@ -1271,14 +1277,14 @@ function bindResearchInteractions(root, { surface }) {
     const preset = selectedPreset();
     const step = query("#input-step-size");
     const applicability = query("#input-step-applicability");
-    if (step instanceof HTMLInputElement) step.disabled = !preset.digital || feedbackSettingsVersion === 2;
+    if (step instanceof HTMLInputElement) step.disabled = !preset.digital || feedbackSettingsVersion >= 2;
     if (applicability) applicability.textContent = preset.digital
-      ? feedbackSettingsVersion === 2 ? "Legacy compatibility value. Saved response settings determine current movement." : "Applies to digital edge-triggered presses."
+      ? feedbackSettingsVersion >= 2 ? "Legacy compatibility value. Saved response settings determine current movement." : "Applies to digital edge-triggered presses."
       : "N/A for this continuous / absolute input.";
     const previewInput = query("#preview-input-source");
     if (previewInput) previewInput.textContent = preset.label;
     const summary = query('[data-section-summary="feedback"]');
-    if (summary) summary.textContent = feedbackSettingsVersion === 2 ? `${preset.label} · ${responsePreviewMode} response`
+    if (summary) summary.textContent = feedbackSettingsVersion >= 2 ? `${preset.label} · ${responsePreviewMode} response`
       : preset.digital ? `${preset.label} · step ${numberValue("input-step-size", 0.1)}` : `${preset.label} · Step Size N/A`;
   }
 
@@ -1553,16 +1559,21 @@ function bindResearchInteractions(root, { surface }) {
     const dimensions = parsePreviewGrid({ mode: query('input[name="previewGridSizing"]:checked')?.value,
       steps: value("preview-tile-count"), columns: value("preview-tile-columns"), rows: value("preview-tile-rows") });
     if (!dimensions) throw new TypeError("Enter valid odd response grid dimensions before saving.");
-    return validateFeedbackContributionV2({ schema: "affect-research-feedback", version: 2, ...retained,
-      presentation: { renderer: feedbackPreviewMode === "face" ? "procedural-face" : feedbackPreviewMode,
+    const current = feedbackSettingsVersion === 3;
+    const pack = current ? faceAtlasPack(value("preview-face-pack")) : null;
+    const candidate = { schema: "affect-research-feedback", version: feedbackSettingsVersion, ...retained,
+      presentation: { renderer: feedbackPreviewMode === "face"
+        ? current ? "photo-face-matrix21" : "procedural-face" : feedbackPreviewMode,
         colorAnchors: query('input[name="previewColorAnchors"]:checked')?.value,
         labels: { axes: Object.fromEntries(previewAxisLabels), corners: Object.fromEntries(previewCornerLabels) },
         halo: { widthPercent: feedbackNumber("preview-halo-size"), gradient: checked("preview-halo-gradient"),
-          steepness: feedbackNumber("preview-halo-steepness") } },
+          steepness: feedbackNumber("preview-halo-steepness") },
+        ...(current ? { facePackId: pack.id, facePackSha256: pack.atlasSha256 } : {}) },
       response: { mode: responsePreviewMode, grid: { columns: dimensions.tileCount, rows: dimensions.tileRows },
         fullSpanDurationMs: feedbackNumber("preview-full-span-duration"),
         holdRule: query('input[name="previewHoldRule"]:checked')?.value, repeatDelayMs: feedbackNumber("preview-repeat-delay") },
-    });
+    };
+    return current ? validateFeedbackContributionV3(candidate) : validateFeedbackContributionV2(candidate);
   }
 
   function researchSettingsDraft({ verifySources = true } = {}) {
@@ -1612,7 +1623,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   async function researchSettingsFromUi() {
-    if (feedbackSettingsVersion === 2) {
+    if (feedbackSettingsVersion >= 2) {
       throw new TypeError("Current feedback settings require the complete Planner recipe; legacy settings/package export and Start cannot omit them.");
     }
     return validateResearchSettingsV3(researchSettingsDraft());
@@ -1720,7 +1731,7 @@ function bindResearchInteractions(root, { surface }) {
   }
 
   function applyFeedbackFields(normalized) {
-    feedbackSettingsVersion = normalized.version === 2 ? 2 : 1;
+    feedbackSettingsVersion = normalized.version >= 2 ? normalized.version : 1;
     // Range defaults are editing increments, not restrictions in the existing
     // finite-number contract. Do not round an imported valid number to a tick.
     for (const id of ["visual-transparency", "flubber-outline-thickness", "grid-line-thickness", "grid-outline-thickness", "grid-cursor-size"]) {
@@ -1758,9 +1769,10 @@ function bindResearchInteractions(root, { surface }) {
       disclosure.querySelector("[data-mapping-driver]").value = mapping.drivenBy;
       disclosure.querySelector("[data-mapping-reverse]").checked = mapping.reverse;
     }
-    if (feedbackSettingsVersion === 2) {
+    if (feedbackSettingsVersion >= 2) {
       const { presentation, response } = normalized;
-      feedbackPreviewMode = presentation.renderer === "procedural-face" ? "face" : presentation.renderer;
+      feedbackPreviewMode = ["procedural-face", "photo-face-matrix21"].includes(presentation.renderer) ? "face" : presentation.renderer;
+      if (presentation.facePackId) setInputValue("preview-face-pack", presentation.facePackId);
       responsePreviewMode = response.mode;
       for (const control of root.querySelectorAll('input[name="previewColorAnchors"]')) control.checked = control.value === presentation.colorAnchors;
       for (const [map, values] of [[previewAxisLabels, presentation.labels.axes], [previewCornerLabels, presentation.labels.corners]]) {
@@ -5273,6 +5285,7 @@ function bindResearchInteractions(root, { surface }) {
     plannerFileWorkflow.edited({ deferNotification: true });
   }
   const authoringIntents = new AbortController();
+  measureFacePickerText(query("#preview-face-pack"), query("#preview-face-pack-full-label"), authoringIntents.signal);
   // Capture before child editor handlers, including edits which are invalid or
   // later reverted. Disclosure, confirmation and preview inspection are not edits.
   for (const type of ["input", "change", "paste"]) root.addEventListener(type, event => {
@@ -5295,16 +5308,17 @@ function bindResearchInteractions(root, { surface }) {
     const target = event.target instanceof Element ? event.target.closest("button") : null;
     if (!(target instanceof HTMLButtonElement)) return;
     if (["flubber", "grid", "face"].includes(target.dataset.feedbackPreviewMode)) {
-      if (feedbackSettingsVersion !== 2) return;
+      if (feedbackSettingsVersion < 2) return;
       packageEditRevision += 1;
       feedbackPreviewMode = target.dataset.feedbackPreviewMode;
+      if (feedbackPreviewMode === "face") feedbackSettingsVersion = 3;
       refreshProjection();
       schedulePlanRefresh();
-      announce(`${feedbackPreviewMode === "grid" ? "2D Grid" : feedbackPreviewMode === "face" ? "Procedural Face" : "Classic Flubber"} selected for the experiment.`);
+      announce(`${feedbackPreviewMode === "grid" ? "2D Grid" : feedbackPreviewMode === "face" ? "Photoreal Face" : "Classic Flubber"} selected for the experiment.`);
       return;
     }
     if (["continuous", "stepwise"].includes(target.dataset.responsePreviewMode)) {
-      if (feedbackSettingsVersion !== 2) return;
+      if (feedbackSettingsVersion < 2) return;
       packageEditRevision += 1;
       responsePreviewMode = target.dataset.responsePreviewMode;
       configurePreviewResponseSimulator();
@@ -6128,7 +6142,7 @@ function bindResearchInteractions(root, { surface }) {
       resetInputTest({ notify: false });
       if (contribution) {
         inputController?.setBinding(contribution.input);
-        if (contribution.version === 2) configurePreviewResponseSimulator();
+        if (contribution.version >= 2) configurePreviewResponseSimulator();
         renderBindings();
       }
       refreshProjection();
