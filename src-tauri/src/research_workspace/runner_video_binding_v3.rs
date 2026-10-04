@@ -1,21 +1,6 @@
 //! Bind a saved browser-video catalogue to the exact current workspace files.
 use super::*;
-use crate::research_workspace_contribution::v3::{
-    validate_video_catalogue_contribution_v3, VideoDisplayGeometryV3,
-};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct RunnerVideoBindingV3 {
-    pub(crate) asset_id: String,
-    pub(crate) annotation_id: String,
-    pub(crate) source_relative_path: String,
-    pub(crate) workspace_file_id: String,
-    pub(crate) sha256: String,
-    pub(crate) byte_length: u64,
-    pub(crate) mime_type: String,
-    pub(crate) duration_ms: u64,
-    pub(crate) display_geometry: VideoDisplayGeometryV3,
-}
+use crate::research_workspace_contribution::v3::validate_video_catalogue_contribution_v3;
 
 impl WorkspaceService {
     pub fn validate_planner_video_catalogue_v3(
@@ -32,12 +17,21 @@ impl WorkspaceService {
         &self,
         workspace_id: &str,
         value: &serde_json::Value,
-    ) -> ResearchResult<Vec<RunnerVideoBindingV3>> {
+    ) -> ResearchResult<Vec<RunnerVideoBinding>> {
         let catalogue = validate_video_catalogue_contribution_v3(value)?;
         let guard = self.lock_selected();
         let workspace = selected_ref(&guard, workspace_id)?;
+        if workspace.unprepared_source_import {
+            return Err(CommandError::forbidden(
+                "An imported source video still needs successful preparation and HTML confirmation.",
+            ));
+        }
         let libraries = validate_selected_workspace(workspace)?;
         let current = scan_planner_videos(&libraries.package_assets)?;
+        media_preparation::validate_active_closure(
+            &workspace.root.join("source-videos"),
+            &current,
+        )?;
         if catalogue.entries.len() != workspace.scanned.len()
             || catalogue.entries.len() != current.len()
         {
@@ -75,7 +69,7 @@ impl WorkspaceService {
                     "The current video file no longer matches the saved catalogue.",
                 ));
             }
-            bindings.push(RunnerVideoBindingV3 {
+            bindings.push(RunnerVideoBinding {
                 asset_id: entry.asset_id,
                 annotation_id: entry.annotation_id,
                 source_relative_path: entry.source_relative_path,

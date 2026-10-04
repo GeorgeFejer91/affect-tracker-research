@@ -6387,16 +6387,18 @@ read. Normal Start remains unavailable until those end-to-end gates are met.
 First source slice: master3–5 preflight now calls the existing P1 exact-catalogue
 binding validator and reports the count of verified current media files. Missing,
 changed or ambiguous prepared files reject preflight before it can imply media
-readiness; this is a read-only check and grants no playback. Earlier master
-versions retain their existing preflight fields and closed Start. This call
+readiness; this is a read-only check and grants no playback. The following
+slice extends the check to supported older P1 catalogues. Start remains closed. This call
 reuses the workspace owner seam without changing its contract.
 
-Second source slice: master3–5 preflight checks every planned video occurrence
+Second source slice: preflight chooses the verifier by saved P1 catalogue v1–3
+across supported master versions and checks every planned video occurrence
 against the complete verified P1 binding, including asset/annotation/path/hash,
 byte length, duration and display geometry. HTML media URL issuance repeats
 the complete catalogue validation and the selected-step check immediately
-before granting the file. The workspace binding type is exposed only within
-the Rust crate; workspace validation and grant contracts remain unchanged.
+before granting the file. P1 v3 now applies the same unprepared-source and
+receipt-closure check as earlier P1 versions. The workspace binding and grant
+contracts remain unchanged.
 Focused stale/duplicate binding tests were added. `cargo check` for the Runner
 binary and tests plus Rust formatting passed locally. Local test execution is
 deferred to Windows CI because this checkout has under 500 MB free after
