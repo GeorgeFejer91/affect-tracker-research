@@ -110,6 +110,16 @@ jobs:
             $target = $shell.CreateShortcut($path).TargetPath
             if ($target -ne (Join-Path $destination $entry[1])) { throw "Suite shortcut target mismatch: $($entry[0])" }
           }
+          $ffmpeg = Join-Path $destination 'ffmpeg/bin/ffmpeg.exe'
+          $ffprobe = Join-Path $destination 'ffmpeg/bin/ffprobe.exe'
+          $source = Join-Path $env:RUNNER_TEMP 'suite-tool-smoke.avi'
+          $playable = Join-Path $env:RUNNER_TEMP 'suite-tool-smoke.mp4'
+          & $ffmpeg -nostdin -hide_banner -loglevel error -f lavfi -i testsrc=size=64x64:rate=10 -t 0.5 -c:v mpeg4 -f avi $source
+          if ($LASTEXITCODE -ne 0) { throw 'Installed FFmpeg could not create the source fixture.' }
+          & $ffmpeg -nostdin -hide_banner -loglevel error -i $source -map 0:v:0 -c:v libx264 -pix_fmt yuv420p -movflags +faststart -f mp4 $playable
+          if ($LASTEXITCODE -ne 0) { throw 'Installed FFmpeg could not prepare a playable sibling.' }
+          $codec = (& $ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nokey=1:noprint_wrappers=1 $playable).Trim()
+          if ($LASTEXITCODE -ne 0 -or $codec -ne 'h264') { throw 'Installed FFprobe did not recognize H.264 output.' }
       - name: Upload suite candidate for installed verification
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
