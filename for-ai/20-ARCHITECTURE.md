@@ -5,7 +5,7 @@
 Planner P1 keeps imported originals in `source-videos/`, outside the closed
 runtime stimulus tree. Native import and Segment One confirmation run FFprobe;
 incompatible sources are converted by FFmpeg to deterministic, create-new MP4
-siblings under `assets/stimuli/`. A current source receipt binds each playable
+files under `assets/stimuli/`. A current source receipt binds each playable
 file; Segment One accepts the selected catalogue only after representative
 frames decode in an HTML video element. Fresh JSON references the prepared
 file's exact path, hash, byte length, duration and oriented geometry. Runner
