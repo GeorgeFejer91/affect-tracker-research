@@ -6355,3 +6355,38 @@ step as named shared verification seams. It will compare independent JS and
 Rust plans across the bundled master5 variants/language routes and write an
 exact-commit receipt. It will not claim that plan interpretation executes a
 session or records XDF.
+
+## 20261004-R1-native-HTML-session-authority
+
+Owner: root, R1/RR-04, RR-06, RR-07, RR-08/09 and R1-03/04/05/07, Backend
+Verification. Isolated branch `codex/segment-r1-native-html-session` in
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-native`, based
+on `7356286`. The frozen master1–5 JSON plus selected participant, language,
+variant, exact P1 video identity, P2 forms, P3 sequence, P4 layout, P5 input
+and sampling policy are inputs. Runner-only output is a versioned attempt,
+observed event and answer journal, outbound LSL and selected-stream XDF. It
+does not write settings back into the Planner manifest.
+
+Verified source: native master Start is fail-closed, status is always absent,
+and existing marker, information, storage, input and recorder components remain
+without an active worker. HTML media URLs independently reparse exact saved
+steps. Browser CSV execution cannot satisfy native input or XDF. The intended
+deliverable is a Rust-owned session lifecycle accepting position-bound HTML
+video observations, executing form and native ISI boundaries, sampling native
+input, emitting exact markers and finalizing Runner recording; the frontend
+will render the saved selection and relay only observed media/form actions.
+Allowed symbols are `src-tauri/src/research_runner_master/{runtime,commands,
+html_session}.rs`, its module registration, the matching Runner adapter/player
+and focused R1 tests. Shared seams are workspace media grants, native input,
+recorder selection and Tauri command registration; preserve their existing
+contracts unless a narrow versioned extension is necessary. No new unsafe
+boundary or XR runtime. Evidence: pure state/contract tests, JS/Rust plan
+parity, complete native compile/lint, exact installed GUI and independent XDF
+read. Normal Start remains unavailable until those end-to-end gates are met.
+
+First source slice: master3–5 preflight now calls the existing P1 exact-catalogue
+binding validator and reports the count of verified current media files. Missing,
+changed or ambiguous prepared files reject preflight before it can imply media
+readiness; this is a read-only check and grants no playback. Earlier master
+versions retain their existing preflight fields and closed Start. This call
+reuses the workspace owner seam without changing its contract.

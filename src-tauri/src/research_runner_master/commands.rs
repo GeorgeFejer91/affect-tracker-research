@@ -203,6 +203,16 @@ async fn master_preflight(
                 .as_array()
                 .ok_or_else(|| CommandError::invalid_contract("Saved video catalogue is missing."))?
                 .len();
+            let media_binding_count = if matches!(prepared.plan.version, 3..=5) {
+                workspace
+                    .validate_runner_video_catalogue_v3(
+                        &request.workspace_id,
+                        &p1["videoCatalogue"],
+                    )?
+                    .len()
+            } else {
+                0
+            };
             let viewport = &prepared.layout.viewport;
             let viewport_matches = scale.is_finite()
                 && scale > 0.0
@@ -225,7 +235,7 @@ async fn master_preflight(
                 "version": prepared.plan.version,
                 "recipeSourceByteSha256": prepared.plan.recipe_source_byte_sha256,
                 "planIdentitySha256": prepared.plan.plan_identity_sha256,
-                "mediaBindingCount": 0,
+                "mediaBindingCount": media_binding_count,
                 "savedVideoCount": saved_video_count,
                 "viewportMatches": viewport_matches,
                 "nativeStartReady": false,
