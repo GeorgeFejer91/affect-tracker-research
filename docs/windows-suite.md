@@ -1,15 +1,15 @@
-# Windows companion suite candidate
+# Windows companion suite
 
-The intended download is one NSIS setup executable. It contains two separate
-programs, **Experiment Planner** and **Experiment Runner**, in one installation;
-the researcher does not need to fetch a second application. The Runner launcher
-checks the adjacent engine hash before opening it. The Planner authors the
-segmented experiment JSON; the Runner consumes that exact saved JSON and owns
-participant execution and recording. This package adds no experiment setting.
+The intended download is one Windows NSIS installer containing separate
+**Experiment Planner** and **Experiment Runner** programs. Planner authors the
+segmented experiment JSON; Runner consumes that saved JSON for participant
+execution. The installer also carries the pinned `ffprobe.exe` and `ffmpeg.exe`
+pair that Planner uses to inspect a video pool and prepare playable siblings.
+Original videos remain in the researcher-selected workspace.
 
-## Build and installed-file check
+## Build and installed-file checks
 
-From a clean Windows x64 source commit with PowerShell 7 and the locked Node and
+From a clean Windows x64 source commit with PowerShell 7 and locked Node and
 Rust dependencies:
 
 ```powershell
@@ -17,106 +17,44 @@ pnpm suite:windows:check
 pnpm suite:windows:build
 ```
 
-The build compiles the Runner frontend and native engine with the Runner Tauri
-configuration, builds its hash-bound launcher, writes portable receipts, and
-then bundles the Planner and both Runner executables with Tauri's NSIS target.
+The build downloads the pinned FFmpeg 9.0.2 essentials ZIP, checks its
+SHA-256 against `60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba`,
+and stages only `ffmpeg.exe`, `ffprobe.exe`, and their license, build notes,
+source notice and receipt. The tools install beside Planner at
+`ffmpeg/bin/`, the exact location P1 checks before falling back to `PATH`.
+The build also compiles the Runner frontend and native engine, builds a
+hash-bound Runner launcher, and bundles both programs into one unsigned setup.
 The generated stage is ignored at `src-tauri/suite/`; a new build refuses to
-overwrite it. The NSIS artifact directory is
-`src-tauri/target/release/bundle/nsis/`. The build is unsigned.
+overwrite it.
 
-The manually dispatched `desktop.yml` Windows workflow first runs the normal
-source checks, then builds and uploads this installer as a short-lived,
-unqualified verification artifact. Before upload, it silently installs the
-candidate on its ephemeral Windows runner and runs the installed-file audit
-against the exact workflow commit. It does not publish a release.
-
-After installing the exact candidate, inspect its
-directory without opening either GUI:
+After installing an exact candidate, inspect its files without opening a GUI:
 
 ```powershell
-node scripts/qualification/windows-suite-installed-audit.mjs --app-dir <installed-directory> --expected-commit <40-character-commit> --verify-launcher
+node scripts/qualification/windows-suite-installed-audit.mjs --app-dir <installed-directory> --expected-commit <40-character-commit> --verify-launcher --verify-media-tools
 ```
 
-The audit checks the three companion executables and two portable receipts,
-rejects a duplicate raw Runner executable, and verifies source identity,
-Runner hashes and the launcher's verification mode. A valid receipt
-binds `Experiment Runner.exe` and `affect-runner-engine.exe` by SHA-256 and marks
-`researchQualified: false`. The installer itself runs the launcher's
-`--verify-only` check before it reports installation success. Uninstall removes
-the installed program files and suite shortcuts; Tauri's normal app-data choice
-controls any app-data removal.
+The audit checks the two named programs, the Runner engine and receipt, the
+video preparation tools and their receipts, the source commit, and tool
+startup with no `PATH` dependency. The installer also verifies the Runner
+launcher and required tool files before reporting success. CI repeats the
+installed-file audit after a same-path reinstall and checks both Start Menu
+shortcut targets.
 
-## Exact installed-file evidence
+## Current evidence and limits
 
-[Windows run 37182385963](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37182385963)
-passed source checks, built the unsigned NSIS setup from commit
-`3ae5fb320b77b1c899af67bc6530e7ad1c07d9a6`, installed it silently into a
-fresh directory on the ephemeral Windows runner, and passed
-`affect-windows-suite-installed-audit-v1` with no issues and
-`launcherVerified: true`. Its [unqualified installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37182385963/artifacts/11296121762)
-is a 153,636,833-byte ZIP with SHA-256
-`b098a19a0e9fac2fb14228cc708f94fa6442622900494b2bf1178c0fd933c3a1`.
-That digest identifies the uploaded ZIP, not the setup executable inside.
+Source-level package checks and the focused installed-audit fixture pass at
+`1461f85`. The package with the new media source and bundled tools has **not**
+yet been built or installed. The last local install is an earlier internal
+candidate; it does not contain the current media workflow or bundled tools.
+Its prior [Windows CI run](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37189915633)
+qualified only fresh and repeat installation layout for that older source.
 
-The same run independently verified all six pinned direct GStreamer component
-source archives against their bytes, SHA-256 values and published upstream
-checksums. Its [temporary source-review artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37182385963/artifacts/11295622049)
-is a 19,317,679-byte ZIP with SHA-256
-`f4d84e4329bc1cc87c080442a1ad5931ba595ba3b119c6168ee50537a45ae1fe`.
-Both artifacts have 14-day retention. The installer contains no GStreamer
-runtime; these source archives do not establish redistribution approval.
+A passing file audit establishes layout, hashes, and tool startup only. It does
+not establish Planner video preparation, participant playback, questionnaire
+flow, physical input, LSL/XDF, timing, accessibility, or research readiness.
+Those gates require independent checks against the same final candidate.
 
-The later [Windows run 37185887919](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37185887919)
-passed all three jobs at source commit
-`308204455eb17b433edb2e2d1bbf9a593e5c7a61`, including the focused native
-saved-renderer animation test. Its [installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37185887919/artifacts/11297477320)
-is a 153,634,544-byte ZIP with SHA-256
-`508fdc31097b5d8412c6ddae6089091e6bf55e4f87c1edd5c68ff1fad9408bc9`.
-The setup executable inside has SHA-256
-`a8b6df00f7fec5645905d9891e6b09e83758cdc1d2a959b5caf226332792d986`.
-It silently installed to a fresh per-user location on the researcher's current
-PC and passed the original installed-file audit with matching source, receipts
-and launcher verification. A subsequent inventory found an unintended
-`affect-runner.exe` alongside the named launcher and engine. The strengthened
-audit correctly rejects that installed candidate with
-`duplicate-runner-executable`.
-
-[Windows run 37188108109](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37188108109)
-passed all three jobs at `0a614b905b6de9781c01122aa6dc918711071139`.
-Its [installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37188108109/artifacts/11297414207)
-is a 153,635,415-byte ZIP with SHA-256
-`cbfd07b34a121b5b53f3336a4968ac85822838fc359856571c39cdc545aa916a`.
-The setup executable inside has SHA-256
-`4c4c55b8c2a83f5333930444197a88d46b51bca56fbbb8a59bd35f1249328e41`.
-It silently installed on the CI host and replaced the local candidate; both
-installed-file audits passed with no issues, matching source and verified
-launcher. The local install has the two named shortcuts, but an update over
-the previous candidate also left a duplicate default Planner shortcut. The
-following pass checks both a fresh install and reinstall to close that
-update-layout issue.
-
-[Windows run 37189915633](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37189915633)
-passed all three jobs at `9b45d2ec8cdece8723c7d59e566067788c826702`.
-Its [internal installer artifact](https://github.com/GeorgeFejer91/affect-tracker-research/actions/runs/37189915633/artifacts/11299386414)
-is a 153,641,244-byte ZIP with SHA-256
-`bcdac128df30faf548e85d629819255ef9c21838f77c34afa6bb02a0880180f1`.
-The Windows runner installed it into a fresh directory, installed it again,
-and passed the exact-source file/hash audit after each install. It also found
-only the two named Planner/Runner Start Menu shortcuts, each targeting its
-expected executable. A local download for the same artifact failed because C:
-had about 51 MB free; automatic approval review blocked removal of superseded
-setup downloads. The local `0a614b9` installation therefore remains the last
-locally audited candidate. This `9b45d2e` artifact is internal packaging
-regression evidence; the next application candidate must include the separate
-user-directed media changes.
-
-## Claim boundary
-
-The `0a614b9` candidate has been silently installed and file-audited on the
-researcher's PC. It remains an unqualified candidate with a duplicate Planner
-shortcut on update. The exact `9b45d2e` update behavior passed on CI, while
-local update and uninstall/reinstall remain unverified.
-Native playback, physical input, actual video-pool execution, LSL/XDF, timing,
-accessibility, uninstallation, and the full Planner-to-Runner installed
-workflow still require independent exact-artifact checks. Do not present this
-candidate as a research-ready release.
+FFmpeg binary provenance and source links are installed in
+`ffmpeg/SOURCE.txt` along with the upstream license and build notes. Any public
+distribution must include a completed redistribution review for that exact
+binary package.
