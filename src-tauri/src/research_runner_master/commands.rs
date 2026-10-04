@@ -4,13 +4,13 @@ use super::runtime::{
     MasterStartRequestV4, MasterStatus,
 };
 use super::runtime::{MasterActionRequestV5, MasterStartRequestV5};
-use super::{MasterPlan, MasterSelector, PreparedMaster};
+use super::{MasterPlan, MasterSelector, MasterStepKind, PreparedMaster};
 use crate::research_desktop::DesktopRole;
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_native_media::NativeMediaService;
 use crate::research_native_protocol::runtime::PackageProtocolRuntime;
 use crate::research_workspace::{RescanResult, WorkspaceService};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Manager, State, WebviewWindow};
 
@@ -21,6 +21,39 @@ pub struct MasterPreflightRequest {
     pub source_text: String,
     pub participant_id: String,
     pub selector: MasterSelector,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MasterHtmlVideoRequest {
+    pub workspace_id: String,
+    pub source_text: String,
+    pub participant_id: String,
+    pub selector: MasterSelector,
+    pub protocol_step_position: u32,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MasterHtmlVideoUrl {
+    pub schema: &'static str,
+    pub version: u32,
+    pub media_url: String,
+    pub media_grant_id: String,
+    pub workspace_file_id: String,
+    pub sha256: String,
+    pub byte_length: u64,
+    pub mime_type: String,
+}
+
+fn declared_video_asset(plan: &MasterPlan, position: u32) -> ResearchResult<&serde_json::Value> {
+    plan.steps
+        .iter()
+        .find(|step| step.position == position && step.kind == MasterStepKind::Video)
+        .and_then(|step| step.payload.get("asset"))
+        .ok_or_else(|| {
+            CommandError::invalid_contract("Select an exact video step in the saved plan.")
+        })
 }
 
 fn authorize(window: &WebviewWindow) -> ResearchResult<()> {
@@ -70,6 +103,55 @@ pub async fn research_runner_master_rescan(
     })
     .await
     .map_err(|_| CommandError::forbidden("Master media scan did not finish."))?
+}
+
+/// Grants the exact prepared workspace file selected by a saved video step to
+/// the participant HTML video element. The caller cannot supply a file path.
+#[tauri::command]
+pub async fn research_runner_master_html_video_url(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    request: MasterHtmlVideoRequest,
+) -> ResearchResult<MasterHtmlVideoUrl> {
+    authorize(&window)?;
+    let workspace = Arc::clone(&workspace);
+    tauri::async_runtime::spawn_blocking(move || {
+        let prepared = PreparedMaster::read(
+            &request.source_text,
+            &request.participant_id,
+            request.selector,
+        )?;
+        let asset = declared_video_asset(&prepared.plan, request.protocol_step_position)?;
+        let path = asset["sourceRelativePath"].as_str().ok_or_else(|| {
+            CommandError::invalid_contract("The selected video has no saved path.")
+        })?;
+        let sha256 = asset["sha256"].as_str().ok_or_else(|| {
+            CommandError::invalid_contract("The selected video has no saved hash.")
+        })?;
+        let byte_length = asset["byteLength"].as_u64().ok_or_else(|| {
+            CommandError::invalid_contract("The selected video has no saved length.")
+        })?;
+        let mime_type = crate::research_workspace::video_mime_type(std::path::Path::new(path));
+        let receipt = workspace.issue_planner_declared_media_url(
+            &request.workspace_id,
+            path,
+            sha256,
+            byte_length,
+            mime_type,
+        )?;
+        Ok(MasterHtmlVideoUrl {
+            schema: "affect-runner-html-media-url",
+            version: 1,
+            media_url: receipt.media_url,
+            media_grant_id: receipt.media_grant_id,
+            workspace_file_id: receipt.workspace_file_id,
+            sha256: sha256.to_owned(),
+            byte_length: receipt.byte_length,
+            mime_type: receipt.mime_type,
+        })
+    })
+    .await
+    .map_err(|_| CommandError::forbidden("HTML media selection did not finish."))?
 }
 
 #[tauri::command]
@@ -446,4 +528,39 @@ pub async fn research_runner_variant_usage(
     })
     .await
     .map_err(|_| CommandError::forbidden("Version usage scan did not finish."))?
+}
+
+#[cfg(test)]
+mod html_video_tests {
+    use super::*;
+
+    #[test]
+    fn html_video_url_can_select_only_a_saved_video_step() {
+        let source = include_str!(
+            "../../../test/fixtures/planner-recipe-locations-current-v1.canonical.json"
+        );
+        let selector = MasterSelector {
+            variant_id: "variant-3".into(),
+            language_id: "en".into(),
+            language_selection_path: vec!["both".into(), "en".into()],
+            presentation_target: "desktop-screen".into(),
+        };
+        let prepared = PreparedMaster::read(source, "P001", selector).unwrap();
+        let video = prepared
+            .plan
+            .steps
+            .iter()
+            .find(|step| step.kind == MasterStepKind::Video)
+            .unwrap();
+        let asset = declared_video_asset(&prepared.plan, video.position).unwrap();
+        assert_eq!(asset["sourceRelativePath"], "stimuli/session_a/clip.mp4");
+        let form = prepared
+            .plan
+            .steps
+            .iter()
+            .find(|step| step.kind == MasterStepKind::Questionnaire)
+            .unwrap();
+        assert!(declared_video_asset(&prepared.plan, form.position).is_err());
+        assert!(declared_video_asset(&prepared.plan, 0).is_err());
+    }
 }

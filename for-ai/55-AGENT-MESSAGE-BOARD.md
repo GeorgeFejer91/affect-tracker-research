@@ -1,5 +1,25 @@
 # Agent message board
 
+## 20261004 HTML video preparation and retired media cleanup
+
+Direct researcher amendment. Integration owner: this task, branch
+`codex/segment-media-ffmpeg-cleanup`, isolated worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-media-cleanup`, base
+`058694c`; stage: Backend Verification. Primary concern: media, with P1-03/04/05/06/07,
+P7-05/06/09 and R1/RR-04/RR-10 named seams. P1 receives selected original videos,
+probes them on confirmation and publishes only verified playable files; P3/P4/P6/P7
+and Runner consume the resulting exact P1 path, hash, length, duration and geometry.
+The original remains in a separate project source folder. HTML video is the
+current playback surface. This pass removes obsolete native playback authority
+and guidance, then checks real preparation and selected-video URL behavior.
+Source snapshot: commit `fa8552e` removed the former actor/dependency but current
+P1 and Runner binders still require it; no production FFprobe/FFmpeg path exists.
+Docs, P1 preparation, and build cleanup are delegated to isolated branches;
+this branch owns Runner's narrow exact-selected-media URL command and integration.
+CLI HTML decode proof, installed playback, LSL/XDF, timing and research
+qualification remain open until separate evidence closes them. Historical
+saved-file compatibility is awaiting the researcher's explicit answer.
+
 ## 20261004 Compartment and JSON handoff catalog
 
 Owner: current task; branch `codex/segment-contracts-compartment-catalog`,
