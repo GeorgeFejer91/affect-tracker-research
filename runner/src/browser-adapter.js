@@ -227,7 +227,7 @@ export function createBrowserRunnerInvoke({ windowObject = window } = {}) {
         return {
           schema: "affect-research-native-package-protocol-capability",
           version: 1,
-          backend: "html-video",
+          backend: "rust-gstplay",
           rustOwnedProtocol: true,
           packageV1CompilationReady: false,
           protocolPlanV2Ready: false,

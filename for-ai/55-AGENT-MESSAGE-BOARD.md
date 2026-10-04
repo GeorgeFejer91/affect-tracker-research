@@ -6222,3 +6222,26 @@ installed verification. No workflow publishes a release. Local C: build space
 is about 1.2 GB; installed use, native GstPlay and research qualification are
 still open. The prior R1 deep-freeze commit is integrated as `b699b14` on the
 single suite candidate branch.
+
+## R1 native player restoration — 2026-10-04
+
+Root R1/RR-04 Backend Verification pass in the isolated
+`codex/r1-native-gst-restore` worktree, based on suite candidate `8b85146`.
+Target: restore the previously approved Rust GstPlay actor and private-runtime
+capability path removed by `fa8552e`, preserving current master5/P5 and separate
+Planner/Runner contracts. Evidence now: source diff, focused software tests and
+remote Windows Rust compilation; local disk cannot hold a fresh native build.
+Native installation, DLL bootstrap, codec redistribution, physical playback,
+LSL/XDF and research qualification remain separate open gates. Do not lift
+normal research Start or change unqualified WebView evidence into native proof.
+
+20261004 R1 source handoff pending Windows CI: the optional GstPlay actor,
+runtime manifest and native service commands are restored from the pre-removal
+source. The two approved FFI adapter blob hashes match that source exactly.
+Conflicts retained the separate-suite desktop identity and manual CI packaging
+job; the suite launcher continues to build without a private runtime and cannot
+claim native playback. A source-boundary test now checks only the Rust-check
+job's no-package invariant. Local full JavaScript 1,233/1,233, SurveyJS checks,
+Rust formatting and suite structural checks pass. See
+`docs/runner-native-actor-restoration.md`; remote native compile is required
+before integration into the suite candidate.

@@ -55,7 +55,7 @@ For a master recipe, [Runner's projection](../runner/src/recipe.js) maps `presen
 | RR-09 Storage and recovery | Frozen recipe/selection/attempt and accepted records | No-overwrite output folder, source copy, journal, CSV/TSV, result/partial receipt; master resume remains unavailable |
 | RR-10 Correspondence | Exact saved recipe and each actual observed protocol step | Immutable JS plan plus independent reconstruction and qualification evidence; parser tests, synthetic runs and opened windows cannot establish a complete research run |
 
-Current code removes the repository-pinned GstPlay actor/runtime path at `fa8552e`; [native capability](../src-tauri/src/research_native_media/capability.rs) reports `qualified_start_available:false`. The existing [release gates](../for-ai/30-TESTING-AND-RELEASE.md) and [Runner validation ledger](../for-ai/72-RUNNER-FINAL-VALIDATION.md) still require an installed, actual video/questionnaire/input/LSL/XDF workflow before a research-ready claim. That source-versus-charter mismatch must be resolved explicitly as part of packaging; a two-app installer by itself cannot close it.
+This R1 source branch restores the repository-pinned GstPlay actor and runtime verifier removed at `fa8552e`. The suite build still omits the `native-gstreamer` feature and private runtime; [native capability](../src-tauri/src/research_native_media/capability.rs) keeps `qualified_start_available:false`. The existing [release gates](../for-ai/30-TESTING-AND-RELEASE.md) and [Runner validation ledger](../for-ai/72-RUNNER-FINAL-VALIDATION.md) still require an installed, actual video/questionnaire/input/LSL/XDF workflow before a research-ready claim. Actor source alone cannot close that gate.
 
 ## Update rule
 
