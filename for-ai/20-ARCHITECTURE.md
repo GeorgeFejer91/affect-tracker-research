@@ -79,6 +79,11 @@ exposed master editor. Planner and Runner are separate executables. Current
 version binding and remaining work are in
 [66-PLANNER-RUNNER-COMPATIBILITY.md](66-PLANNER-RUNNER-COMPATIBILITY.md).
 
+The table assigns authority for the intended complete system. The current
+desktop HTML Runner can play declared video and export browser-style CSV;
+binding its observed playback to native sampling, outbound LSL and XDF remains
+an open R1 implementation and installed qualification gate.
+
 | Concern | One active authority | Adapters/consumers |
 | --- | --- | --- |
 | Experiment recipe | Exact canonical master5 bytes, integrity and declared assets; strict historical package readers | Planner save/re-export and Runner intake |
@@ -246,12 +251,13 @@ The landed package-run slice realizes that map through these explicit seams:
 - `research_experiment_package.rs` owns strict package bytes and hashes;
   `research_native_protocol/{compiler,contracts,records,reducer,responses}.rs`
   owns pure package-run domain logic; `{input_mailbox,storage,recovery}.rs`
-  owns isolated service/failure domains; `runtime.rs` coordinates those
-  services; and `commands.rs` is the path-free serialization boundary.
+  retains historical service/failure domains; `runtime.rs` now serves
+  companion leasing, preflight and recovery reads; `commands.rs` is the
+  path-free serialization boundary.
 - `research_workspace/media_preparation.rs` owns FFprobe/FFmpeg source
   preparation and source receipts outside protocol and persistence. Runner's
   HTML video element owns playback presentation; Rust validates exact asset
-  identity and owns the run authority.
+  identity. R1 must bind observed HTML lifecycle to native Run authority.
 
 The legacy `ResearchRuntime` and browser journal remain isolated compatibility
 readers/finalizers for historical manifests. They are not permitted to become
@@ -267,12 +273,11 @@ identify its row, add or extend both sides where native authority is required,
 and include a boundary-focused unit test plus a cross-boundary contract test.
 
 Files are split by cohesive authority and failure domain rather than by line
-count alone. In particular, the native run implementation is factored into
-package preparation, protocol reducer, scheduler/input/media coordination,
-durable journal/writer, recovery/finalization, and read-only status projection.
+count alone. The retired package player worker is removed; the HTML lifecycle,
+native sampling, LSL and XDF coordination remains an R1 implementation task.
 P1 preparation and Runner HTML playback have distinct owners and boundaries.
-Each unit has focused success, rejection, stale-generation,
-failure, and shutdown tests before it is composed end to end.
+That future coordination needs focused success, rejection, stale-generation,
+failure and shutdown checks before end-to-end qualification.
 
 ## Contract family
 
