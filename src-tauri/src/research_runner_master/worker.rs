@@ -670,7 +670,7 @@ impl MasterWorker {
         };
         let active = self.response.active(now);
         let feedback = &self.prepared.feedback;
-        let animation = feedback.visual.flubber_enabled;
+        let animation = feedback.flubber_animation_active();
         let lsl = self
             .lsl
             .as_ref()

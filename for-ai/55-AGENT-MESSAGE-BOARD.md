@@ -6332,3 +6332,19 @@ distribution and full Windows checks remain separate.
 Root integrated the exact tested source tree as `0f153ff`. The superseded
 feature-branch run was cancelled after its source job and artifact succeeded;
 the merged commit still needs its own Windows check and suite installation.
+
+20261004 R1/RR-04/RR-07 native animation correspondence pass: isolated branch
+`codex/segment-r1-native-animation` at integration `3ae5fb3` in the Runner
+qualification worktree. The saved P5 renderer and hide flag determine whether
+Flubber animation is active during a sampled video. `worker.rs` instead reads
+retained `visual.flubber_enabled`, which P5 v2/v3 marks inactive; Grid or Face can
+therefore be recorded as animated despite the chosen display. Browser CSV already
+uses the saved renderer. This pass touches the R1 worker, its typed feedback
+predicate/test seam, one focused Windows CI test step, and this handoff. The
+workflow step runs the Rust case after its existing test compilation. It will
+test contradictory legacy flags and format/source checks, then use exact-commit
+Windows CI. No recipe field, physical
+input, LSL channel shape, native playback authority, or qualification flag changes.
+Installed video/LSL/XDF and visible mode paint remain separate gates. Baseline:
+Rust formatting passed and 10 focused Face/browser correspondence checks passed;
+local Rust compilation is deferred because C: has under 1 GiB free.
