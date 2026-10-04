@@ -16,6 +16,7 @@ are under `source/recorder` in the installation and
 | LabRecorder engine | MIT source and `source/recorder/upstream/LICENSE`; exact source revision and hashes in `source/recorder/source-lock.json`. |
 | Respyra recorder adapter | The corresponding `source/recorder/main.cpp`, `CMakeLists.txt`, and `build_recorder.py` were taken from [Respyra 2.0](https://github.com/GeorgeFejer91/respyra-2.0), which is GPL-3.0. Its GPL-3.0 license is included as `source/recorder/RESPYRA-LICENSE`. |
 | Pretext | Bundled `app/vendor/pretext/LICENSE`. |
+| Great Dictator study clip (0.2 demo) | The exact source clip is `site/assets/dictator-3-study.mp4` in [the earlier Playground repository](https://github.com/GeorgeFejer91/affect-tracker-playground). [The Chaplin rights office](https://charliechaplin.com/en/articles/130-The-Chaplin-Office) identifies Roy Export SAS as rightsholder for *The Great Dictator*. Public redistribution requires appropriate permission. |
 
 The downloaded VLC and FFmpeg archives are SHA-256 checked by `package.ps1`.
 `manifest.json` records hashes of the installed executable components.

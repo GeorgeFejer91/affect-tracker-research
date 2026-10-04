@@ -14,6 +14,25 @@ Python 3.12.10, liblsl, the native VLC plugin, and the recorder. The installed
 app opens the local control window from the Start menu. Data is written under
 `%LOCALAPPDATA%\Flubbercorder\recordings` by default.
 
+## Included trial experiment
+
+The 0.2 installer candidate adds `demo/great-dictator.json` and the matching
+`demo/dictator-3-study.mp4`. Opening the installed app without a recipe loads
+this example automatically. Select **Prepare video and recorder**, wait for
+the one-time media conversion and recorder readiness, then select **Start**.
+VLC displays the clip with Flubber below it; the runner saves affect and
+`dictator-3-study.mp4_Start`/`_Stop` markers to XDF, while VLC independently
+saves a CSV. No external LSL stream is required for this example. Enter a
+different JSON path and select **Load** to run another experiment.
+
+The package build requires the exact 86,870,779-byte study clip previously
+identified in the research project, with SHA-256
+`B5327E7465EC92A4C93F3236A1EBAB4556CDF508E24EAFE6C593EAC1E13AFD49`.
+Pass its local path to `package.ps1 -DemoVideo <path>` or place it at
+`build/demo/dictator-3-study.mp4`. The build checks the hash before bundling it.
+Public distribution of an installer containing this film requires the
+appropriate clip redistribution rights.
+
 ## Run an experiment
 
 Create a JSON file next to your source video:

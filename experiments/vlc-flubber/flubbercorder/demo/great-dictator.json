@@ -1,0 +1,7 @@
+{
+  "schema": "flubbercorder-experiment/v1",
+  "video": "dictator-3-study.mp4",
+  "panelPercent": 25,
+  "stepPercent": 10,
+  "requiredStreams": []
+}

@@ -652,6 +652,8 @@ class Session:
                      "summary": self.summary}
             if not phone:
                 state.update({"recipePath": str(recipe["recipe"]) if recipe else None,
+                              "bundledDemo": bool(PACKAGED and recipe and
+                                                  recipe["recipe"] == RUNTIME / "demo/great-dictator.json"),
                               "csvPath": str(self.csv) if self.csv else None,
                               "xdfPath": str(self.xdf) if self.xdf else None,
                               "vlcPid": self.vlc.pid if self.vlc else None,
@@ -811,8 +813,15 @@ def main():
     local_token = secrets.token_urlsafe(32)
     phone_token = secrets.token_urlsafe(32)
     session = Session(args)
+    demo_recipe = RUNTIME / "demo/great-dictator.json"
     if args.recipe:
         session.load(str(args.recipe))
+    elif PACKAGED and demo_recipe.is_file():
+        try:
+            session.load(str(demo_recipe))
+        except (ValueError, OSError, json.JSONDecodeError) as exc:
+            session.phase = "error"
+            session.error = f"Bundled demo could not be loaded: {exc}"
     server = ControlServer(("0.0.0.0" if args.phone_host else "127.0.0.1", args.port),
                            session, local_token, phone_token)
     port = server.server_address[1]

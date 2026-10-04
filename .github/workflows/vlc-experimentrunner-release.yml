@@ -21,6 +21,14 @@ jobs:
         working-directory: experiments/vlc-flubber
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch and check study clip for the demo package
+        run: |
+          New-Item -ItemType Directory -Force -Path 'build/demo' | Out-Null
+          Invoke-WebRequest 'https://raw.githubusercontent.com/GeorgeFejer91/affect-tracker-playground/main/site/assets/dictator-3-study.mp4' -OutFile 'build/demo/dictator-3-study.mp4'
+          $actual = (Get-FileHash 'build/demo/dictator-3-study.mp4' -Algorithm SHA256).Hash
+          if ($actual -ne 'B5327E7465EC92A4C93F3236A1EBAB4556CDF508E24EAFE6C593EAC1E13AFD49') {
+            throw 'The pinned study clip hash changed'
+          }
       - name: Build pinned offline package
         run: .\package.ps1
       - name: Install Inno Setup compiler
@@ -36,13 +44,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
       - name: Install package and run real VLC LSL XDF session
         run: |
-          $setup = (Resolve-Path 'build/package/out/VLC_ExperimentRunner_Setup_0.1.0_x64.exe').Path
+          $setup = (Resolve-Path 'build/package/out/VLC_ExperimentRunner_Setup_0.2.0_x64.exe').Path
           $install = Join-Path $env:RUNNER_TEMP 'VLCExperimentRunnerInstalled'
           $process = Start-Process -FilePath $setup -ArgumentList @(
             '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$install"
           ) -Wait -PassThru -WindowStyle Hidden
           if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
           $env:FLUBBERCORDER_APP = Join-Path $install 'app/app.py'
+          & (Join-Path $install 'python/python.exe') 'flubbercorder/test_bundled_demo.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Bundled Great Dictator demo failed' }
           & (Join-Path $install 'python/python.exe') 'flubbercorder/test_session.py'
           if ($LASTEXITCODE -ne 0) { throw 'Installed VLC/LSL/XDF session failed' }
           & (Join-Path $install 'python/python.exe') 'flubbercorder/test_session.py' --missing
@@ -63,18 +73,18 @@ jobs:
       - name: Upload tested installer
         uses: actions/upload-artifact@v4
         with:
-          name: VLC_ExperimentRunner_Setup_0.1.0_x64
-          path: experiments/vlc-flubber/build/package/out/VLC_ExperimentRunner_Setup_0.1.0_x64.exe
+          name: VLC_ExperimentRunner_Setup_0.2.0_x64
+          path: experiments/vlc-flubber/build/package/out/VLC_ExperimentRunner_Setup_0.2.0_x64.exe
           if-no-files-found: error
       - name: Publish validated public prerelease
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create vlc-experimentrunner-v0.1.0 `
-            'build/package/out/VLC_ExperimentRunner_Setup_0.1.0_x64.exe' `
+          gh release create vlc-experimentrunner-v0.2.0 `
+            'build/package/out/VLC_ExperimentRunner_Setup_0.2.0_x64.exe' `
             --repo $env:GITHUB_REPOSITORY `
             --target $env:GITHUB_SHA `
-            --title 'VLC ExperimentRunner 0.1.0 (Flubbercorder side project)' `
+            --title 'VLC ExperimentRunner 0.2.0 (bundled Great Dictator demo)' `
             --notes-file 'flubbercorder/RELEASE-NOTES.md' `
             --prerelease

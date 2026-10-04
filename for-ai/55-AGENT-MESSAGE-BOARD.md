@@ -1,5 +1,17 @@
 # Agent message board
 
+## 20261004 Flubbercorder bundled default demo
+
+Owner: current task; branch `codex/segment-flubbercorder-default-demo`, isolated
+side-project worktree; stage: Repository/Web Synchronization. Follow-up to the
+0.1 experimental VLC release, outside P1–P7/R1. The 0.2 candidate includes
+an exact-hash Great Dictator study clip and a simple default JSON, preloads that
+JSON at installed startup, and retains explicit custom-recipe loading. A local
+installed candidate passed default clip Start/Stop with XDF/CSV and exact
+filename markers, plus the existing synthetic custom-recipe run. Public clip
+redistribution remains unconfirmed; no 0.2 release is claimed. Main Planner
+and Runner contracts/source are untouched.
+
 ## 20261004 Flubbercorder VLC runner experiment
 
 Owner: current task; branch `codex/segment-flubbercorder-runner`, isolated

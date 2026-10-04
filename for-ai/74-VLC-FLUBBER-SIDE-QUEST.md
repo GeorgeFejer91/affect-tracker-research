@@ -43,6 +43,18 @@ side-project branch; the installed checks were run locally. This is installed
 software evidence for the specific synthetic clip, not broad codec, timing,
 device, or research qualification.
 
+The follow-up 0.2 **local candidate** bundles the identified 86,870,779-byte
+Great Dictator study clip and [simple demo JSON](../experiments/vlc-flubber/flubbercorder/demo/great-dictator.json).
+The installed app loads that recipe automatically when opened without an
+explicit recipe. Its 195,369,013-byte installer has SHA-256
+`42EFCB11BC2D38C2E53D7658EE5540B0C088882CD2F5C7F57546AB3EB988BF21`.
+The installed candidate passed a real clip Start/early-Stop session with XDF,
+CSV and exact `dictator-3-study.mp4_Start`/`_Stop` markers; a separate custom
+JSON run still recorded 300 affect samples. Edge and Chrome rendered the
+default-loaded desktop and narrow layouts without page errors or overflow.
+This candidate has **not been publicly released**: redistribution rights for
+the film clip must be confirmed first.
+
 The earlier standalone probe and its receipts follow below.
 
 The bounded goal was to load a clip with a defined video-to-Flubber height

@@ -78,6 +78,7 @@ function render(state) {
   set('#first-data', state.recorder ? state.recorder.firstData.join(', ') || 'Waiting' : null);
   set('#markers', state.lsl.markers.map(m => m.label).join(' → ') || 'Waiting');
   if (role === 'local') {
+    $('#demo-hint').hidden = !state.bundledDemo;
     if (state.recipePath && !$('#recipe-path').value) $('#recipe-path').value = state.recipePath;
     set('#xdf', state.xdfPath || (state.phase === 'finalizing' ? 'Finalizing' : '—'));
     set('#csv', state.csvPath);

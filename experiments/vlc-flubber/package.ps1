@@ -1,4 +1,4 @@
-param([string]$VisualStudioDir)
+param([string]$VisualStudioDir, [string]$DemoVideo)
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
@@ -11,6 +11,16 @@ foreach ($path in @($downloads, $unpacked)) {
     New-Item -ItemType Directory -Force -Path $path | Out-Null
 }
 $rootAbsolute = (Resolve-Path -LiteralPath $root).Path
+$demoInput = if ($DemoVideo) { (Resolve-Path -LiteralPath $DemoVideo).Path } else {
+    Join-Path $build 'demo\dictator-3-study.mp4'
+}
+if (-not (Test-Path -LiteralPath $demoInput -PathType Leaf)) {
+    throw 'Supply the authorized Great Dictator study clip with -DemoVideo or place it in build/demo'
+}
+$demoHash = 'B5327E7465EC92A4C93F3236A1EBAB4556CDF508E24EAFE6C593EAC1E13AFD49'
+if ((Get-FileHash -LiteralPath $demoInput -Algorithm SHA256).Hash -ne $demoHash) {
+    throw 'The Great Dictator study clip does not match the pinned source hash'
+}
 $stageAbsolute = [IO.Path]::GetFullPath($stage)
 if (-not $stageAbsolute.StartsWith($rootAbsolute + [IO.Path]::DirectorySeparatorChar,
                                    [StringComparison]::OrdinalIgnoreCase)) {
@@ -69,7 +79,7 @@ if (-not $VisualStudioDir) { throw 'Visual Studio C toolchain was not found' }
 & (Join-Path $root 'build.ps1') -VlcDir $vlcExe.DirectoryName -VisualStudioDir $VisualStudioDir
 if ($LASTEXITCODE -ne 0) { throw 'Native VLC plugin build failed' }
 
-foreach ($name in @('vlc', 'ffmpeg', 'python', 'app', 'recorder', 'plugins\video_filter', 'licenses', 'source')) {
+foreach ($name in @('vlc', 'ffmpeg', 'python', 'app', 'demo', 'recorder', 'plugins\video_filter', 'licenses', 'source')) {
     New-Item -ItemType Directory -Force -Path (Join-Path $stage $name) | Out-Null
 }
 Copy-Item -Path (Join-Path $vlcExe.DirectoryName '*') -Destination (Join-Path $stage 'vlc') -Recurse -Force
@@ -80,6 +90,8 @@ Copy-Item -LiteralPath (Join-Path $root 'flubbercorder\app.py'),
     (Join-Path $root 'flubbercorder\app.css'),
     (Join-Path $root 'flubbercorder\app.js') -Destination (Join-Path $stage 'app')
 Copy-Item -LiteralPath (Join-Path $root 'flubbercorder\vendor') -Destination (Join-Path $stage 'app\vendor') -Recurse
+Copy-Item -LiteralPath (Join-Path $root 'flubbercorder\demo\great-dictator.json') -Destination (Join-Path $stage 'demo')
+Copy-Item -LiteralPath $demoInput -Destination (Join-Path $stage 'demo\dictator-3-study.mp4')
 Copy-Item -Path (Join-Path $root 'flubbercorder\recorder-runtime\*') -Destination (Join-Path $stage 'recorder') -Force
 Copy-Item -LiteralPath (Join-Path $root 'build\plugins\video_filter\libflubber_plugin.dll') `
     -Destination (Join-Path $stage 'plugins\video_filter')
@@ -96,7 +108,8 @@ Copy-Item -LiteralPath (Join-Path $root 'flubbercorder\THIRD-PARTY.md') `
 $manifest = [ordered]@{}
 foreach ($name in @('vlc\vlc.exe', 'ffmpeg\ffmpeg.exe', 'ffmpeg\ffprobe.exe',
                    'python\python.exe', 'recorder\respyrecorder.exe',
-                   'plugins\video_filter\libflubber_plugin.dll', 'lsl.dll')) {
+                   'plugins\video_filter\libflubber_plugin.dll', 'lsl.dll',
+                   'demo\great-dictator.json', 'demo\dictator-3-study.mp4')) {
     $file = Join-Path $stage $name
     $manifest[$name] = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash
 }
