@@ -6214,3 +6214,11 @@ reconstruction identity. Focused 12/12 and full JavaScript 1,233/1,233 pass.
 The read-only historical correspondence probe now observes all queried plan
 objects frozen. No native or installed execution was attempted. See
 `docs/runner-plan-immutability.md` for the precise claim.
+
+20261004 P7 packaging continuation: `desktop.yml` gains a manual Windows suite
+job after the existing Node/Rust checks. It runs the exact clean-source suite
+build and uploads only a short-lived unqualified NSIS candidate for later
+installed verification. No workflow publishes a release. Local C: build space
+is about 1.2 GB; installed use, native GstPlay and research qualification are
+still open. The prior R1 deep-freeze commit is integrated as `b699b14` on the
+single suite candidate branch.

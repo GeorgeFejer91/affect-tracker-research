@@ -23,7 +23,11 @@ The generated stage is ignored at `src-tauri/suite/`; a new build refuses to
 overwrite it. The NSIS artifact directory is
 `src-tauri/target/release/bundle/nsis/`. The build is unsigned.
 
-After a *separately authorized and performed* installation, inspect its exact
+The manually dispatched `desktop.yml` Windows workflow first runs the normal
+source checks, then builds and uploads this installer as a short-lived,
+unqualified verification artifact. It does not publish a release.
+
+After installing the exact candidate, inspect its
 directory without opening either GUI:
 
 ```powershell
@@ -44,6 +48,6 @@ The configuration and static audit have been checked, but no suite installer
 has yet been built or installed from this branch. Native playback, physical
 input, actual video-pool execution, LSL/XDF, timing, accessibility, and full
 Planner-to-Runner installed workflow still require independent exact-artifact
-checks. The current C: free space is about 2 GB, below the release build
+checks. The current C: free space is about 1.2 GB, below the release build
 headroom. Do not present a source check or unqualified NSIS build as a tested
 download or a research-ready release.

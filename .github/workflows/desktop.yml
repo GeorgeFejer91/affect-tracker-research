@@ -56,3 +56,41 @@ jobs:
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --all-features --no-run
       - name: Lint native Research backend
         run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-features
+
+  suite-installer:
+    if: github.event_name == 'workflow_dispatch'
+    needs: windows
+    runs-on: windows-latest
+    steps:
+      - name: Check out exact suite source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.19.0
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install locked frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@ebb3d1676050bfd0971c36c1e215b5751473994d # 1.96.0
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: src-tauri
+          key: windows-suite
+      - name: Check suite configuration
+        run: pnpm suite:windows:check
+      - name: Build unsigned, unqualified Planner and Runner installer
+        run: pnpm suite:windows:build
+      - name: Upload suite candidate for installed verification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: affect-research-suite-unqualified-${{ github.sha }}
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
