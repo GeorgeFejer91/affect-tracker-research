@@ -1,7 +1,7 @@
 import { runnerMarkup } from "./view.js";
 import { createRunnerHtmlVideoPlayer } from "./html-video-player.js";
 import { plannerRecipeTransportText } from "../../site/src/research/planner-recipe-transport.js";
-import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTraversalStepV1, runnerFeedbackState, runnerLanguageTree, runnerInput, runnerMasterFeedbackState } from "./recipe.js";
+import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTraversalStepV1, runnerFeedbackState, runnerLanguageTree, runnerInput, runnerMasterFeedbackState, runnerMasterStepFeedbackState } from "./recipe.js";
 import { NativePackageProtocolAdapter } from "../../site/src/research/native-package-protocol.js";
 import { NativeMediaController } from "../../site/src/research/native-media-controller.js";
 import { attestNativeGstCatalogue } from "../../site/src/research/native-media-catalogue.js";
@@ -459,16 +459,13 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       stage.hidden = false;
       feedback.hidden = false;
       query("run-stimulus-placeholder").textContent = "";
-      preview.update(step.kind === "interval"
-        ? { ...runnerMasterFeedbackState(attempt.plan.selected.feedback, 0, 0), hideFeedback: false, lockPosition: true }
-        : runnerMasterFeedbackState(attempt.plan.selected.feedback, attempt.x, attempt.y));
+      if (step.kind === "interval") { attempt.x = 0; attempt.y = 0; }
+      preview.update(runnerMasterStepFeedbackState(attempt.plan.selected.feedback, step.kind, attempt.x, attempt.y));
       text("runner-timing", step.kind === "interval"
         ? `Browser CSV run · waiting ${Number((step.durationMs / 1000).toFixed(3))} s`
         : `Browser CSV run · loading ${Number((step.durationMs / 1000).toFixed(3))} s video`);
       if (step.kind === "interval") {
         validationVideo.stop();
-        attempt.x = 0;
-        attempt.y = 0;
         attempt.stepTimer = windowObject.setTimeout(() => {
           if (!destroyed && browserAttempt === attempt && attempt.active && attempt.index === index) action(() => showBrowserRunStep(index + 1));
         }, step.durationMs);
@@ -659,9 +656,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     const asset = step.payload.asset;
     return `${asset.annotationId ?? step.payload.entry?.referenceId ?? "video"} · ${duration}`;
   }
-  function validationNeutralFeedbackState() {
-    return { ...runnerMasterFeedbackState(validationPreview.plan.selected.feedback, 0, 0), hideFeedback: false, lockPosition: true };
-  }
   function moveQuestionnairePage(delta) {
     const presenter = questionnaire?.presenter, model = presenter?.model;
     if (!model || typeof model.currentPageNo !== "number") return false;
@@ -722,7 +716,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       stage.hidden = false;
       feedback.hidden = false;
       query("run-stimulus-placeholder").textContent = "";
-      preview.update(validationNeutralFeedbackState());
+      preview.update(runnerMasterStepFeedbackState(validationPreview.plan.selected.feedback, step.kind, 0, 0));
       if (step.kind === "interval") {
         validationVideo.stop();
         feedback.hidden = false;
@@ -1086,7 +1080,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       root.querySelector(".run-feedback-stage").hidden=!videoStep;
       query("run-native-video-host").hidden=!videoStep;
       query("run-stimulus-placeholder").textContent = videoStep ? "" : "";
-      preview.update(videoStep ? runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal) : {...runnerMasterFeedbackState(plan.selected.feedback,status.currentValence,status.currentArousal),hideFeedback:true});
+      preview.update(runnerMasterStepFeedbackState(plan.selected.feedback,step.kind,status.currentValence,status.currentArousal));
       if (videoStep && status.phase === "awaitingPresentation") {
         const ready=await setRegion(root.querySelector(".run-feedback-stage"),"runFeedback");
         if (!ready.runReady) throw new Error("Native participant input is not ready for this video.");

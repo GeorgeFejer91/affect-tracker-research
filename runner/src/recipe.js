@@ -69,6 +69,13 @@ export function runnerMasterFeedbackState(feedback, x = 0, y = 0) {
   };
 }
 
+/** One participant-step visibility rule for native, browser, and preview paths. */
+export function runnerMasterStepFeedbackState(feedback, kind, x = 0, y = 0) {
+  if (kind !== "video" && kind !== "interval") throw new TypeError("Unsupported feedback step.");
+  const state = runnerMasterFeedbackState(feedback, x, y);
+  return kind === "interval" ? { ...state, hideFeedback: true } : state;
+}
+
 /** Only a fully parsed recipe reaches this projection. No editor defaults. */
 export function runnerFeedbackState(settings, x = 0, y = 0) {
   const visual = settings.visual;

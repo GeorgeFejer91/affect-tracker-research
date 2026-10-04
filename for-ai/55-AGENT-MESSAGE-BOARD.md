@@ -14,6 +14,29 @@ It does not change schema, application behavior, checklist completion, native
 qualification, or the pending exact installer CI result. Evidence: source and
 contract comparison, focused link/status review and diff check.
 
+## 20261004 R1 saved feedback visibility in browser intervals
+
+Owner: current task; `codex/segment-r1-feedback-visibility` from `9b45d2e`,
+R1/RR-05 with the named P5-09 consumer seam, Backend Verification. P5 saves
+`visual.hideFeedback` to suppress all selected paint. Native master intervals
+already hide feedback, but `runner/src/app.js` forces `hideFeedback:false` for
+browser CSV intervals and validation traversal, including a video whose saved
+setting requests hidden feedback. This pass gives the three Runner step paths
+one projection rule: video honors the saved visibility; interval hides paint
+while preserving the received coordinates and mapping state. It changes no
+recipe, input, sample, LSL or XDF contract. Baseline: 12 focused Node tests
+passed. Evidence target: all three strict v3 renderer choices under saved
+visible/hidden settings, interval state, focused/full JS tests and Runner build.
+Physical paint, native playback, recording and installed qualification remain
+open, as does the P7 reinstall CI run in its separate branch.
+
+Implemented in the shared master-step projector and all three Runner callers.
+The browser CSV path now resets its own x/y before hiding interval paint;
+the native path retains observed status coordinates and mapping values before
+hiding. The validation video preview respects saved visibility. Focused 13/13,
+full JavaScript 1,235/1,235 and Runner production build/boundary passed locally.
+These checks do not observe an installed window or qualify timing/recording.
+
 ## 20261004 P7 suite duplicate executable correction
 
 Owner: current task; `codex/p7-windows-suite`, P7 packaging continuation,
