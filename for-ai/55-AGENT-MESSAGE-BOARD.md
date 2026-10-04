@@ -6307,3 +6307,16 @@ instruction.
 Root integrated this code as `efd9869`; the integration merge tree equals the
 tested segment tree. The current installed-file artifact predates this fix, so
 an exact-source suite rebuild is still required before installed claims.
+
+20261004 R1/RR-04 source-provenance pass: isolated branch
+`codex/segment-r1-gst-sources` starts at integration `097bd08`. The native
+runtime pin now names the six direct GStreamer 1.28.6 component archives, exact
+upstream URLs, byte lengths, and existing SHA-256 values. Upstream checksum
+files match all six pinned hashes; HEAD lengths match the recorded bytes.
+`verify-gstreamer-sources.ps1` validates the pin without downloads locally and
+on manual Windows CI downloads, hashes, checks published sums, and emits a
+commit-bound source receipt with the archives for 14-day review. The CI archive
+run is pending at this checkpoint. No runtime enters the suite, no new JSON
+experiment field or unsafe native boundary is introduced, and redistribution
+approval remains false. External DLL/plugin/codec source and license review,
+durable release-source retention, installed playback and XDF remain open.

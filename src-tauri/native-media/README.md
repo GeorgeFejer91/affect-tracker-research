@@ -22,11 +22,17 @@ installer: `/TYPE=runtime` stages the redistributable application tree and
 needed to compile the Rust bindings. There is no second Windows development
 installer to invent or trust independently.
 
-The component checksums in `sources` are preliminary notes, not complete
-corresponding-source evidence. `sourceEvidence` deliberately records the
-missing archive names, canonical URLs, byte lengths, retained source artifacts,
-and automated verification. No distribution can use this pin until those gaps
-and the redistribution review are closed.
+The `sources` entries pin the names, upstream URLs, byte lengths, and SHA-256
+values of six direct GStreamer component archives. Their published upstream
+checksums match the pin. A manual
+[`native-media-sources.yml`](../../.github/workflows/native-media-sources.yml)
+run downloads the exact archives, checks the bytes and published checksums,
+and retains them with a commit-bound receipt for 14 days. Run
+`verify-gstreamer-sources.ps1 -CheckOnly` to inspect the pin without downloading.
+These six archives are not a complete corresponding-source or license closure
+for every DLL, plugin, and codec in the staged Windows runtime. The pin remains
+marked `incomplete-not-for-distribution` pending that review and a retained
+release source artifact bound to the exact installer.
 
 The canonical runtime tree contains 827 files and 340,362,958 bytes. Its
 ordered `runtime-files.sha256` identity is
