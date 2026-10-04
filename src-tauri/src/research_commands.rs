@@ -1345,7 +1345,12 @@ pub async fn research_import_stimuli(
             })
         })
         .collect::<ResearchResult<Vec<_>>>()?;
-    Ok(Some(workspace.import_paths(&workspace_id, paths)?))
+    let workspace = workspace.inner().clone();
+    let result =
+        tauri::async_runtime::spawn_blocking(move || workspace.import_paths(&workspace_id, paths))
+            .await
+            .map_err(CommandError::io)??;
+    Ok(Some(result))
 }
 
 #[tauri::command]

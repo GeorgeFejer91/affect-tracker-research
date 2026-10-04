@@ -257,8 +257,10 @@ fn prepare_one(
                 "mp4",
             ])
             .arg(&staging)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()
-            .map_err(CommandError::io)?;
+            .map_err(|_| CommandError::forbidden("FFmpeg could not start video preparation."))?;
         if !status.success() {
             let _ = fs::remove_file(&staging);
             return Err(CommandError::forbidden(
@@ -349,8 +351,9 @@ fn probe_media(path: &Path) -> ResearchResult<MediaProbe> {
             "-i",
         ])
         .arg(path)
+        .stderr(Stdio::null())
         .output()
-        .map_err(CommandError::io)?;
+        .map_err(|_| CommandError::forbidden("FFprobe could not start video inspection."))?;
     if !output.status.success() || output.stdout.len() > 64 * 1024 {
         return Err(CommandError::forbidden(
             "FFprobe could not inspect this video.",
