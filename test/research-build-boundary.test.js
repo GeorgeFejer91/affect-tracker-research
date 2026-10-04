@@ -85,13 +85,16 @@ test("Windows GStreamer CI validates the pinned integration boundary without dis
       `${step} must run after GStreamer prep`,
     );
   }
+  const animationStepIndex = checksWorkflow.indexOf("- name: Verify native saved-renderer animation correspondence\n");
+  assert.ok(animationStepIndex > prepareStepIndex, "native animation test needs the pinned private runtime");
+  assert.match(checksWorkflow, /--no-default-features --lib sampled_animation_follows_saved_renderer_even_when_legacy_flags_disagree/u);
   assert.equal(
     [
       ...checksWorkflow.matchAll(
         /\$env:PATH = "\$env:GSTREAMER_1_0_ROOT_MSVC_X86_64\\bin;\$env:PATH"/gu,
       ),
     ].length,
-    3,
+    4,
   );
   assert.doesNotMatch(packageWorkflow, /prepare-gstreamer-windows-ci\.ps1|--all-features/u);
   const [nativeChecks, suiteJob] = checksWorkflow.split("\n  suite-installer:");

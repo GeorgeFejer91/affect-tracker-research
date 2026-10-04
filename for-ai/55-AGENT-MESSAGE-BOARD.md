@@ -6354,3 +6354,8 @@ not run. The focused step now runs after the existing pinned GStreamer setup,
 with its private runtime bin first on `PATH` and `--lib` to avoid unrelated test
 targets. This is a CI loader correction, not evidence that the application or
 installer has passed playback qualification.
+The retry `37183372361` stopped earlier in its workflow boundary test: that
+test still expected three private-runtime `PATH` assignments, while the newly
+added focused execution step makes four. The R1 pass also updates this one
+named CI-boundary assertion and verifies the step's ordering; it changes no
+runtime or package policy.
