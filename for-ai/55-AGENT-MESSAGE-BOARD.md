@@ -6402,4 +6402,5 @@ contracts remain unchanged.
 Focused stale/duplicate binding tests were added. `cargo check` for the Runner
 binary and tests plus Rust formatting passed locally. Local test execution is
 deferred to Windows CI because this checkout has under 500 MB free after
-compilation. Native Start remains closed and no installed execution is claimed.
+compilation. Windows CI now runs the focused binding test after compiling the
+native tests. Native Start remains closed and no installed execution is claimed.
