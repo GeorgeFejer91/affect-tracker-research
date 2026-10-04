@@ -48,7 +48,6 @@ mod research_stimulus_order;
 pub mod research_surveyjs_definition;
 mod research_surveyjs_engine;
 mod research_timing;
-mod research_video_geometry;
 mod research_workspace;
 pub mod research_workspace_contribution;
 pub mod research_xr_layout;

@@ -2,9 +2,9 @@
 mod contracts;
 
 pub use contracts::{
-    NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaDecodeReceiptV1,
-    NativeMediaPrepareReceiptV1, NativeMediaStateV1, NativeMediaStatusV1, NativeMediaViewportCssV1,
-    NativeMediaViewportPxV1, PlaybackMode, PlaybackQualification,
+    NativeMediaCapability, NativeMediaCommandFenceV1, NativeMediaPrepareReceiptV1,
+    NativeMediaStateV1, NativeMediaStatusV1, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
+    PlaybackMode, PlaybackQualification,
 };
 
 use crate::research_error::{CommandError, ResearchResult};

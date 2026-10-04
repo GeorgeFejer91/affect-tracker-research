@@ -50,7 +50,7 @@ pub fn validate_video_catalogue_contribution_v3(
     let mut content = BTreeMap::new();
     for (i, entry) in document.entries.iter().enumerate() {
         validate_entry_identity(entry, 3)?;
-        validate_geometry(&entry.geometry, false)?;
+        validate_geometry(&entry.geometry)?;
         if !locations.insert(&entry.annotation_id) || !paths.insert(&entry.package_relative_path) {
             return Err(invalid("Duplicate catalogue v3 location."));
         }
