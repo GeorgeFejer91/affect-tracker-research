@@ -292,6 +292,7 @@ fn launch(
             research_commands::research_save_planner_recipe,
             research_commands::research_open_surveyjs_builder,
             research_commands::research_rescan_stimuli,
+            research_commands::research_prepare_planner_media,
             research_commands::research_rescan_package_stimuli,
             research_commands::research_import_stimuli,
             research_commands::research_workspace_media_url,

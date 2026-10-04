@@ -9,6 +9,8 @@ import { plannerRecipeTransportText } from "./planner-recipe-transport.js";
 import { prepareFormSourceStorage } from "./form-source-storage.js";
 import { withPlannerCore9 } from "./planner-authoring-core9.js";
 import { createPlannerCore9Composition } from "./planner-core9-composition.js";
+import { preparePlannerMediaForHtml } from "./planner-media-preparation.js";
+import { sendPlannerMedia } from "./planner-media-native.js";
 import { QUESTIONNAIRE_HOOKS_V3_ALGORITHM_VERSION, verifySupportedQuestionnaireRecipeContribution } from "./questionnaire-recipe-v2.js";
 import { capturePlannerRecipeInputPreparedFeedback, capturePlannerRecipeInputVersion, plannerRecipeVersionForContributions } from "./planner-recipe-capture.js";
 import { createXrLayoutEditor } from "./xr-layout-editor.js";
@@ -369,6 +371,19 @@ function bindResearchInteractions(root, { surface }) {
   const setupConfirmationFlow = createSetupConfirmationFlow({
     acceptContribution: async (segment, { isCurrent }) => {
       const current = () => isCurrent() && mode === "setup";
+      if (segment === "P1" && surface === "tauri") {
+        const workspaceId = plannerNativeWorkspace?.getWorkspaceId();
+        const projection = await preparePlannerMediaForHtml({ send: sendPlannerMedia, workspaceId,
+          isCurrent: current, existingStimuli: stimuli });
+        if (!current()) throw new Error("P1 confirmation changed during media preparation.");
+        const next = catalogueRecords(projection);
+        stimuli.splice(0, stimuli.length, ...next);
+        renderPools();
+        refreshProjection();
+        schedulePlanRefresh();
+        const snapshot = await refreshVideoCatalogueContribution();
+        if (!current() || snapshot.pending) throw new Error("The prepared video catalogue is incomplete.");
+      }
       if (segment === "P3") await stimulusOrderEditor.prepareContribution({ isCurrent: current });
       if (segment === "P4") await layoutDraftEditor.prepareContribution({ isCurrent: current });
       if (segment === "P6") await xrLayoutAuthoring.prepare({ isCurrent: current });

@@ -21,6 +21,7 @@ use unicode_normalization::UnicodeNormalization;
 use uuid::Uuid;
 
 mod controlled_geometry;
+mod media_preparation;
 mod stimulus_authoring;
 mod video_location;
 pub(crate) use controlled_geometry::RunnerVideoBindingV3;
@@ -281,6 +282,8 @@ struct SelectedWorkspace {
     libraries: WorkspaceLibraries,
     display_name: String,
     scanned: Vec<ScannedStimulus>,
+    unprepared_source_import: bool,
+    source_revision: u64,
     media_grants: HashMap<String, MediaGrant>,
 }
 
@@ -402,6 +405,8 @@ impl WorkspaceService {
             libraries,
             display_name,
             scanned: Vec::new(),
+            unprepared_source_import: false,
+            source_revision: 0,
             media_grants: HashMap::new(),
         };
         *self.lock_selected() = Some(selected);
@@ -470,7 +475,12 @@ impl WorkspaceService {
         let mut guard = self.lock_selected();
         let workspace = selected_mut(&mut guard, workspace_id)?;
         let libraries = validate_selected_workspace(workspace)?;
-        workspace.scanned = scan_planner_videos(&libraries.package_assets)?;
+        let scanned = scan_planner_videos(&libraries.package_assets)?;
+        media_preparation::validate_active_closure(
+            &workspace.root.join("source-videos"),
+            &scanned,
+        )?;
+        workspace.scanned = scanned;
         workspace.media_grants.clear();
         Ok(RescanResult {
             workspace_id: workspace.id.clone(),
@@ -494,8 +504,17 @@ impl WorkspaceService {
         }
         let guard = self.lock_selected();
         let workspace = selected_ref(&guard, workspace_id)?;
+        if workspace.unprepared_source_import {
+            return Err(CommandError::forbidden(
+                "An imported source video still needs successful preparation and HTML confirmation.",
+            ));
+        }
         let libraries = validate_selected_workspace(workspace)?;
         let current = scan_planner_videos(&libraries.package_assets)?;
+        media_preparation::validate_active_closure(
+            &workspace.root.join("source-videos"),
+            &current,
+        )?;
         if catalogue.entries.len() != workspace.scanned.len()
             || catalogue.entries.len() != current.len()
         {
@@ -831,20 +850,73 @@ impl WorkspaceService {
         selections: Vec<PathBuf>,
     ) -> ResearchResult<RescanResult> {
         let destination = self.with_workspace(workspace_id, |root, _| {
-            let libraries = validate_workspace_libraries(root)?;
-            Ok(libraries.package_assets)
+            ensure_exact_child_directory(root, "source-videos")
         })?;
         let mut sources = collect_import_videos(selections)?;
+        if sources.is_empty() {
+            return Err(CommandError::forbidden(
+                "The native selection contained no supported video files.",
+            ));
+        }
         sources.sort_by(|left, right| {
             left.relative_path
                 .cmp(&right.relative_path)
                 .then_with(|| left.source.cmp(&right.source))
         });
         sources.dedup();
+        {
+            let mut guard = self.lock_selected();
+            let workspace = selected_mut(&mut guard, workspace_id)?;
+            validate_selected_workspace(workspace)?;
+            workspace.unprepared_source_import = true;
+            workspace.source_revision =
+                workspace.source_revision.checked_add(1).ok_or_else(|| {
+                    CommandError::forbidden("The source import revision is exhausted.")
+                })?;
+            workspace.scanned.clear();
+            workspace.media_grants.clear();
+        }
         for source in sources {
             import_planner_video(&source, &destination)?;
         }
-        self.rescan_planner_videos(workspace_id)
+        self.prepare_planner_media(workspace_id)
+    }
+
+    /// Prepare selected sources for HTML playback. A source stays outside the
+    /// closed package tree; only its checked playable copy enters P1.
+    pub fn prepare_planner_media(&self, workspace_id: &str) -> ResearchResult<RescanResult> {
+        let (source_root, package_assets, recovery, source_revision) = {
+            let guard = self.lock_selected();
+            let workspace = selected_ref(&guard, workspace_id)?;
+            let libraries = validate_selected_workspace(workspace)?;
+            (
+                ensure_exact_child_directory(&workspace.root, "source-videos")?,
+                libraries.package_assets,
+                libraries.recovery,
+                workspace.source_revision,
+            )
+        };
+        media_preparation::prepare_sources(&source_root, &package_assets, &recovery)?;
+        let mut guard = self.lock_selected();
+        let workspace = selected_mut(&mut guard, workspace_id)?;
+        let libraries = validate_selected_workspace(workspace)?;
+        if workspace.source_revision != source_revision {
+            return Err(CommandError::forbidden(
+                "The source import changed during video preparation.",
+            ));
+        }
+        let scanned = scan_planner_videos(&libraries.package_assets)?;
+        media_preparation::validate_active_closure(
+            &workspace.root.join("source-videos"),
+            &scanned,
+        )?;
+        workspace.scanned = scanned;
+        workspace.media_grants.clear();
+        workspace.unprepared_source_import = false;
+        Ok(RescanResult {
+            workspace_id: workspace.id.clone(),
+            stimuli: workspace.scanned.iter().map(scanned_summary).collect(),
+        })
     }
 
     pub fn issue_media_url(
@@ -901,6 +973,61 @@ impl WorkspaceService {
             decode_attestation: candidate.decode_attestation,
             decoded_positions_ms: candidate.decoded_positions_ms.clone(),
         })
+    }
+
+    /// Resolve only an exact declared Planner location through a fresh ordinary-file scan.
+    /// Runner receives the existing opaque media grant, never a caller-supplied path.
+    pub(crate) fn issue_planner_declared_media_url(
+        &self,
+        workspace_id: &str,
+        logical_relative_path: &str,
+        sha256: &str,
+        byte_length: u64,
+        mime_type: &str,
+    ) -> ResearchResult<MediaUrlReceipt> {
+        let workspace_file_id = {
+            let guard = self.lock_selected();
+            let workspace = selected_ref(&guard, workspace_id)?;
+            let libraries = validate_selected_workspace(workspace)?;
+            let fresh = scan_planner_videos(&libraries.package_assets)?;
+            media_preparation::validate_active_closure(
+                &workspace.root.join("source-videos"),
+                &fresh,
+            )?;
+            let matches = fresh
+                .iter()
+                .filter(|entry| {
+                    entry.logical_relative_path == logical_relative_path
+                        && entry.sha256 == sha256
+                        && entry.byte_length == byte_length
+                        && entry.mime_type == mime_type
+                })
+                .collect::<Vec<_>>();
+            let [entry] = matches.as_slice() else {
+                return Err(CommandError::forbidden(
+                    "The declared Planner video does not match one fresh ordinary file.",
+                ));
+            };
+            if !workspace.scanned.iter().any(|candidate| {
+                candidate.id == entry.id
+                    && candidate.logical_relative_path == logical_relative_path
+                    && candidate.sha256 == sha256
+                    && candidate.byte_length == byte_length
+                    && candidate.mime_type == mime_type
+            }) {
+                return Err(CommandError::forbidden(
+                    "The declared Planner video is absent from the active scan.",
+                ));
+            }
+            entry.id.clone()
+        };
+        self.issue_media_url(
+            workspace_id,
+            &workspace_file_id,
+            sha256,
+            byte_length,
+            mime_type,
+        )
     }
 
     pub(crate) fn issue_native_media_grant(
@@ -1866,7 +1993,7 @@ fn is_video(path: &Path) -> bool {
         })
 }
 
-fn video_mime_type(path: &Path) -> &'static str {
+pub(crate) fn video_mime_type(path: &Path) -> &'static str {
     match path
         .extension()
         .and_then(|extension| extension.to_str())
@@ -2178,11 +2305,6 @@ fn collect_import_videos(selections: Vec<PathBuf>) -> ResearchResult<Vec<Importe
             }
         }
     }
-    if videos.is_empty() {
-        return Err(CommandError::forbidden(
-            "The native selection contained no supported video files.",
-        ));
-    }
     Ok(videos)
 }
 
@@ -2200,7 +2322,13 @@ fn import_planner_video(source: &ImportedVideo, destination: &Path) -> ResearchR
     if source.source == target {
         return Ok(());
     }
-    if target.exists() {
+    if fs::symlink_metadata(&target).is_ok() {
+        let metadata = fs::symlink_metadata(&target).map_err(CommandError::io)?;
+        if !metadata.is_file() || metadata.file_type().is_symlink() {
+            return Err(CommandError::forbidden(
+                "An imported video conflicts with a link or non-file.",
+            ));
+        }
         let (existing_digest, _) = hash_file(&target)?;
         if existing_digest == digest {
             return Ok(());
@@ -2215,7 +2343,17 @@ fn import_planner_video(source: &ImportedVideo, destination: &Path) -> ResearchR
     std::io::copy(&mut input, &mut output).map_err(CommandError::io)?;
     output.sync_all().map_err(CommandError::io)?;
     drop(output);
-    fs::rename(staging, target).map_err(CommandError::io)
+    let copied = hash_file(&staging)?;
+    let source_after = hash_file(&source.source)?;
+    if copied != source_after || copied.0 != digest {
+        fs::remove_file(&staging).map_err(CommandError::io)?;
+        return Err(CommandError::forbidden(
+            "The source video changed during import.",
+        ));
+    }
+    let published = fs::hard_link(&staging, &target).map_err(CommandError::io);
+    fs::remove_file(&staging).map_err(CommandError::io)?;
+    published
 }
 
 // Frozen legacy authoring import used by the historical video-library v1
@@ -2809,6 +2947,27 @@ mod tests {
 
     #[test]
     fn planner_import_preserves_nested_locations_and_does_not_collapse_equal_content() {
+        let ffmpeg = if cfg!(target_os = "windows") {
+            "ffmpeg.exe"
+        } else {
+            "ffmpeg"
+        };
+        let ffprobe = if cfg!(target_os = "windows") {
+            "ffprobe.exe"
+        } else {
+            "ffprobe"
+        };
+        if std::process::Command::new(ffmpeg)
+            .arg("-version")
+            .output()
+            .is_err()
+            || std::process::Command::new(ffprobe)
+                .arg("-version")
+                .output()
+                .is_err()
+        {
+            return;
+        }
         let base = temporary_directory("planner-location-import");
         let service = WorkspaceService::new(base.join("app-data")).unwrap();
         let workspace = base.join("chosen");
@@ -2818,12 +2977,32 @@ mod tests {
         fs::create_dir_all(&workspace).unwrap();
         fs::create_dir_all(&session_dash).unwrap();
         fs::create_dir_all(&session_underscore).unwrap();
-        fs::write(session_dash.join("clip.mp4"), b"identical-video-bytes").unwrap();
-        fs::write(
-            session_underscore.join("clip.mp4"),
-            b"identical-video-bytes",
-        )
-        .unwrap();
+        let sample = session_dash.join("clip.mp4");
+        let status = std::process::Command::new(ffmpeg)
+            .args([
+                "-nostdin",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc2=size=32x32:rate=5",
+                "-t",
+                "1",
+                "-an",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-y",
+            ])
+            .arg(&sample)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let sample_bytes = fs::read(&sample).unwrap();
+        fs::write(session_underscore.join("clip.mp4"), &sample_bytes).unwrap();
         let workspace_id = service
             .select(workspace.clone())
             .unwrap()
@@ -2851,7 +3030,7 @@ mod tests {
                     .join("clip.mp4")
             )
             .unwrap(),
-            b"identical-video-bytes"
+            sample_bytes
         );
         assert_eq!(
             fs::read(
@@ -2862,7 +3041,17 @@ mod tests {
                     .join("clip.mp4")
             )
             .unwrap(),
-            b"identical-video-bytes"
+            sample_bytes
+        );
+        assert_eq!(
+            fs::read(
+                workspace
+                    .join("source-videos")
+                    .join("session-a")
+                    .join("clip.mp4")
+            )
+            .unwrap(),
+            sample_bytes
         );
         let guard = service.lock_selected();
         let paths = guard
@@ -2877,6 +3066,85 @@ mod tests {
             ["stimuli/session-a/clip.mp4", "stimuli/session_a/clip.mp4"]
         );
         drop(guard);
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn incompatible_import_keeps_original_and_rejects_changed_prepared_sibling() {
+        let ffmpeg = if cfg!(target_os = "windows") {
+            "ffmpeg.exe"
+        } else {
+            "ffmpeg"
+        };
+        let ffprobe = if cfg!(target_os = "windows") {
+            "ffprobe.exe"
+        } else {
+            "ffprobe"
+        };
+        if std::process::Command::new(ffmpeg)
+            .arg("-version")
+            .output()
+            .is_err()
+            || std::process::Command::new(ffprobe)
+                .arg("-version")
+                .output()
+                .is_err()
+        {
+            return;
+        }
+        let base = temporary_directory("planner-media-sibling");
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let original = base.join("clip.avi");
+        let status = std::process::Command::new(ffmpeg)
+            .args([
+                "-nostdin",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc2=size=32x32:rate=5",
+                "-t",
+                "1",
+                "-an",
+                "-c:v",
+                "mpeg4",
+                "-y",
+            ])
+            .arg(&original)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let original_bytes = fs::read(&original).unwrap();
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let id = service
+            .select(workspace.clone())
+            .unwrap()
+            .workspace_id
+            .unwrap();
+        let first = service.import_paths(&id, vec![original]).unwrap();
+        assert_eq!(first.stimuli.len(), 1);
+        assert!(first.stimuli[0].display_name.ends_with(".mp4"));
+        assert!(first.stimuli[0].display_name.contains(".ready-"));
+        assert_eq!(
+            fs::read(workspace.join("source-videos").join("clip.avi")).unwrap(),
+            original_bytes
+        );
+        let prepared = workspace
+            .join("assets")
+            .join("stimuli")
+            .join(&first.stimuli[0].display_name);
+        assert!(prepared.is_file());
+        let again = service.prepare_planner_media(&id).unwrap();
+        assert_eq!(again.stimuli[0].sha256, first.stimuli[0].sha256);
+        fs::write(&prepared, b"conflict").unwrap();
+        assert!(service.prepare_planner_media(&id).is_err());
+        assert_eq!(
+            fs::read(workspace.join("source-videos").join("clip.avi")).unwrap(),
+            original_bytes
+        );
         fs::remove_dir_all(base).unwrap();
     }
 

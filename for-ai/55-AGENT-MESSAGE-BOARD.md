@@ -6188,3 +6188,11 @@ assumption in Runner UI fixtures. The source baseline passed
 before and after this cleanup, and eleven changed scripts passed syntax checks.
 No package was built or installed. Final source, package, and installed
 qualification remain separate gates.
+
+## 20261004-P1-FFmpeg-preparation
+
+- Owner/worktree: P1 `workspace`, `codex/segment-p1-ffmpeg-preparation` in `affect-tracker-research-p1-media-prep`, based on `058694c`.
+- Stage/deliverable: Backend Verification of P1-03/04/05/06/07 media preparation on Windows Planner. Input is the selected project and its imported video sources; P1 contributes only the accepted playable asset path, identity, duration and oriented geometry. P3/P4/P6/P7 consume the P1 revision; R1 consumes the declared playable path.
+- Verified baseline: existing native import/rescan writes and scans `assets/stimuli`; GUI P1 confirmation and CLI `confirmSegment` only accept the current P1 snapshot. Native scan/proof still depends on the retired player, while browser P1 uses HTML media probing. Focused Node baseline: 26/26 passed.
+- This slice: use fixed FFprobe/FFmpeg commands in a narrow native workspace service, keep imported originals in `source-videos/` outside the closed playable asset tree, create/reuse exact playable assets without overwrite, and require a real HTML representative-frame proof before GUI P1 acceptance. Existing historical saved-file readers remain intact.
+- Shared seams: `app.js` P1 confirmation, a closed Planner media IPC adapter, and the native workspace service. The existing bridge keeps HTML import/rescan catalogue publication; code audit owns removing its retired actor branches. Root owns Runner (`runner/src`, `research_runner_master`) integration and related tests. Static browser transcoding and headless CLI HTML proof remain open. FFprobe and FFmpeg prefer a verified side-by-side pair at `ffmpeg/bin/` next to the Planner executable, then PATH; a clean-machine bundle and qualification gate belongs to the installer owner. No installed qualification, new unsafe, broad process IPC, or native playback qualification is claimed.

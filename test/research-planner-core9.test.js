@@ -44,6 +44,13 @@ test("core9 catalogue has exact closed public arguments and only Open uses seque
   assert.equal(session.revision, 0);
 });
 
+test("headless P1 confirmation cannot claim HTML frame evidence", async () => {
+  const prepare = createPlannerCore9Composition({ nativeEffects: () => ({}),
+    prepareConfirmation() { throw new Error("must not accept without HTML proof"); } });
+  await assert.rejects(prepare("confirmSegment", { segment: "P1" }, {}), error =>
+    error.code === "html_decode_required" && /HTML representative-frame probe/u.test(error.message));
+});
+
 test("metadata wrapper preserves existing owner state and delegates detached arguments", async () => {
   const args = { questionnaireId: "actual-id" }; let received;
   const owner = { id: "P2", settings: [{ id: "P2.value" }], read() { return 3; } };

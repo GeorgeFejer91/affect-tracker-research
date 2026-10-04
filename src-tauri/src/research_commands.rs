@@ -1298,6 +1298,19 @@ pub async fn research_rescan_stimuli(
 }
 
 #[tauri::command]
+pub async fn research_prepare_planner_media(
+    window: WebviewWindow,
+    workspace: State<'_, Arc<WorkspaceService>>,
+    workspace_id: String,
+) -> ResearchResult<RescanResult> {
+    authorize(&window)?;
+    let workspace = workspace.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || workspace.prepare_planner_media(&workspace_id))
+        .await
+        .map_err(CommandError::io)?
+}
+
+#[tauri::command]
 pub async fn research_import_stimuli(
     window: WebviewWindow,
     app: AppHandle,
@@ -1815,6 +1828,7 @@ mod tests {
             "research_load_planner_recipe",
             "research_save_planner_recipe",
             "research_rescan_stimuli",
+            "research_prepare_planner_media",
             "research_import_stimuli",
             "research_workspace_media_url",
             "research_attest_workspace_decode",
