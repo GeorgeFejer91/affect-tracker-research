@@ -54,7 +54,6 @@ await Promise.all([
   "native-media-catalogue.js",
   "native-media-controller.js",
   "native-package-protocol.js",
-  "native-run-media.js",
 ].map((name) => rm(resolve(outputRoot, "src", "research", name), { force: true })));
 
 // Browser Runner is bundled separately so the desktop Tauri entrypoint remains

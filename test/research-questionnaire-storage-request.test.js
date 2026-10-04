@@ -76,13 +76,33 @@ test("the bridge adapter retains legacy payload callers without putting completi
 
 test("native storage listener acknowledges only an exact workspace receipt and forwards no callback", async () => {
   const root = new EventTarget();
+  root.dataset = { researchProgram: "planner" };
+  root.querySelector = () => null;
+  root.researchUi = { applyNativeInputStatus() {} };
   const workspaceId = "11111111-1111-4111-8111-111111111111";
   const requests = [];
   let invalidReceipt = false;
   const bridge = new NativeResearchRuntimeBridge(root, {
     windowObject: null,
+    setIntervalObject: () => 1,
+    clearIntervalObject: () => {},
     invoke: async (command, args) => {
-      if (command !== "research_store_questionnaire_asset") throw new Error("Unneeded initialization unavailable.");
+      if (command === "research_desktop_identity") return { schema: "affect-research-desktop-identity", version: 1, program: "planner" };
+      if (command === "research_workspace_status") return { selected: false };
+      if (command === "research_source_capabilities") return {};
+      if (command === "research_input_capability") return { nativeAuthorityReady: false, supportedPresets: [] };
+      if (command === "research_input_status") return {};
+      if (command === "research_native_media_capability") return {
+        schema: "affect-research-native-media-capability", version: 2, backend: "html-video",
+        api: "webview-video", pinnedRuntimeVersion: "", bindingsVersion: "", target: "browser-webview",
+        runtimeInstallerSha256: "", runtimeTreeManifestSha256: "", defaultPlaybackMode: "unqualifiedWebview",
+        unqualifiedFallbackMode: "unqualifiedWebview", runtimeBundleState: "notStaged",
+        runtimeIntegrityVerified: false, runtimeFileCount: null, runtimeByteLength: null,
+        playerActorReady: false, qualifiedStartAvailable: false, qualifiedFormatMatrixReady: false,
+        redistributionReviewReady: false, ambientRuntimeAllowed: false, requiredForQualifiedRun: false,
+        rendererReceivesFilesystemPaths: false, reasonCode: "html-video-playback-selected",
+      };
+      if (command !== "research_store_questionnaire_asset") throw new Error("Unexpected native command.");
       requests.push(args.request);
       return {
         workspaceId: invalidReceipt ? "wrong-workspace" : workspaceId,
@@ -103,4 +123,5 @@ test("native storage listener acknowledges only an exact workspace receipt and f
   invalidReceipt = true;
   await assert.rejects(requestQuestionnaireAssetStorage(root, payload()), /invalid workspace receipt/u);
   await bridge.operation;
+  bridge.destroy();
 });

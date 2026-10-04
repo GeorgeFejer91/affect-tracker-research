@@ -481,9 +481,10 @@ test("the application projects successor settings to Setup and invalidates saved
   assert.match(appSource, /previewResponseSimulator\?\.destroy\(\)/u);
 });
 
-test("desktop media probes stay bounded to the primary renderer instead of the scrolling editor", () => {
-  assert.equal(count(nativeBridgeSource, /"\.preview-pane \.preview-primary-stage"/gu), 2);
-  assert.doesNotMatch(nativeBridgeSource, /"\.preview-pane \.research-preview-stage"/u);
+test("desktop HTML media probes use a detached video element", () => {
+  assert.match(nativeBridgeSource, /const video = videoFactory\(\)/u);
+  assert.match(nativeBridgeSource, /probeVideoElement\(video/u);
+  assert.doesNotMatch(nativeBridgeSource, /setViewport|\.preview-pane/u);
 });
 
 test("native Setup input testing is confined to the explicitly focused test surface", () => {
