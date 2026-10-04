@@ -109,6 +109,17 @@ jobs:
         run: pnpm suite:windows:check
       - name: Build unsigned, unqualified Planner and Runner installer
         run: pnpm suite:windows:build
+      - name: Install and audit exact suite files on the ephemeral runner
+        shell: pwsh
+        run: |
+          $installers = @(Get-ChildItem -LiteralPath 'src-tauri/target/release/bundle/nsis' -Filter '*-setup.exe' -File)
+          if ($installers.Count -ne 1) { throw 'Expected exactly one suite installer.' }
+          $destination = Join-Path $env:RUNNER_TEMP 'affect-research-suite-installed'
+          if (Test-Path -LiteralPath $destination) { throw 'Install destination must be fresh.' }
+          $process = Start-Process -FilePath $installers[0].FullName -ArgumentList @('/S', "/D=$destination") -WindowStyle Hidden -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Suite installation failed: $($process.ExitCode)" }
+          node scripts/qualification/windows-suite-installed-audit.mjs --app-dir $destination --expected-commit $env:GITHUB_SHA --verify-launcher
+          if ($LASTEXITCODE -ne 0) { throw 'Installed suite file audit failed.' }
       - name: Upload suite candidate for installed verification
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

@@ -26,7 +26,9 @@ overwrite it. The NSIS artifact directory is
 
 The manually dispatched `desktop.yml` Windows workflow first runs the normal
 source checks, then builds and uploads this installer as a short-lived,
-unqualified verification artifact. It does not publish a release.
+unqualified verification artifact. Before upload, it silently installs the
+candidate on its ephemeral Windows runner and runs the installed-file audit
+against the exact workflow commit. It does not publish a release.
 
 After installing the exact candidate, inspect its
 directory without opening either GUI:

@@ -6265,3 +6265,10 @@ launcher preparation because `powershell.exe` on that runner did not expose
 The suite builder now invokes PowerShell 7 explicitly for the existing launcher
 preparation script. No installer artifact was created by that failed run;
 rebuild and installed audit remain open.
+
+20261004 P7 ephemeral install audit pass: after one exact NSIS candidate builds,
+run it silently only on the Windows CI runner into a fresh temporary directory.
+Require installer exit 0, then run the existing read-only installed-file audit
+against the exact workflow commit and launcher `--verify-only`. This covers
+package extraction and file identity without using the researcher's desktop or
+claiming GUI operation, media playback, LSL/XDF or research qualification.
