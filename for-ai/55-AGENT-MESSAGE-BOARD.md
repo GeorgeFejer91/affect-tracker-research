@@ -6257,3 +6257,11 @@ passed in run `37170372323`, including pinned GStreamer setup, all-feature
 Rust check/test compile and lint. Integration commit `78af687` passed focused
 15/15 and full JavaScript 1,233/1,233; both package jobs were still running at
 this checkpoint.
+
+20261004 P7 installer build correction: manual run `37170274675` passed the
+Windows source checks and compiled the release Runner engine, then failed in
+launcher preparation because `powershell.exe` on that runner did not expose
+`Get-FileHash`. The same CI run's `pwsh` steps used that cmdlet successfully.
+The suite builder now invokes PowerShell 7 explicitly for the existing launcher
+preparation script. No installer artifact was created by that failed run;
+rebuild and installed audit remain open.

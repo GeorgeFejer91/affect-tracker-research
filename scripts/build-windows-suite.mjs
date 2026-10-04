@@ -73,8 +73,8 @@ const engine = resolve(root, process.env.CARGO_TARGET_DIR ?? "src-tauri/target",
 assert.ok(existsSync(engine), "Runner engine release executable is missing.");
 mkdirSync(stage);
 const launcherTarget = resolve(root, "src-tauri/native-launcher/target");
-run("powershell.exe", [
-  "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "src-tauri/native-launcher/prepare.ps1",
+run("pwsh.exe", [
+  "-NoProfile", "-NonInteractive", "-File", "src-tauri/native-launcher/prepare.ps1",
   "-EnginePath", engine, "-ApplicationDirectory", stage, "-BuildDirectory", launcherTarget,
 ], buildEnv);
 

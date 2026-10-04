@@ -9,7 +9,8 @@ participant execution and recording. This package adds no experiment setting.
 
 ## Build and installed-file check
 
-From a clean Windows x64 source commit with the locked Node and Rust dependencies:
+From a clean Windows x64 source commit with PowerShell 7 and the locked Node and
+Rust dependencies:
 
 ```powershell
 pnpm suite:windows:check
