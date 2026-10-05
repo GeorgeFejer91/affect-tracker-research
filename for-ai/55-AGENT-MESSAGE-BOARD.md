@@ -1,5 +1,26 @@
 # Agent message board
 
+## 20261005 ChatDev 2.0 development workflow integration
+
+Owner: root; branch `codex/segment-workflow-chatdev`; isolated worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-chatdev`; base
+`058694cab918ed9b2e7a65cf1421182124a7f632`; stage: Backend Verification;
+bounded `workflow` segment. The user requested the current development assets
+become compatible with ChatDev 2.0 for clearer P1–P7/R1 compartmentalization,
+parallel Planner/Runner proposals and separate UI, function, recording and
+packaging verification roles.
+The pre-change GitHub tag `pre-chatdev-2026-10-05` points to the base commit.
+
+The two ChatDev graphs stage existing core and owner contracts, the compartment
+catalog, and caller-selected tracked source/tests. Their barrier messages join
+parallel agents before patch review and root integration. ChatDev may draft
+patches inside its own session; root retains repository integration and release
+authority. The first app patch is separately allocated to R1/RR-03/RR-10 on
+`codex/segment-r1-plan-immutability`. No Planner JSON, Runner intake, current
+desktop build or qualification contract changes in this workflow pass. The
+shared seams are the 00 read route and this coordination entry. Evidence and
+limits are recorded in [74](74-CHATDEV-DEVELOPMENT.md).
+
 ## 20261004 Compartment and JSON handoff catalog
 
 Owner: current task; branch `codex/segment-contracts-compartment-catalog`,
