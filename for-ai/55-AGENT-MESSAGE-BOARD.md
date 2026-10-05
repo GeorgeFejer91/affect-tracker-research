@@ -1,5 +1,19 @@
 # Agent message board
 
+## 20261005 Native SVG VLC Flubber and standalone time series
+
+Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,
+isolated side-project worktree; stage: Backend Verification. Scope is the
+native VLC side quest only: `experiments/vlc-flubber/` and [74](74-VLC-FLUBBER-SIDE-QUEST.md),
+outside P1–P7/R1. The filter now renders generated SVG paths through a Rust
+`resvg` DLL loaded inside VLC and writes a separate three-variable
+`time_s,valence,arousal` CSV automatically. Focused 640x360 and 1920x1080
+60-fps YUV captures retained all expected frames and show changing,
+antialiased geometry. Main Planner/Runner source and contracts are untouched.
+The new Rust/Tauri split installers, installed SVG check, external LSL
+loopback on the exact SVG build, display-resolution overlay, and broader
+video/input qualification remain open. The 0.1 public prototype is historical.
+
 ## 20261004 Flubbercorder bundled default demo
 
 Owner: current task; branch `codex/segment-flubbercorder-default-demo`, isolated
@@ -6187,3 +6201,14 @@ The focused headless Chrome check passed 13 synthetic master5 renderer assertion
 and a screenshot was inspected. Reproduction command, screenshot, and claim limit
 are in `docs/runner-master5-display-modes-qualification.md`. There was no
 participant execution or native recording in this pass.
+
+## VLC Flubber side quest — 2026-10-05
+
+The isolated side project now has a separate no-Python Rust launcher and local
+Windows player installer candidate. Fresh installed playback, CSV boundaries,
+idle LSL outlet discovery, and exact filename Start/Stop marker loopback passed
+with the native SVG filter. The new `--arm` control path held playback until
+the native recorder reported both subscriptions, then recorded a local XDF
+with 180 affect samples and exact Start/Stop markers. The future Rust/Tauri
+Flubbercorder must enforce that same gate. No P1–P7/R1 status changes
+follow from this side-quest work, and no new public package was released.

@@ -14,6 +14,7 @@ typedef SSIZE_T ssize_t;
 #include <windows.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,6 +23,16 @@ typedef SSIZE_T ssize_t;
 #define WAVES 16
 #define LSL_BUFFER 1024
 #define PI 3.14159265358979323846
+#define SESSION_MAGIC 0x464C4252u
+#define SESSION_VERSION 1u
+
+/* Written atomically by Flubbercorder before the RC add command. The VLC
+ * process and its LSL outlets stay alive between videos. */
+typedef struct {
+    uint32_t magic, version;
+    int32_t panel_percent, video_height, step_percent, render_fps;
+    char csv_path[1024], marker_base[1024], control_name[128];
+} session_config_t;
 
 typedef struct {
     HMODULE library;
@@ -50,6 +61,12 @@ static LONG outlet_users;
 typedef struct {
     CRITICAL_SECTION lock;
     FILE *csv;
+    FILE *series_csv;
+    HMODULE svg_library;
+    int (__cdecl *svg_render)(const uint8_t *, size_t, uint32_t, uint32_t,
+                              uint8_t *, size_t);
+    uint8_t *svg_rgba;
+    size_t svg_rgba_bytes;
     char *csv_path;
     char *start_marker, *stop_marker;
     HANDLE control_handle;
@@ -139,12 +156,56 @@ static void init_profiles(flubber_t *s)
     }
 }
 
+static void close_svg(flubber_t *s)
+{
+    free(s->svg_rgba);
+    s->svg_rgba = NULL;
+    if (s->svg_library) FreeLibrary(s->svg_library);
+    s->svg_library = NULL;
+}
+
+static bool open_svg(filter_t *f, flubber_t *s)
+{
+    wchar_t path[32768];
+    DWORD length = GetEnvironmentVariableW(L"FLUBBER_SVG_DLL", path,
+                                            sizeof(path) / sizeof(path[0]));
+    if (!length || length >= sizeof(path) / sizeof(path[0])) {
+        msg_Err(f, "FLUBBER_SVG_DLL must name the native SVG renderer");
+        return false;
+    }
+    int panel = s->total_height - s->video_height;
+    uint64_t bytes = (uint64_t)s->width * (uint64_t)panel * 4;
+    if (bytes == 0 || bytes > 64 * 1024 * 1024) {
+        msg_Err(f, "Flubber SVG surface is outside the supported size");
+        return false;
+    }
+    s->svg_library = LoadLibraryW(path);
+    if (!s->svg_library) {
+        msg_Err(f, "Cannot load native Flubber SVG renderer");
+        return false;
+    }
+    s->svg_render = (void *)GetProcAddress(s->svg_library, "flubber_svg_render");
+    s->svg_rgba_bytes = (size_t)bytes;
+    s->svg_rgba = malloc(s->svg_rgba_bytes);
+    if (!s->svg_render || !s->svg_rgba) {
+        msg_Err(f, "Cannot initialize native Flubber SVG renderer");
+        close_svg(s);
+        return false;
+    }
+    return true;
+}
+
 static void row(flubber_t *s, const char *event)
 {
     if (s->csv) {
         fprintf(s->csv, "%s,%lld,%.6f,%.6f,%.6f\n", event,
                 (long long)s->video_ms, s->x, s->y, s->phase);
         fflush(s->csv);
+    }
+    if (s->series_csv && strcmp(event, "sample") == 0) {
+        fprintf(s->series_csv, "%.6f,%.6f,%.6f\n",
+                s->frame_count / (double)s->render_fps, s->x, s->y);
+        fflush(s->series_csv);
     }
     if (s->lsl.library) {
         if (strcmp(event, "sample") == 0) {
@@ -214,11 +275,14 @@ static bool open_lsl(lsl_api_t *a)
     LOAD(have_consumers, "lsl_have_consumers")
     LOAD(local_clock, "lsl_local_clock")
 #undef LOAD
-    char affect_source[80], marker_source[80];
-    snprintf(affect_source, sizeof(affect_source), "vlc-flubber-%lu-affect",
-             (unsigned long)GetCurrentProcessId());
-    snprintf(marker_source, sizeof(marker_source), "vlc-flubber-%lu-markers",
-             (unsigned long)GetCurrentProcessId());
+    char source_prefix[64], affect_source[80], marker_source[80];
+    DWORD source_length = GetEnvironmentVariableA("FLUBBER_SOURCE_PREFIX",
+                                                  source_prefix, sizeof(source_prefix));
+    if (!source_length || source_length >= sizeof(source_prefix))
+        snprintf(source_prefix, sizeof(source_prefix), "vlc-flubber-%lu",
+                 (unsigned long)GetCurrentProcessId());
+    snprintf(affect_source, sizeof(affect_source), "%s-affect", source_prefix);
+    snprintf(marker_source, sizeof(marker_source), "%s-markers", source_prefix);
     a->affect_info = a->create_info("VLC_Flubber_Affect", "Affect", 2, 0.0,
                                    cft_float32, affect_source);
     a->marker_info = a->create_info("VLC_Flubber_Markers", "Markers", 1, 0.0,
@@ -268,6 +332,63 @@ static void free_vlc_string(char *value)
     if (release) release(value);
 }
 
+static char *copy_vlc_string(filter_t *f, const char *name)
+{
+    char *raw = var_CreateGetString(f, name);
+    char *copy = raw ? _strdup(raw) : NULL;
+    free_vlc_string(raw);
+    return copy;
+}
+
+static bool open_series_csv(filter_t *f, flubber_t *s)
+{
+    if (!s->csv_path || !s->csv_path[0]) return true;
+    size_t stem = strlen(s->csv_path);
+    if (stem >= 4 && _stricmp(s->csv_path + stem - 4, ".csv") == 0)
+        stem -= 4;
+    static const char suffix[] = "-timeseries.csv";
+    char *path = malloc(stem + sizeof(suffix));
+    if (!path) return false;
+    memcpy(path, s->csv_path, stem);
+    memcpy(path + stem, suffix, sizeof(suffix));
+    bool opened = fopen_s(&s->series_csv, path, "w") == 0;
+    if (!opened) msg_Err(f, "Cannot open affect time-series CSV: %s", path);
+    free(path);
+    if (!opened) return false;
+    if (fputs("time_s,valence,arousal\n", s->series_csv) < 0 ||
+        fflush(s->series_csv) != 0) {
+        fclose(s->series_csv);
+        s->series_csv = NULL;
+        return false;
+    }
+    return true;
+}
+
+static bool load_session_config(session_config_t *config)
+{
+    wchar_t path[32768];
+    DWORD length = GetEnvironmentVariableW(L"FLUBBER_SESSION_FILE", path,
+                                            sizeof(path) / sizeof(path[0]));
+    if (!length || length >= sizeof(path) / sizeof(path[0])) return false;
+    FILE *file = NULL;
+    if (_wfopen_s(&file, path, L"rb") != 0) return false;
+    bool valid = fread(config, 1, sizeof(*config), file) == sizeof(*config) &&
+                 fgetc(file) == EOF;
+    fclose(file);
+    return valid && config->magic == SESSION_MAGIC &&
+           config->version == SESSION_VERSION &&
+           config->panel_percent >= 10 && config->panel_percent <= 100 &&
+           config->video_height >= 64 && config->video_height <= 8192 &&
+           config->step_percent >= 1 && config->step_percent <= 100 &&
+           config->render_fps >= 1 && config->render_fps <= 240 &&
+           memchr(config->csv_path, 0, sizeof(config->csv_path)) &&
+           config->csv_path[0] &&
+           memchr(config->marker_base, 0, sizeof(config->marker_base)) &&
+           config->marker_base[0] &&
+           memchr(config->control_name, 0, sizeof(config->control_name)) &&
+           config->control_name[0];
+}
+
 static int Open(vlc_object_t *object)
 {
     filter_t *f = (filter_t *)object;
@@ -281,10 +402,20 @@ static int Open(vlc_object_t *object)
     if (width < 64 || total_height < 68 || (width & 1) || (total_height & 1))
         return VLC_EGENERIC;
     config_ChainParse(f, PREFIX, options, f->p_cfg);
-    int percent = (int)clip(var_CreateGetInteger(f, PREFIX "panel-percent"), 10, 100);
-    int height = (int)var_CreateGetInteger(f, PREFIX "video-height");
-    int step = (int)clip(var_CreateGetInteger(f, PREFIX "step-percent"), 1, 100);
-    int render_fps = (int)clip(var_CreateGetInteger(f, PREFIX "render-fps"), 1, 240);
+    session_config_t config;
+    bool configured = GetEnvironmentVariableW(L"FLUBBER_SESSION_FILE", NULL, 0) > 0;
+    if (configured && !load_session_config(&config)) {
+        msg_Err(f, "Flubber session configuration is missing or invalid");
+        return VLC_EGENERIC;
+    }
+    int percent = configured ? config.panel_percent :
+        (int)clip(var_CreateGetInteger(f, PREFIX "panel-percent"), 10, 100);
+    int height = configured ? config.video_height :
+        (int)var_CreateGetInteger(f, PREFIX "video-height");
+    int step = configured ? config.step_percent :
+        (int)clip(var_CreateGetInteger(f, PREFIX "step-percent"), 1, 100);
+    int render_fps = configured ? config.render_fps :
+        (int)clip(var_CreateGetInteger(f, PREFIX "render-fps"), 1, 240);
     if (height == 0) height = (total_height * 100 / (100 + percent)) & ~1;
     int panel = total_height - height;
     if (height < 64 || (height & 1) || panel < 4 ||
@@ -299,16 +430,24 @@ static int Open(vlc_object_t *object)
     s->panel_percent = percent;
     s->step_percent = step;
     s->render_fps = render_fps;
-    s->sentinel = var_CreateGetBool(f, PREFIX "sentinel");
+    s->sentinel = configured || var_CreateGetBool(f, PREFIX "sentinel");
     s->width = width;
     s->video_height = height;
     s->total_height = total_height;
-    s->csv_path = var_CreateGetString(f, PREFIX "csv");
-    char *marker_base = var_CreateGetString(f, PREFIX "marker-base");
-    if (!marker_base || !marker_base[0] || strlen(marker_base) > 900) {
-        free_vlc_string(marker_base);
-        free_vlc_string(s->csv_path);
+    if (!open_svg(f, s)) {
         DeleteCriticalSection(&s->lock);
+        free(s);
+        return VLC_EGENERIC;
+    }
+    s->csv_path = configured ? _strdup(config.csv_path) :
+        copy_vlc_string(f, PREFIX "csv");
+    char *marker_base = configured ? _strdup(config.marker_base) :
+        copy_vlc_string(f, PREFIX "marker-base");
+    if (!marker_base || !marker_base[0] || strlen(marker_base) > 900) {
+        free(marker_base);
+        free(s->csv_path);
+        DeleteCriticalSection(&s->lock);
+        close_svg(s);
         free(s);
         return VLC_EGENERIC;
     }
@@ -318,16 +457,18 @@ static int Open(vlc_object_t *object)
     if (!s->start_marker || !s->stop_marker) {
         free(s->start_marker);
         free(s->stop_marker);
-        free_vlc_string(marker_base);
-        free_vlc_string(s->csv_path);
+        free(marker_base);
+        free(s->csv_path);
         DeleteCriticalSection(&s->lock);
+        close_svg(s);
         free(s);
         return VLC_ENOMEM;
     }
     snprintf(s->start_marker, marker_size, "%s_Start", marker_base);
     snprintf(s->stop_marker, marker_size, "%s_Stop", marker_base);
-    free_vlc_string(marker_base);
-    char *control_name = var_CreateGetString(f, PREFIX "control-name");
+    free(marker_base);
+    char *control_name = configured ? _strdup(config.control_name) :
+        copy_vlc_string(f, PREFIX "control-name");
     if (control_name && control_name[0]) {
         s->control_handle = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL,
                                                PAGE_READWRITE, 0,
@@ -341,30 +482,44 @@ static int Open(vlc_object_t *object)
                                        0, 0, sizeof(control_t));
         if (!s->control) {
             if (s->control_handle) CloseHandle(s->control_handle);
-            free_vlc_string(control_name);
+            free(control_name);
             free(s->start_marker);
             free(s->stop_marker);
-            free_vlc_string(s->csv_path);
+            free(s->csv_path);
             DeleteCriticalSection(&s->lock);
+            close_svg(s);
             free(s);
             return VLC_EGENERIC;
         }
     }
-    free_vlc_string(control_name);
+    free(control_name);
     if (s->csv_path && s->csv_path[0]) {
         if (fopen_s(&s->csv, s->csv_path, "w") != 0) {
             msg_Err(f, "Cannot open CSV: %s", s->csv_path);
-            free_vlc_string(s->csv_path);
+            free(s->csv_path);
             if (s->control) UnmapViewOfFile(s->control);
             if (s->control_handle) CloseHandle(s->control_handle);
             free(s->start_marker);
             free(s->stop_marker);
             DeleteCriticalSection(&s->lock);
+            close_svg(s);
             free(s);
             return VLC_EGENERIC;
         }
         fputs("event,video_ms,valence,arousal,phase_rad\n", s->csv);
         fflush(s->csv);
+    }
+    if (!open_series_csv(f, s)) {
+        if (s->csv) fclose(s->csv);
+        free(s->csv_path);
+        if (s->control) UnmapViewOfFile(s->control);
+        if (s->control_handle) CloseHandle(s->control_handle);
+        free(s->start_marker);
+        free(s->stop_marker);
+        DeleteCriticalSection(&s->lock);
+        close_svg(s);
+        free(s);
+        return VLC_EGENERIC;
     }
     if (var_CreateGetBool(f, PREFIX "lsl")) {
         AcquireSRWLockExclusive(&outlet_lock);
@@ -377,12 +532,14 @@ static int Open(vlc_object_t *object)
         if (!s->shared_lsl && !open_lsl(&s->lsl)) {
             msg_Err(f, "LSL requested but the pinned FLUBBER_LSL_DLL could not start");
             if (s->csv) fclose(s->csv);
-            free_vlc_string(s->csv_path);
+            if (s->series_csv) fclose(s->series_csv);
+            free(s->csv_path);
             if (s->control) UnmapViewOfFile(s->control);
             if (s->control_handle) CloseHandle(s->control_handle);
             free(s->start_marker);
             free(s->stop_marker);
             DeleteCriticalSection(&s->lock);
+            close_svg(s);
             free(s);
             return VLC_EGENERIC;
         }
@@ -406,15 +563,17 @@ static void Close(vlc_object_t *object)
         msg_Warn(f, "%llu early LSL samples exceeded the receiver buffer",
                  (unsigned long long)s->pending_dropped);
     if (s->csv) fclose(s->csv);
+    if (s->series_csv) fclose(s->series_csv);
     if (s->shared_lsl) InterlockedDecrement(&outlet_users);
     else close_lsl(&s->lsl);
     LeaveCriticalSection(&s->lock);
     DeleteCriticalSection(&s->lock);
-    free_vlc_string(s->csv_path);
+    free(s->csv_path);
     if (s->control) UnmapViewOfFile(s->control);
     if (s->control_handle) CloseHandle(s->control_handle);
     free(s->start_marker);
     free(s->stop_marker);
+    close_svg(s);
     free(s);
 }
 
@@ -438,7 +597,7 @@ static int KeyEvent(vlc_object_t *object, const char *name,
     return VLC_SUCCESS;
 }
 
-static void yuv_color(double x, double y, uint8_t *l, uint8_t *u, uint8_t *v)
+static void rgb_color(double x, double y, int rgb[3])
 {
     const int anchor[4][3] = {
         {255, 91, 104}, {93, 255, 176}, {255, 209, 102}, {92, 124, 250}
@@ -446,7 +605,6 @@ static void yuv_color(double x, double y, uint8_t *l, uint8_t *u, uint8_t *v)
     double weight[4] = { fmax(0, -x), fmax(0, x), fmax(0, y), fmax(0, -y) };
     double total = weight[0] + weight[1] + weight[2] + weight[3];
     double saturation = clip(hypot(x, y), 0, 1);
-    int rgb[3];
     for (int c = 0; c < 3; ++c) {
         double directional = 183;
         if (total > 0.000001) {
@@ -455,47 +613,69 @@ static void yuv_color(double x, double y, uint8_t *l, uint8_t *u, uint8_t *v)
         }
         rgb[c] = (int)floor(183 + saturation * (directional - 183) + 0.5);
     }
-    *l = (uint8_t)clip(16 + ((66*rgb[0] + 129*rgb[1] + 25*rgb[2] + 128) >> 8), 0, 255);
-    *u = (uint8_t)clip(128 + ((-38*rgb[0] - 74*rgb[1] + 112*rgb[2] + 128) >> 8), 0, 255);
-    *v = (uint8_t)clip(128 + ((112*rgb[0] - 94*rgb[1] - 18*rgb[2] + 128) >> 8), 0, 255);
 }
 
-static void pixel(picture_t *p, int x, int y, uint8_t l, uint8_t u, uint8_t v)
+static bool append_point(char *svg, size_t capacity, size_t *used,
+                         char command, double x, double y)
 {
-    if (x < 0 || y < 0 || x >= (int)p->format.i_visible_width ||
-        y >= (int)p->format.i_visible_height) return;
-    p->p[0].p_pixels[y * p->p[0].i_pitch + x] = l;
-    p->p[1].p_pixels[(y/2) * p->p[1].i_pitch + x/2] = u;
-    p->p[2].p_pixels[(y/2) * p->p[2].i_pitch + x/2] = v;
+    long long xi = llround(x * 1000.0), yi = llround(y * 1000.0);
+    unsigned long long xa = (unsigned long long)llabs(xi);
+    unsigned long long ya = (unsigned long long)llabs(yi);
+    int written = snprintf(svg + *used, capacity - *used,
+                           "%c%s%llu.%03llu %s%llu.%03llu",
+                           command, xi < 0 ? "-" : "", xa / 1000, xa % 1000,
+                           yi < 0 ? "-" : "", ya / 1000, ya % 1000);
+    if (written < 0 || (size_t)written >= capacity - *used) return false;
+    *used += (size_t)written;
+    return true;
 }
 
-static void outline(picture_t *p, int x0, int y0, int x1, int y1,
-                    uint8_t l, uint8_t u, uint8_t v)
+static void composite_svg(picture_t *picture, const flubber_t *s)
 {
-    int dx = abs(x1-x0), sx = x0 < x1 ? 1 : -1;
-    int dy = -abs(y1-y0), sy = y0 < y1 ? 1 : -1;
-    int err = dx + dy;
-    for (;;) {
-        pixel(p, x0, y0, l, u, v);
-        pixel(p, x0+1, y0, l, u, v);
-        if (x0 == x1 && y0 == y1) break;
-        int twice = 2*err;
-        if (twice >= dy) { err += dy; x0 += sx; }
-        if (twice <= dx) { err += dx; y0 += sy; }
+    int panel = s->total_height - s->video_height;
+    for (int y = 0; y < panel; y += 2) {
+        for (int x = 0; x < s->width; x += 2) {
+            int red = 0, green = 0, blue = 0;
+            for (int dy = 0; dy < 2; ++dy) {
+                for (int dx = 0; dx < 2; ++dx) {
+                    const uint8_t *rgba = s->svg_rgba +
+                        ((size_t)(y + dy) * s->width + x + dx) * 4;
+                    int r = rgba[0], g = rgba[1], b = rgba[2];
+                    red += r;
+                    green += g;
+                    blue += b;
+                    picture->p[0].p_pixels[
+                        (s->video_height + y + dy) * picture->p[0].i_pitch + x + dx] =
+                        (uint8_t)(16 + ((66*r + 129*g + 25*b + 128) >> 8));
+                }
+            }
+            int r = (red + 2) / 4, g = (green + 2) / 4, b = (blue + 2) / 4;
+            int chroma_y = (s->video_height + y) / 2;
+            int chroma_x = x / 2;
+            picture->p[1].p_pixels[chroma_y * picture->p[1].i_pitch + chroma_x] =
+                (uint8_t)(128 + ((-38*r - 74*g + 112*b + 128) >> 8));
+            picture->p[2].p_pixels[chroma_y * picture->p[2].i_pitch + chroma_x] =
+                (uint8_t)(128 + ((112*r - 94*g - 18*b + 128) >> 8));
+        }
     }
 }
 
-static void draw_flubber(picture_t *p, flubber_t *s)
+static bool draw_flubber(picture_t *picture, flubber_t *s)
 {
     int panel = s->total_height - s->video_height;
     double radius = fmin(s->width * 0.15, panel * 0.38);
-    double cx = s->width/2.0, cy = s->video_height + panel/2.0;
+    double cx = s->width/2.0, cy = panel/2.0;
     double mix = (s->x+1.0)/2.0, amplitude = 0.3+0.1*s->y;
     double disorder = 0.4*(1.0-s->x);
     double scale = 0.9+0.1*(0.5+0.5*sin(s->phase));
-    int px[N], py[N];
-    uint8_t l,u,v;
-    yuv_color(s->x, s->y, &l, &u, &v);
+    int rgb[3];
+    rgb_color(s->x, s->y, rgb);
+    char svg[16384];
+    int written = snprintf(svg, sizeof(svg),
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\"><path d=\"",
+        s->width, panel, s->width, panel);
+    if (written < 0 || (size_t)written >= sizeof(svg)) return false;
+    size_t used = (size_t)written;
     for (int i=0; i<N; ++i) {
         int wave_index = ((i+N/WAVES/2)/(N/WAVES))%WAVES;
         double theta = i*2.0*PI/N;
@@ -503,32 +683,19 @@ static void draw_flubber(picture_t *p, flubber_t *s)
         double wave = 0.5+0.5*sin(s->phase+disorder*s->phase_offset[wave_index]);
         double asymmetry = 1.0+disorder*s->size_offset[wave_index];
         double r = radius*(1.0+shape*amplitude*wave*asymmetry)*scale;
-        px[i] = (int)floor(cx+r*cos(theta)+0.5);
-        py[i] = (int)floor(cy+r*sin(theta)+0.5);
+        if (!append_point(svg, sizeof(svg), &used, i ? 'L' : 'M',
+                          cx+r*cos(theta), cy+r*sin(theta))) return false;
     }
-    for (int y=s->video_height; y<s->total_height; ++y) {
-        double crossings[N]; int count=0;
-        for (int i=0; i<N; ++i) {
-            int j=(i+1)%N;
-            if ((py[i]<=y && py[j]>y) || (py[j]<=y && py[i]>y))
-                crossings[count++] = px[i]+(double)(y-py[i])*(px[j]-px[i])/(py[j]-py[i]);
-        }
-        for (int i=1; i<count; ++i) {
-            double value=crossings[i]; int j=i-1;
-            while (j>=0 && crossings[j]>value) { crossings[j+1]=crossings[j]; --j; }
-            crossings[j+1]=value;
-        }
-        for (int i=0; i+1<count; i+=2) {
-            int left=(int)ceil(crossings[i]), right=(int)floor(crossings[i+1]);
-            if (left<0) left=0;
-            if (right>=s->width) right=s->width-1;
-            for (int x=left; x<=right; ++x) pixel(p,x,y,l,u,v);
-        }
-    }
-    for (int i=0; i<N; ++i) {
-        int j=(i+1)%N;
-        outline(p,px[i],py[i],px[j],py[j],235,u,v);
-    }
+    written = snprintf(svg + used, sizeof(svg) - used,
+        "Z\" fill=\"rgb(%d,%d,%d)\" stroke=\"#f0f0f0\" stroke-width=\"1.5\"/></svg>",
+        rgb[0], rgb[1], rgb[2]);
+    if (written < 0 || (size_t)written >= sizeof(svg) - used) return false;
+    used += (size_t)written;
+    if (s->svg_render((const uint8_t *)svg, used, (uint32_t)s->width,
+                      (uint32_t)panel, s->svg_rgba, s->svg_rgba_bytes) != 0)
+        return false;
+    composite_svg(picture, s);
+    return true;
 }
 
 static picture_t *Render(filter_t *f, picture_t *source)
@@ -599,7 +766,11 @@ static picture_t *Render(filter_t *f, picture_t *source)
         s->lsl.push_string_at(s->lsl.marker_outlet, &label, s->lsl_start_stamp);
         s->replay_start_marker = false;
     }
-    draw_flubber(out,s);
+    if (!draw_flubber(out,s)) {
+        LeaveCriticalSection(&s->lock);
+        msg_Err(f, "Native SVG Flubber frame render failed");
+        goto failed;
+    }
     row(s,"sample");
     s->frame_count++;
     LeaveCriticalSection(&s->lock);

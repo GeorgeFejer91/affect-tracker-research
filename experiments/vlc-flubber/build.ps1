@@ -20,9 +20,17 @@ $deps = Join-Path $build 'deps'
 $objects = Join-Path $build 'obj'
 $plugins = Join-Path $build 'plugins'
 $videoFilters = Join-Path $plugins 'video_filter'
-foreach ($directory in @($downloads, $deps, $objects, $videoFilters)) {
+$svgDirectory = Join-Path $build 'svg'
+foreach ($directory in @($downloads, $deps, $objects, $videoFilters, $svgDirectory)) {
     New-Item -ItemType Directory -Force -Path $directory | Out-Null
 }
+
+$svgManifest = Join-Path $PSScriptRoot 'svg-renderer\Cargo.toml'
+& cargo build --release --locked --manifest-path $svgManifest
+if ($LASTEXITCODE -ne 0) { throw 'Native SVG renderer build failed' }
+$svgSource = Join-Path $PSScriptRoot 'svg-renderer\target\release\flubber_svg.dll'
+$svgDll = Join-Path $svgDirectory 'flubber_svg.dll'
+Copy-Item -LiteralPath $svgSource -Destination $svgDll -Force
 
 function Get-VerifiedArchive([string]$url, [string]$path, [string]$expectedSha256) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -89,4 +97,6 @@ Invoke-DeveloperCommand ('link /nologo /DLL /IMPLIB:"' + $pluginImport +
 
 Write-Output "Plugin: $plugin"
 Write-Output "Plugin SHA256: $((Get-FileHash -LiteralPath $plugin -Algorithm SHA256).Hash)"
+Write-Output "Native SVG renderer: $svgDll"
+Write-Output "Native SVG renderer SHA256: $((Get-FileHash -LiteralPath $svgDll -Algorithm SHA256).Hash)"
 Write-Output "Optional LSL DLL: $(Join-Path $lslRoot 'bin\lsl.dll')"

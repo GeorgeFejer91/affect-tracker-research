@@ -34,8 +34,9 @@ if ($StepPercent -lt 1 -or $StepPercent -gt 100) { throw 'StepPercent must be 1â
 $vlc = Join-Path $VlcDir 'vlc.exe'
 $pluginRoot = Join-Path $PSScriptRoot 'build\plugins'
 $plugin = Join-Path $pluginRoot 'video_filter\libflubber_plugin.dll'
+$svgDll = Join-Path $PSScriptRoot 'build\svg\flubber_svg.dll'
 $lslDll = Join-Path $PSScriptRoot 'build\deps\liblsl-1.17.7-Win_amd64\bin\lsl.dll'
-foreach ($file in @($vlc, $plugin)) {
+foreach ($file in @($vlc, $plugin, $svgDll)) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
         throw "Missing $file. Run build.ps1 first."
     }
@@ -92,6 +93,11 @@ if (-not $Csv) {
     $Csv = Join-Path (Split-Path -Parent $source) $Csv
 }
 $csvPath = [IO.Path]::GetFullPath($Csv)
+$seriesPath = if ($csvPath.EndsWith('.csv', [StringComparison]::OrdinalIgnoreCase)) {
+    $csvPath.Substring(0, $csvPath.Length - 4) + '-timeseries.csv'
+} else {
+    $csvPath + '-timeseries.csv'
+}
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $csvPath) | Out-Null
 
 $arguments = @(
@@ -109,10 +115,12 @@ if ($Lsl) { $arguments += '--flubber-lsl' }
 $arguments += "`"$converted`""
 
 $oldPluginPath = $env:VLC_PLUGIN_PATH
+$oldSvgDll = $env:FLUBBER_SVG_DLL
 $oldLslDll = $env:FLUBBER_LSL_DLL
 $oldPath = $env:PATH
 try {
     $env:VLC_PLUGIN_PATH = $pluginRoot
+    $env:FLUBBER_SVG_DLL = $svgDll
     $env:FLUBBER_LSL_DLL = if ($Lsl) { $lslDll } else { '' }
     $env:PATH = "$VlcDir;$oldPath"
     $launch = @{ FilePath = $vlc; ArgumentList = $arguments; PassThru = $true; Wait = $true }
@@ -121,14 +129,23 @@ try {
     if ($process.ExitCode -ne 0) { throw "VLC exited with code $($process.ExitCode)" }
 } finally {
     $env:VLC_PLUGIN_PATH = $oldPluginPath
+    $env:FLUBBER_SVG_DLL = $oldSvgDll
     $env:FLUBBER_LSL_DLL = $oldLslDll
     $env:PATH = $oldPath
 }
 if (-not (Test-Path -LiteralPath $csvPath -PathType Leaf)) {
     throw 'VLC exited without a Flubber CSV; inspect plugin loading and input format'
 }
+if (-not (Test-Path -LiteralPath $seriesPath -PathType Leaf)) {
+    throw 'VLC exited without the three-variable affect time-series CSV'
+}
+$seriesHeader = Get-Content -LiteralPath $seriesPath -TotalCount 1
+if ($seriesHeader -ne 'time_s,valence,arousal') {
+    throw "Unexpected affect time-series CSV header: $seriesPath"
+}
 $lastRow = Get-Content -LiteralPath $csvPath -Tail 1
 if (-not $lastRow.StartsWith('video_end,')) { throw "CSV did not end cleanly: $csvPath" }
 Write-Output "Padded video: $converted"
 Write-Output "Affect CSV: $csvPath"
+Write-Output "Affect time-series CSV: $seriesPath"
 Write-Output "Layout: ${canvasWidth}Ã—${videoHeight} video + ${panelHeight}px Flubber at ${renderFps} fps"

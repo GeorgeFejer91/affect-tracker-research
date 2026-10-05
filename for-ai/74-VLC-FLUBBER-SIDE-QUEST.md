@@ -1,7 +1,7 @@
 # Native VLC Flubber side quest
 
-Status 2026-10-04: **experimental feasibility probe plus separate Flubbercorder
-Windows release candidate**, separate from the
+Status 2026-10-05: **experimental feasibility probe, historical Flubbercorder
+candidate, and separate Rust player installer candidate**, separate from the
 approved Experiment Planner and Experiment Runner. The user explicitly asked
 for this as an additional project. Passing its checks does not approve it as
 part of the main suite or change P1–P7/R1 requirements, saved recipe formats,
@@ -12,6 +12,46 @@ can reliably play while preserving the clip's content. The earlier proposed
 player stack was abandoned. This side quest uses the same conversion idea to
 reserve a bottom panel, then lets a **native VLC 3.0.20 filter** draw the moving
 Flubber there. It is not a replacement for the main direction.
+
+The current local side-quest source now generates a fresh SVG path per frame
+inside the VLC filter and calls a bundled Rust `resvg` DLL in the same VLC
+process for antialiased rasterization. This replaces the earlier C scanline
+renderer. It also automatically writes a separate three-variable
+`time_s,valence,arousal` CSV, one flushed row per video frame between video
+start and stop, alongside the pre-existing event/marker CSV. The Rust
+standalone launcher chooses both file paths if none is supplied. A 2026-10-05
+focused check completed 180/180 frames at 640x360/60 fps and 72/72 at
+1920x1080/60 fps with a 50% panel; a five-second full-HD run completed
+300/300 frame samples and a video-end event. Two exported full-HD VLC output frames
+show changing geometry and smooth edges; see the side-quest runbook and
+evidence. This is native SVG rendering at the *video output's pixel size*.
+Display-independent vector composition, full HTML/SVG setting parity,
+input-to-photon latency, and the Rust/Tauri recorder installer remain open.
+The previous 0.1 public installer is a historical Python-based prototype, not
+the requested new Rust/Tauri distribution.
+
+The separate `Flubber_VLC_Player_Setup_0.1.0_x64.exe` **local candidate** is a
+99,665,240-byte, no-Python installer with SHA-256
+`FD49103CCB6BF9B2D8D5093A2954D60D4E95B66011118327D2E91EFF81464E78`.
+Its fresh installation verified all seven manifest hashes and had no Python
+files. A three-second synthetic source produced 180 video-bounded
+`time_s,valence,arousal` samples (0.000000–2.983333 seconds) and a final
+`video_end` event. The installed idle player exposed both exact Flubber LSL
+outlets before any video. An independent installed loopback received both
+`installed sample.mp4_Start` and `_Stop` plus 51 affect samples. That receiver
+joined during the five-second lead, so it does not prove complete affect
+capture. The new `--arm` mode holds prepared playback while VLC exposes both
+outlets and a localhost RC port. With both native-recorder subscription receipts
+confirmed before RC `add`, a local XDF closed with 180 affect samples and
+exactly one filename Start and Stop marker; stream footers matched those
+counts. A fresh installation of the final candidate verified its seven
+manifest hashes, contained no Python files, and passed the same prearmed
+recorder/marker path. The installed visible player was opened locally for
+inspection. The final fresh installation also confirmed bundled VLC, FFmpeg,
+and liblsl notices. Final installed playback reproduced 180 video-bounded
+samples; a separate synthetic audio clip retained its audio packets at the
+five-second prepared-media offset. This installer has **not** been published
+or qualified as a complete Flubbercorder suite.
 
 ## Goal and result
 
@@ -68,9 +108,10 @@ recorder. The implementation and runbook are in
 
 This is a Windows x64 native VLC plugin, not a web overlay or a separate
 Flubber window. The launcher pads video with FFmpeg, then enables the filter.
-The filter rasterizes the project's circle-based Flubber geometry per decoded
-frame, accepts VLC's `key-pressed` arrow events, flushes per-frame and key
-events to CSV, and optionally creates two liblsl outlets. The probe retains no
+The filter generates the project's circle-based Flubber SVG path per decoded
+frame; the current Rust renderer rasterizes it inside VLC. It accepts VLC's
+`key-pressed` arrow events, flushes per-frame and key events to CSV, and
+optionally creates two liblsl outlets. The probe retains no
 external LSL streams and does not write XDF; a remote recorder may subscribe.
 
 ## Verification and claim boundary
