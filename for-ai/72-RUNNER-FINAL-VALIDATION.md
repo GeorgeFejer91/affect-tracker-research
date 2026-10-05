@@ -1,8 +1,21 @@
 # Current primary goal and JSON authority — 2026-09-13
 
-The latest user amendments govern this pass. Root is the sole implementation
-and release owner: no delegation. Finish the installed Windows Runner, not just
-its parsers or a simulated browser. Keep the full end-to-end goal active until
+## Parallel-agent amendment — 2026-10-06
+
+The user authorized ChatDev-style Planner and Runner development in parallel,
+with separate UI, function, recording-gate and packaging reviewers, and asked
+to run that pattern directly in Codex. Bounded R1 implementation and read-only
+verification may now be delegated with explicit RR checklist IDs, distinct
+worktrees and the handoff in the project
+[Codex development team skill](skills/affect-chatdev-codex/SKILL.md). Root remains
+the sole integration, installed-validation and release owner. This supersedes
+the earlier no-delegation sentence below; it does not lower any execution or
+XDF evidence gate.
+
+The 2026-09-13 pass assigned Root sole implementation and release ownership;
+the amendment above now permits bounded implementation delegation. Finish the
+installed Windows Runner, not just its parsers or a simulated browser. Keep the
+full end-to-end goal active until
 real execution and independently read XDF prove it.
 
 ## Authoritative experiment recipe

@@ -8,7 +8,8 @@ Owner: root; branch `codex/segment-workflow-chatdev`; isolated worktree
 bounded `workflow` segment. The user requested the current development assets
 become compatible with ChatDev 2.0 for clearer P1–P7/R1 compartmentalization,
 parallel Planner/Runner proposals and separate UI, function, recording and
-packaging verification roles.
+packaging verification roles. The 2026-10-06 follow-up makes this a Codex-native
+delegation workflow by default; the ChatDev 2.0 YAML runner remains optional.
 The pre-change GitHub tag `pre-chatdev-2026-10-05` points to the base commit.
 
 The two ChatDev graphs stage existing core and owner contracts, the compartment
@@ -18,7 +19,7 @@ patches inside its own session; root retains repository integration and release
 authority. The first app patch is separately allocated to R1/RR-03/RR-10 on
 `codex/segment-r1-plan-immutability`. No Planner JSON, Runner intake, current
 desktop build or qualification contract changes in this workflow pass. The
-shared seams are the 00 read route and this coordination entry. Evidence and
+shared seams are the 00 read route, project Codex skill, and this coordination entry. Evidence and
 limits are recorded in [74](74-CHATDEV-DEVELOPMENT.md).
 
 ## 20261004 Compartment and JSON handoff catalog

@@ -5,6 +5,16 @@ development steps more clearly compartmentalized. The exact pre-integration
 GitHub checkpoint is tag `pre-chatdev-2026-10-05` at
 `058694cab918ed9b2e7a65cf1421182124a7f632`.
 
+## Default in Codex
+
+Use the project [Codex development team skill](skills/affect-chatdev-codex/SKILL.md)
+for requested parallel Planner/Runner work. Codex directly delegates independent
+owner and verification roles, exchanges labeled messages at barriers, and keeps
+root integration authority. It uses the current Codex session and needs no
+separate ChatDev installation or model API key. A small single-segment pass can
+still follow [50](50-AGENT-WORKFLOW.md) directly. The YAML graphs below are an
+optional way to run the same role pattern in ChatDev 2.0 outside Codex.
+
 This is an optional development tool. The first companion app change is a
 separate Runner R1/RR-03 and RR-10 pass on
 `codex/segment-r1-plan-immutability`: a plan-immutability guard in
@@ -48,6 +58,9 @@ review the proposals in parallel:
 | **RecordingGate** | Runner-owned LSL/XDF, timestamp, privacy, recovery and physical recording gates |
 | **PackagingGate** | Separate apps, Windows installer, Chrome/Edge delivery, native runtime provenance and release claims |
 
+These agents inspect proposals and existing receipts. Root alone owns the
+current installed validation, packaging acceptance and release claim.
+
 PlannerRevision and RunnerRevision each receive all four labeled verdicts and
 revise only their own proposal. IntegrationReview checks both resulting patches
 and the shared contract; Handoff reports what the root owner can apply and
@@ -76,7 +89,7 @@ material out of the task file and selected inputs. A task requiring those needs
 its owner's specific authorization and a separate evidence path. Real
 experiments remain under the existing Runner and qualification workflow.
 
-## Use
+## Use the optional ChatDev runner
 
 Install ChatDev 2.0 separately from its official repository and set
 `CHATDEV_HOME` to that checkout. This workflow was schema-checked against
