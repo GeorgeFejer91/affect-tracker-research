@@ -18,8 +18,9 @@ Research Planner and Runner.
 
 The experimenter can press **Give control** to start a phone page on a
 detected local IPv4 address, then copy its pairing link to a browser on the
-same trusted network. The phone page shows live affect, stream status, and
-markers and can Start, Pause, Resume, or Stop. **Revoke** closes that session.
+same trusted network. The phone page mirrors the recorder console's affect
+samples, stream status, and markers; it does not open an LSL inlet. It can
+Start, Pause, Resume, or Stop. **Revoke** closes that session.
 This direct LAN prototype uses HTTP with a random session link, so the link
 can be observed on an untrusted network. It does not change firewall rules;
 Windows may require the user to allow local inbound access. The exact
@@ -30,10 +31,15 @@ boundary is in [REMOTE-PROFILE.md](REMOTE-PROFILE.md).
 1. Build the pinned player package in `../build/player-package/stage` using
    the [player runbook](../README.md). The Tauri build checks every binary
    hash in that package's `manifest.json`.
-2. Run `npm ci` here, then `npm run build` to compile the Tauri executable and
+2. The checked-in `../flubbercorder/recorder-runtime/` is the native XDF
+   recorder. Its C++ source and reproducible build script are in
+   `../flubbercorder/recorder-source/`; Python is used only by that build script,
+   not by the installed application. The recorder forwards sample and marker
+   receipts to the Rust console while independently writing XDF.
+3. Run `npm ci` here, then `npm run build` to compile the Tauri executable and
    its resources. Run Inno Setup on `../installer-tauri.iss` to create the
    Windows installer in `../build/tauri-package/out/`.
-3. To include the locally held Great Dictator study clip, set
+4. To include the locally held Great Dictator study clip, set
    `FLUBBERCORDER_DEMO_VIDEO` to its absolute path before the build. Its exact
    size and SHA-256 are checked. The user has stated they have permission to
    redistribute this clip in the side-project package.

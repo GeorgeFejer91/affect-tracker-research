@@ -1,12 +1,25 @@
 # Native VLC Flubber side quest
 
-Status 2026-10-05: **experimental feasibility probe, historical Flubbercorder
+Status 2026-10-06: **experimental feasibility probe, historical Flubbercorder
 candidate, separate Rust player installer candidate, and Rust/Tauri runner
 installer candidate**, separate from the
 approved Experiment Planner and Experiment Runner. The user explicitly asked
 for this as an additional project. Passing its checks does not approve it as
 part of the main suite or change P1–P7/R1 requirements, saved recipe formats,
 LSL contracts, recording policy, or release qualification.
+
+## Recorder-mirrored phone monitor, 2026-10-06
+
+The phone page now mirrors the Rust experimenter console's state; it never
+subscribes to LSL. The console receives sample and marker receipts from the
+native XDF recorder that already subscribes to VLC. This removes the extra
+preview inlet, which discovered VLC outlets but did not deliver samples in the
+installed Tauri run. The XDF remains the authoritative LSL recording and the
+VLC per-frame CSV remains its independent fallback. A native 300-frame short
+trial using the updated recorder produced 300 XDF affect samples, 300 console
+preview samples, and both exact filename markers. Installed Tauri phone and
+installer checks are still in progress; this paragraph does not claim a
+published download.
 
 ## Frame-matched sampling follow-up, 2026-10-05
 

@@ -489,23 +489,7 @@ async fn snapshot(state: tauri::State<'_, Authority>) -> Result<Value, String> {
 fn snapshot_value(authority: &Authority) -> Result<Value, String> {
     let (phase, error, recipe, info, session, bundled_demo, phone_enabled, phone_url, revision) = {
         let mut inner = locked(&authority.inner)?;
-        if matches!(inner.phase.as_str(), "running" | "paused") {
-            if let Some(session) = inner.session.as_mut() {
-                if let Err(error) = session.tick() {
-                    inner.error = Some(error.to_string());
-                    inner.phase = "error".into();
-                    inner.revision += 1;
-                } else {
-                    let new_phase = phase_name(session.snapshot().phase);
-                    if inner.phase != new_phase {
-                        inner.phase = new_phase.into();
-                        inner.revision += 1;
-                    }
-                }
-            }
-        }
         let session = inner.session.as_mut().map(Session::snapshot);
-        inner.revision += 1;
         (
             inner.phase.clone(),
             inner.error.clone(),
@@ -527,6 +511,28 @@ fn snapshot_value(authority: &Authority) -> Result<Value, String> {
         bundled_demo,
         (phone_enabled, phone_url, revision),
     ))
+}
+
+fn poll_session(authority: &Authority) {
+    let Ok(mut inner) = authority.inner.lock() else {
+        return;
+    };
+    if !matches!(inner.phase.as_str(), "running" | "paused") {
+        return;
+    }
+    if let Some(session) = inner.session.as_mut() {
+        if let Err(error) = session.tick() {
+            inner.error = Some(error.to_string());
+            inner.phase = "error".into();
+            inner.revision += 1;
+        } else {
+            let new_phase = phase_name(session.snapshot().phase);
+            if inner.phase != new_phase {
+                inner.phase = new_phase.into();
+                inner.revision += 1;
+            }
+        }
+    }
 }
 
 fn render_state(
@@ -645,13 +651,21 @@ fn main() {
                 initial.recipe = Some(path);
                 initial.phase = "loaded".into();
             }
-            app.manage(Authority {
+            let authority = Authority {
                 inner: Arc::new(Mutex::new(initial)),
                 player_dir,
                 recorder_dir,
                 data_dir,
                 web_dir: app.path().resource_dir()?.join("resources/web"),
+            };
+            let monitor = authority.clone();
+            thread::spawn(move || {
+                loop {
+                    thread::sleep(Duration::from_millis(20));
+                    poll_session(&monitor);
+                }
             });
+            app.manage(authority);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![dispatch, snapshot])

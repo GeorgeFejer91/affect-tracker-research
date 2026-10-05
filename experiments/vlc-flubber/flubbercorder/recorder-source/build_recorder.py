@@ -12,7 +12,7 @@ import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "native/recorder"
+SOURCE = Path(__file__).resolve().parent
 STAGE = ROOT / ".for-ai-local/recorder"
 OUTPUT = STAGE / "runtime"
 
@@ -41,7 +41,7 @@ def build():
     cpp = patched / "src/recording.cpp"
     text = cpp.read_text()
     # Native readiness identifies the exact subscribed source, not another consumer.
-    text = '#include <cmath>\n#include <cstdio>\n#include <type_traits>\n' + text
+    text = '#include <cmath>\n#include <cstdio>\n#include <type_traits>\n#include <vector>\n' + text
     helper = '''
 static std::string hex_text(const std::string &value) {
     const char *digits = "0123456789abcdef";
@@ -53,6 +53,28 @@ static std::string hex_text(const std::string &value) {
     text = helper + text
     # Include the helper's types before its definition.
     text = '#include <string>\n' + text
+    preview = '''
+template <typename T>
+static void report_preview(const std::string &source,
+    const std::vector<double> &timestamps, const std::vector<T> &chunk) {
+    if (source.rfind("vlc-flubber-", 0) != 0) return;
+    const auto encoded = hex_text(source);
+    if constexpr (std::is_same_v<T, float>) {
+        if (source.size() < 7 || source.substr(source.size() - 7) != "-affect") return;
+        for (size_t i = 0; i < timestamps.size() && 2 * i + 1 < chunk.size(); ++i)
+            std::fprintf(stderr, "\\nRESPYRA_RECORDER_AFFECT/1 %s %.17g %.9g %.9g\\n",
+                encoded.c_str(), timestamps[i], chunk[2 * i], chunk[2 * i + 1]);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        if (source.size() < 8 || source.substr(source.size() - 8) != "-markers") return;
+        for (size_t i = 0; i < timestamps.size() && i < chunk.size(); ++i)
+            std::fprintf(stderr, "\\nRESPYRA_RECORDER_MARKER/1 %s %.17g %s\\n",
+                encoded.c_str(), timestamps[i], hex_text(chunk[i]).c_str());
+    }
+    std::fflush(stderr);
+}
+'''
+    include_anchor = '#include <cmath>\n#include <cstdio>\n#include <type_traits>\n#include <vector>\n'
+    text = replace_once(text, include_anchor, include_anchor + preview)
     text = replace_once(text, '\t\t\tcase lsl::cf_float32:',
         '\t\t\tcase lsl::cf_int64:\n\t\t\t\ttyped_transfer_loop<int64_t>(streamid, nominal_srate, in, first_timestamp, last_timestamp, sample_count);\n\t\t\t\tbreak;\n\t\t\tcase lsl::cf_float32:')
     text = replace_once(text, '<< std::endl;\n\t\t\t}\n\t\t\tfile_.write_stream_offset',
@@ -70,6 +92,12 @@ static std::string hex_text(const std::string &value) {
         raise RuntimeError("Pinned native sample notification patch no longer matches")
     text = replace_once(text, 'double sample_interval = srate ? 1.0 / srate : 0;',
                         'double sample_interval = srate ? 1.0 / srate : 0;\n\t\tbool finite_reported = false;')
+    text = replace_once(text,
+        'file_.write_data_chunk(streamid, timestamps, chunk, (uint32_t)in->get_channel_count());',
+        'report_preview(in->info().source_id(), timestamps, chunk);\n\t\t\tfile_.write_data_chunk(streamid, timestamps, chunk, (uint32_t)in->get_channel_count());')
+    text = replace_once(text,
+        'file_.write_data_chunk(streamid, timestamps, chunk, in->get_channel_count());',
+        'report_preview(in->info().source_id(), timestamps, chunk);\n\t\t\tfile_.write_data_chunk(streamid, timestamps, chunk, in->get_channel_count());')
     text = text.replace(sample_count, '''if (sample_count == 0 && !timestamps.empty() && !in->info().source_id().empty()) {
                 std::fprintf(stderr, "\\nRESPYRA_RECORDER_DATA/1 %s\\n",
                     hex_text(in->info().source_id()).c_str()); std::fflush(stderr);
@@ -129,9 +157,9 @@ static std::string hex_text(const std::string &value) {
     shutil.copy2(SOURCE / "upstream/LICENSE", OUTPUT / "LABRECORDER-LICENSE")
     shutil.copy2(SOURCE / "LIBLSL-LICENSE", OUTPUT / "LIBLSL-LICENSE")
     # Supply the locked engine's app-local MSVC dependencies beside the native DLL.
-    support = Path(sys.prefix) / "Lib/site-packages/PyQt6/Qt6/bin"
+    support = ROOT / "recorder-runtime"
     if not all((support / name).is_file() for name in ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")):
-        raise RuntimeError("Build using the locked uv environment with PyQt6's app-local MSVC DLLs")
+        raise RuntimeError("App-local MSVC support DLLs are missing from the recorder runtime")
     for dll in support.glob("*140*.dll"):
         shutil.copy2(dll, OUTPUT / dll.name)
     manifest = {"source": lock, "patches": sha256(Path(__file__)),

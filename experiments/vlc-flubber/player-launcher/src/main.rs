@@ -8,7 +8,7 @@ use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -304,7 +304,8 @@ fn wait_for_outlets(pid: u32) -> Result<()> {
     let affect = format!("vlc-flubber-{pid}-affect");
     let markers = format!("vlc-flubber-{pid}-markers");
     let mut observed = Vec::new();
-    for _ in 0..20 {
+    let deadline = Instant::now() + Duration::from_secs(120);
+    loop {
         let found = labstream::resolve_all(&Query::all(), Duration::from_millis(250))?;
         observed.clear();
         observed.extend(found.iter().map(|info| info.source_id().to_owned()));
@@ -316,6 +317,9 @@ fn wait_for_outlets(pid: u32) -> Result<()> {
             .any(|info| info.name() == "VLC_Flubber_Markers" && info.source_id() == markers);
         if affect_ready && markers_ready {
             return Ok(());
+        }
+        if Instant::now() >= deadline {
+            break;
         }
         thread::sleep(Duration::from_millis(100));
     }

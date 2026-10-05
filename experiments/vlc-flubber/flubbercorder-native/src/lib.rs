@@ -1,6 +1,6 @@
 mod xdf;
 
-use labstream::{Buffer, Inlet, Post, Query};
+use labstream::Query;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
@@ -277,6 +277,18 @@ fn hex(value: &str) -> String {
     value.bytes().map(|b| format!("{b:02x}")).collect()
 }
 
+fn unhex(value: &str) -> Result<String> {
+    if value.len() % 2 != 0 {
+        return Err("Invalid recorder marker encoding".into());
+    }
+    let bytes = value
+        .as_bytes()
+        .chunks_exact(2)
+        .map(|pair| Ok(u8::from_str_radix(std::str::from_utf8(pair)?, 16)?))
+        .collect::<Result<Vec<_>>>()?;
+    Ok(String::from_utf8(bytes)?)
+}
+
 pub struct Session {
     recipe: Recipe,
     launched: Launched,
@@ -284,8 +296,6 @@ pub struct Session {
     expected: HashMap<String, String>,
     recorder: Child,
     receipts: Receiver<String>,
-    marker_inlet: Inlet,
-    affect_inlet: Inlet,
     partial: PathBuf,
     final_xdf: PathBuf,
     phase: Phase,
@@ -295,6 +305,7 @@ pub struct Session {
     summary: Option<Summary>,
     playback_seen: bool,
     stopping: bool,
+    last_rc_poll: Instant,
 }
 
 impl Session {
@@ -328,7 +339,7 @@ impl Session {
             let affect_id = format!("{source}-affect");
             let marker_id = format!("{source}-markers");
             let deadline = Instant::now() + Duration::from_secs(8);
-            let (affect, markers, expected) = loop {
+            let expected = loop {
                 let found = labstream::resolve_all(&Query::all(), Duration::from_millis(250))?;
                 let affect = found
                     .iter()
@@ -355,30 +366,14 @@ impl Session {
                         all_external = false;
                     }
                 }
-                if let (Some(affect), Some(markers)) = (affect, markers) {
-                    if all_external {
-                        break (
-                            affect.fetch(Duration::from_secs(3))?,
-                            markers.fetch(Duration::from_secs(3))?,
-                            expected,
-                        );
-                    }
+                if affect.is_some() && markers.is_some() && all_external {
+                    break expected;
                 }
                 if Instant::now() >= deadline {
                     return Err("Required LSL streams are not discoverable".into());
                 }
                 thread::sleep(Duration::from_millis(100));
             };
-            let marker_inlet = Inlet::builder(&markers)
-                .buffer(Buffer::Samples(32))
-                .recover(false)
-                .postprocess(Post::NONE)
-                .open(Duration::from_secs(3))?;
-            let affect_inlet = Inlet::builder(&affect)
-                .buffer(Buffer::Seconds(30.0))
-                .recover(false)
-                .postprocess(Post::NONE)
-                .open(Duration::from_secs(3))?;
             let recordings = data_dir.join("recordings");
             fs::create_dir_all(&recordings)?;
             let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
@@ -426,7 +421,7 @@ impl Session {
                 }
             });
             let mut pending = expected.clone();
-            let deadline = Instant::now() + Duration::from_secs(10);
+            let deadline = Instant::now() + Duration::from_secs(60);
             while !pending.is_empty() {
                 let remaining = deadline.saturating_duration_since(Instant::now());
                 if remaining.is_zero() {
@@ -463,8 +458,6 @@ impl Session {
                 expected,
                 recorder,
                 receipts,
-                marker_inlet,
-                affect_inlet,
                 partial,
                 final_xdf,
                 phase: Phase::Armed,
@@ -474,6 +467,7 @@ impl Session {
                 summary: None,
                 playback_seen: false,
                 stopping: false,
+                last_rc_poll: Instant::now() - Duration::from_millis(250),
             })
         })();
         result.map_err(|error| (port, error))
@@ -564,56 +558,15 @@ impl Session {
         if self.recorder.try_wait()?.is_some() {
             return Err("XDF recorder exited during experiment".into());
         }
-        for index in 0..512 {
-            let timeout = if index == 0 { Duration::from_millis(5) } else { Duration::ZERO };
-            let Some((stamp, values)) = self.affect_inlet.pull::<f32>(timeout)? else {
-                break;
-            };
-            if values.len() != 2
-                || !stamp.is_finite()
-                || values.iter().any(|v| !(-1.0..=1.0).contains(v))
-            {
-                return Err("Invalid VLC affect sample".into());
-            }
-            self.history.push_back(AffectPoint {
-                lsl_time: stamp,
-                valence: values[0],
-                arousal: values[1],
-            });
-            while self.history.len() > 600 {
-                self.history.pop_front();
-            }
-        }
         let start = format!("{}_Start", self.recipe.filename);
         let stop = format!("{}_Stop", self.recipe.filename);
-        for index in 0..32 {
-            let timeout = if index == 0 { Duration::from_millis(5) } else { Duration::ZERO };
-            let Some((stamp, values)) = self.marker_inlet.pull_text(timeout)? else {
-                break;
-            };
-            for label in values {
-                if !stamp.is_finite() || (label != start && label != stop) {
-                    return Err("Unexpected VLC marker".into());
-                }
-                self.markers.push(Marker {
-                    lsl_time: stamp,
-                    label,
-                });
-            }
-        }
         while let Ok(line) = self.receipts.try_recv() {
-            if line.contains("RESPYRA_RECORDER_ERROR") {
-                return Err("XDF recorder reported an error".into());
-            }
-            if let Some(encoded) = line.strip_prefix("RESPYRA_RECORDER_DATA/1 ") {
-                for source in self.expected.keys() {
-                    if encoded.trim().eq_ignore_ascii_case(&hex(source)) {
-                        self.first_data.insert(source.clone());
-                    }
-                }
-            }
+            self.consume_receipt(&line, &start, &stop)?;
         }
-        let playing = if matches!(self.phase, Phase::Running) || self.stopping {
+        let playing = if (matches!(self.phase, Phase::Running) || self.stopping)
+            && self.last_rc_poll.elapsed() >= Duration::from_millis(250)
+        {
+            self.last_rc_poll = Instant::now();
             rc_is_playing(self.launched.port)?
         } else {
             None
@@ -625,6 +578,62 @@ impl Session {
             || (playing == Some(false) && (self.stopping || self.playback_seen))
         {
             self.finish()?;
+        }
+        Ok(())
+    }
+
+    fn consume_receipt(&mut self, line: &str, start: &str, stop: &str) -> Result<()> {
+        if line.contains("RESPYRA_RECORDER_ERROR") {
+            return Err("XDF recorder reported an error".into());
+        }
+        if let Some(encoded) = line.strip_prefix("RESPYRA_RECORDER_DATA/1 ") {
+            for source in self.expected.keys() {
+                if encoded.trim().eq_ignore_ascii_case(&hex(source)) {
+                    self.first_data.insert(source.clone());
+                }
+            }
+        }
+        if let Some(data) = line.strip_prefix("RESPYRA_RECORDER_AFFECT/1 ") {
+            let parts: Vec<_> = data.split_whitespace().collect();
+            if parts.len() != 4
+                || !parts[0].eq_ignore_ascii_case(&hex(&format!("{}-affect", self.source)))
+            {
+                return Err("Invalid recorder affect receipt".into());
+            }
+            let stamp: f64 = parts[1].parse()?;
+            let valence: f32 = parts[2].parse()?;
+            let arousal: f32 = parts[3].parse()?;
+            if !stamp.is_finite()
+                || !(-1.0..=1.0).contains(&valence)
+                || !(-1.0..=1.0).contains(&arousal)
+            {
+                return Err("Invalid VLC affect sample".into());
+            }
+            self.history.push_back(AffectPoint {
+                lsl_time: stamp,
+                valence,
+                arousal,
+            });
+            while self.history.len() > 600 {
+                self.history.pop_front();
+            }
+        }
+        if let Some(data) = line.strip_prefix("RESPYRA_RECORDER_MARKER/1 ") {
+            let parts: Vec<_> = data.split_whitespace().collect();
+            if parts.len() != 3
+                || !parts[0].eq_ignore_ascii_case(&hex(&format!("{}-markers", self.source)))
+            {
+                return Err("Invalid recorder marker receipt".into());
+            }
+            let stamp: f64 = parts[1].parse()?;
+            let label = unhex(parts[2])?;
+            if !stamp.is_finite() || (label != start && label != stop) {
+                return Err("Unexpected VLC marker".into());
+            }
+            self.markers.push(Marker {
+                lsl_time: stamp,
+                label,
+            });
         }
         Ok(())
     }
@@ -653,6 +662,16 @@ impl Session {
         };
         if !status.success() {
             return Err("XDF recorder failed; partial file preserved".into());
+        }
+        let start = format!("{}_Start", self.recipe.filename);
+        let stop = format!("{}_Stop", self.recipe.filename);
+        let receipts_deadline = Instant::now() + Duration::from_secs(2);
+        while Instant::now() < receipts_deadline {
+            match self.receipts.recv_timeout(Duration::from_millis(50)) {
+                Ok(line) => self.consume_receipt(&line, &start, &stop)?,
+                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
+            }
         }
         let result = xdf::inspect(
             &self.partial,
