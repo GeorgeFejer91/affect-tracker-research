@@ -102,7 +102,27 @@ installed CLI Open/edit/Save, video inspection and research qualification
 remain open; this machine's C: drive has less than 1 GiB available. Root owns
 integration, installed validation and release decisions. The other three
 Windows installers need distinct application identifiers and install paths;
- Planner retains its existing identifier.
+Planner retains its existing identifier.
+
+## 20261006 R1 GstPlay integration handoff and next owner slice
+
+Root collected the R1 native actor commit `e7e64ca` as `e75fde2` on
+`codex/integration-four-installers`, preserving the two approved FFI adapter
+blobs. The source is restored but its native feature has not compiled on this
+machine or CI. Root retains `src-tauri/src/research_desktop.rs`, Tauri bundle
+configuration, Windows CI and installer/resource closure. To parallelize the
+remaining R1/RR-04/RR-07 bridge, the same Runner owner is assigned a second
+bounded branch `codex/segment-r1-gst-bridge` from integrated commit `c7953d2`
+in the existing clean Runner owner worktree. Allowed files:
+`site/src/research/native-bridge.js`,
+`site/src/research/native-media-readiness.js`,
+`runner/src/app.js`, `runner/src/browser-adapter.js`, and their focused tests.
+Replace retired HTML-only capability assumptions with the exact restored
+GstPlay contract, keep explicit unqualified WebView opt-in and fail-closed
+normal Start, and restore native Runner routing without importing unrelated
+Face or suite changes from the donor branch. Evidence now: bridge/readiness,
+Runner flow and build checks. Root will reconcile its native identity/CI work
+against this patch before combined verification.
 
 ## 20261005 Runner master plan immutability
 
