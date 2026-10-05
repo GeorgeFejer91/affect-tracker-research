@@ -1,22 +1,8 @@
-#![cfg_attr(
-    not(all(target_os = "windows", feature = "native-gstreamer")),
-    allow(dead_code)
-)]
-
 use super::contracts::{
     NativeMediaCapability, PlaybackMode, RuntimeBundleState, NATIVE_MEDIA_CAPABILITY_SCHEMA,
 };
 use crate::research_platform::NATIVE_ACQUISITION_UNSUPPORTED_REASON;
 use std::path::{Path, PathBuf};
-
-#[path = "../../native-media/runtime_manifest.rs"]
-pub(crate) mod runtime_manifest;
-
-use runtime_manifest::{
-    verify_runtime_tree_cancellable, RuntimeManifestErrorCode, PINNED_BINDINGS_SERIES,
-    PINNED_GSTREAMER_VERSION, PINNED_INSTALLER_SHA256, PINNED_RUNTIME_MANIFEST_SHA256,
-    PINNED_TARGET, RUNTIME_RELATIVE_ROOT,
-};
 
 pub(crate) struct InspectedCapability {
     public: NativeMediaCapability,
@@ -43,21 +29,20 @@ impl InspectedCapability {
     }
 }
 
-/// Immediate fail-closed projection while the worker verifies the pinned tree.
-/// NotStaged here makes no positive claim about a not-yet-inspected bundle;
-/// the explicit pending reason distinguishes it from a completed absent check.
+/// HTML/WebView video is the supported playback surface. The native-media
+/// actor remains absent so legacy native playback requests fail closed.
 pub(crate) fn pending_capability() -> NativeMediaCapability {
     NativeMediaCapability {
         schema: NATIVE_MEDIA_CAPABILITY_SCHEMA,
         version: 2,
-        backend: "gstreamer-gstplay",
-        api: "gstplay",
-        pinned_runtime_version: PINNED_GSTREAMER_VERSION,
-        bindings_version: PINNED_BINDINGS_SERIES,
-        target: PINNED_TARGET,
-        runtime_installer_sha256: PINNED_INSTALLER_SHA256,
-        runtime_tree_manifest_sha256: PINNED_RUNTIME_MANIFEST_SHA256,
-        default_playback_mode: PlaybackMode::NativeGstPlay,
+        backend: "html-video",
+        api: "webview-video",
+        pinned_runtime_version: "",
+        bindings_version: "",
+        target: "browser-webview",
+        runtime_installer_sha256: "",
+        runtime_tree_manifest_sha256: "",
+        default_playback_mode: PlaybackMode::UnqualifiedWebview,
         unqualified_fallback_mode: PlaybackMode::UnqualifiedWebview,
         runtime_bundle_state: RuntimeBundleState::NotStaged,
         runtime_integrity_verified: false,
@@ -68,9 +53,9 @@ pub(crate) fn pending_capability() -> NativeMediaCapability {
         qualified_format_matrix_ready: false,
         redistribution_review_ready: false,
         ambient_runtime_allowed: false,
-        required_for_qualified_run: true,
+        required_for_qualified_run: false,
         renderer_receives_filesystem_paths: false,
-        reason_code: "native-runtime-verification-pending".to_owned(),
+        reason_code: "html-video-playback-selected".to_owned(),
     }
 }
 
@@ -86,50 +71,19 @@ pub(crate) fn inspect_capability_cancellable(
     native_acquisition_supported: bool,
     canceled: &impl Fn() -> bool,
 ) -> InspectedCapability {
-    let runtime_root = resource_dir.join(RUNTIME_RELATIVE_ROOT);
-    let (runtime_bundle_state, runtime_integrity_verified, file_count, byte_length, reason) =
-        if !native_acquisition_supported {
-            (
-                RuntimeBundleState::NotStaged,
-                false,
-                None,
-                None,
-                NATIVE_ACQUISITION_UNSUPPORTED_REASON.to_owned(),
-            )
-        } else {
-            match verify_runtime_tree_cancellable(&runtime_root, canceled) {
-                Ok(verified) => (
-                    RuntimeBundleState::Verified,
-                    true,
-                    Some(verified.file_count),
-                    Some(verified.byte_length),
-                    "native-gstplay-actor-not-started".to_owned(),
-                ),
-                Err(error) => {
-                    let state = if matches!(
-                        error.code,
-                        RuntimeManifestErrorCode::RuntimeMissing
-                            | RuntimeManifestErrorCode::VerificationCanceled
-                    ) {
-                        RuntimeBundleState::NotStaged
-                    } else {
-                        RuntimeBundleState::Invalid
-                    };
-                    (state, false, None, None, error.code.as_str().to_owned())
-                }
-            }
-        };
+    let _ = (resource_dir, canceled);
+    let reason = if native_acquisition_supported {
+        "html-video-playback-selected".to_owned()
+    } else {
+        NATIVE_ACQUISITION_UNSUPPORTED_REASON.to_owned()
+    };
 
     InspectedCapability {
         public: NativeMediaCapability {
-            runtime_bundle_state,
-            runtime_integrity_verified,
-            runtime_file_count: file_count,
-            runtime_byte_length: byte_length,
             reason_code: reason,
             ..pending_capability()
         },
-        runtime_root,
+        runtime_root: PathBuf::new(),
     }
 }
 
@@ -142,7 +96,7 @@ fn safe_reason(reason_code: &str) -> String {
     {
         reason_code.to_owned()
     } else {
-        "native-gstplay-actor-failed".to_owned()
+        "native-media-actor-failed".to_owned()
     }
 }
 
@@ -154,7 +108,7 @@ mod cancellation_tests {
     fn canceled_inspection_publishes_no_partial_integrity_or_counts() {
         let capability =
             inspect_capability_cancellable(Path::new("not-opened"), true, &|| true).into_public();
-        assert_eq!(capability.reason_code, "runtime-verification-canceled");
+        assert_eq!(capability.reason_code, "html-video-playback-selected");
         assert_eq!(
             capability.runtime_bundle_state,
             RuntimeBundleState::NotStaged

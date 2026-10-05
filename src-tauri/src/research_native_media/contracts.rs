@@ -1,8 +1,3 @@
-#![cfg_attr(
-    not(all(target_os = "windows", feature = "native-gstreamer")),
-    allow(dead_code)
-)]
-
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_video_geometry::{
     NativeDisplayMetadataReceiptV1, NativeDisplayMetadataReceiptV2,
@@ -35,9 +30,9 @@ pub struct NativeMediaDecodeReceiptV2 {
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum PlaybackMode {
-    #[default]
     NativeGstPlay,
     NativeLibvlc,
+    #[default]
     UnqualifiedWebview,
 }
 

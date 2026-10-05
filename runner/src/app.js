@@ -41,7 +41,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   root.innerHTML = runnerMarkup(); root.setAttribute("aria-busy", "false");
   const identity = await invoke("research_desktop_identity");
   if (identity?.schema !== "affect-research-desktop-identity" || identity.version !== 1 || identity.program !== "runner") throw new Error("Open this interface with the Experiment Runner executable.");
-  const browserMode = identity.platform === "browser";
+  if (identity.suite?.required && !identity.suite.complete) throw new Error(`Experiment Runner requires the complete Planner/Runner suite (${identity.suite.issues.join(", ")}).`);
+  const browserMode = identity.platform === "browser" || identity.playbackSurface === "htmlVideo";
   const query = (id) => root.querySelector(`#${id}`);
   const text = (id, value) => { query(id).textContent = value; };
   const value = (id) => query(id).value;
@@ -957,7 +958,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     mediaCapability = current;
     if (!current?.playerActorReady) {
       const reason = current?.reasonCode ?? "native-capability-unavailable";
-      if (["native-runtime-verification-pending", "native-gstplay-startup-pending"].includes(reason)) {
+      if (reason === "native-runtime-verification-pending") {
         throw new Error("Native video support is still starting. Wait a moment, then press Continue again.");
       }
       throw new Error(`Native video inspection is not ready (${reason}). The experiment remains loaded.`);

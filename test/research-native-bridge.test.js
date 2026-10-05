@@ -198,14 +198,14 @@ function nativeMediaCapability(overrides = {}) {
   return {
     schema: "affect-research-native-media-capability",
     version: 2,
-    backend: "gstreamer-gstplay",
-    api: "gstplay",
-    pinnedRuntimeVersion: "1.28.6",
-    bindingsVersion: "0.25",
-    target: "msvc-x86_64",
-    runtimeInstallerSha256: "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5",
-    runtimeTreeManifestSha256: "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566",
-    defaultPlaybackMode: "nativeGstPlay",
+    backend: "html-video",
+    api: "webview-video",
+    pinnedRuntimeVersion: "",
+    bindingsVersion: "",
+    target: "browser-webview",
+    runtimeInstallerSha256: "",
+    runtimeTreeManifestSha256: "",
+    defaultPlaybackMode: "unqualifiedWebview",
     unqualifiedFallbackMode: "unqualifiedWebview",
     runtimeBundleState: "notStaged",
     runtimeIntegrityVerified: false,
@@ -216,9 +216,9 @@ function nativeMediaCapability(overrides = {}) {
     qualifiedFormatMatrixReady: false,
     redistributionReviewReady: false,
     ambientRuntimeAllowed: false,
-    requiredForQualifiedRun: true,
+    requiredForQualifiedRun: false,
     rendererReceivesFilesystemPaths: false,
-    reasonCode: "native-runtime-verification-pending",
+    reasonCode: "html-video-playback-selected",
     ...overrides,
   };
 }
@@ -1085,19 +1085,13 @@ test("native input regions remain bounded to visible client coordinates", () => 
   });
 });
 
-test("desktop playback defaults to native GstPlay and requires a qualified capability", () => {
+test("desktop playback defaults to the HTML video path and rejects retired native backends", () => {
   const unavailable = nativeMediaCapability();
-  assert.throws(() => authorizeDesktopPlaybackMode(undefined, unavailable), /unavailable/u);
+  assert.equal(authorizeDesktopPlaybackMode(undefined, unavailable), "unqualifiedWebview");
   assert.equal(authorizeDesktopPlaybackMode("unqualifiedWebview", unavailable), "unqualifiedWebview");
-  assert.throws(() => authorizeDesktopPlaybackMode("nativeGstPlay", unavailable), /unavailable/u);
+  assert.throws(() => authorizeDesktopPlaybackMode("nativeGstPlay", unavailable), /retired/u);
   assert.throws(() => authorizeDesktopPlaybackMode("nativeLibvlc", unavailable), /retired/u);
   assert.throws(() => authorizeDesktopPlaybackMode("ambientVlc", unavailable), /Unknown native playback mode/u);
-
-  const qualified = nativeMediaCapability({ runtimeBundleState: "verified", runtimeIntegrityVerified: true,
-    runtimeFileCount: 827, runtimeByteLength: 340362958, playerActorReady: true,
-    qualifiedStartAvailable: true, qualifiedFormatMatrixReady: true, redistributionReviewReady: true,
-    reasonCode: "native-gstplay-ready" });
-  assert.equal(authorizeDesktopPlaybackMode(undefined, qualified), "nativeGstPlay");
 
   const interfaceOnly = nativeMediaCapability({
     reasonCode: "native-acquisition-platform-unsupported",
@@ -1108,11 +1102,11 @@ test("desktop playback defaults to native GstPlay and requires a qualified capab
   );
   assert.throws(
     () => authorizeDesktopPlaybackMode("nativeGstPlay", interfaceOnly),
-    /Windows build/u,
+    /complete Windows suite/u,
   );
 });
 
-test("native media capability v2 is exact for the pinned GstPlay contract", () => {
+test("native media capability v2 is exact for the HTML video contract", () => {
   assert.deepEqual(validateNativeMediaCapabilityV2(nativeMediaCapability()), nativeMediaCapability());
   assert.throws(() => validateNativeMediaCapabilityV2({
     ...nativeMediaCapability(), extra: true,
@@ -1122,14 +1116,7 @@ test("native media capability v2 is exact for the pinned GstPlay contract", () =
   })), /malformed/u);
   assert.throws(() => validateNativeMediaCapabilityV2(nativeMediaCapability({
     qualifiedStartAvailable: true,
-  })), /inconsistent/u);
-  assert.throws(() => validateNativeMediaCapabilityV2(nativeMediaCapability({
-    backend: "html-video",
   })), /malformed/u);
-  assert.throws(() => validateNativeMediaCapabilityV2(nativeMediaCapability({
-    runtimeBundleState: "verified", runtimeIntegrityVerified: true,
-    runtimeFileCount: 826, runtimeByteLength: 340362958,
-  })), /inconsistent/u);
 });
 
 test("native participant projection distinguishes terminal and recoverable partials", () => {

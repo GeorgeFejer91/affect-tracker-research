@@ -47,8 +47,6 @@ const NATIVE_PROTOCOL_PREFLIGHT_KEYS = Object.freeze([
   "protocolStepCount", "questionnaireStepCount", "schema", "settingsSha256",
   "stimulusStepCount", "version",
 ]);
-const GSTREAMER_INSTALLER_SHA256 = "059251444d1267b486eba390b18d25fed87e10315e72f757ec6c7e912fa746b5";
-const GSTREAMER_RUNTIME_TREE_SHA256 = "51c27b6a25db1d86dea20cc108e88240fc340758b34ae1e497dd91d8de1b5566";
 const INTERFACE_ONLY_PLATFORM_REASON = "native-acquisition-platform-unsupported";
 
 function expectedPlaybackQualification(playbackMode) {
@@ -109,43 +107,28 @@ export function validateNativeMediaCapabilityV2(value) {
     || keys.some((key, index) => key !== NATIVE_MEDIA_CAPABILITY_KEYS[index])
     || value.schema !== "affect-research-native-media-capability"
     || value.version !== 2
-    || value.backend !== "gstreamer-gstplay"
-    || value.api !== "gstplay"
-    || value.pinnedRuntimeVersion !== "1.28.6"
-    || value.bindingsVersion !== "0.25"
-    || value.target !== "msvc-x86_64"
-    || value.runtimeInstallerSha256 !== GSTREAMER_INSTALLER_SHA256
-    || value.runtimeTreeManifestSha256 !== GSTREAMER_RUNTIME_TREE_SHA256
-    || value.defaultPlaybackMode !== "nativeGstPlay"
+    || value.backend !== "html-video"
+    || value.api !== "webview-video"
+    || value.pinnedRuntimeVersion !== ""
+    || value.bindingsVersion !== ""
+    || value.target !== "browser-webview"
+    || value.runtimeInstallerSha256 !== ""
+    || value.runtimeTreeManifestSha256 !== ""
+    || value.defaultPlaybackMode !== "unqualifiedWebview"
     || value.unqualifiedFallbackMode !== "unqualifiedWebview"
-    || !["notStaged", "invalid", "verified"].includes(value.runtimeBundleState)
-    || typeof value.runtimeIntegrityVerified !== "boolean"
-    || !(value.runtimeFileCount === null || (Number.isSafeInteger(value.runtimeFileCount) && value.runtimeFileCount > 0))
-    || !(value.runtimeByteLength === null || (Number.isSafeInteger(value.runtimeByteLength) && value.runtimeByteLength > 0))
-    || typeof value.playerActorReady !== "boolean"
-    || typeof value.qualifiedStartAvailable !== "boolean"
-    || typeof value.qualifiedFormatMatrixReady !== "boolean"
-    || typeof value.redistributionReviewReady !== "boolean"
+    || value.runtimeBundleState !== "notStaged"
+    || value.runtimeIntegrityVerified !== false
+    || value.runtimeFileCount !== null
+    || value.runtimeByteLength !== null
+    || value.playerActorReady !== false
+    || value.qualifiedStartAvailable !== false
+    || value.qualifiedFormatMatrixReady !== false
+    || value.redistributionReviewReady !== false
     || value.ambientRuntimeAllowed !== false
-    || value.requiredForQualifiedRun !== true
+    || value.requiredForQualifiedRun !== false
     || value.rendererReceivesFilesystemPaths !== false
     || typeof value.reasonCode !== "string" || value.reasonCode.length === 0) {
-    throw new TypeError("Native media capability v2 is malformed or does not match the pinned GstPlay contract.");
-  }
-  const verifiedTree = value.runtimeBundleState === "verified"
-    && value.runtimeIntegrityVerified
-    && value.runtimeFileCount === 827
-    && value.runtimeByteLength === 340362958;
-  if (value.runtimeIntegrityVerified !== (value.runtimeBundleState === "verified")
-    || (verifiedTree !== value.runtimeIntegrityVerified)
-    || ((value.runtimeFileCount === null) !== (value.runtimeByteLength === null))
-    || (value.runtimeBundleState === "verified" && value.runtimeFileCount === null)
-    || (value.runtimeBundleState !== "verified" && value.runtimeFileCount !== null)
-    || (value.qualifiedStartAvailable && !(verifiedTree
-      && value.playerActorReady
-      && value.qualifiedFormatMatrixReady
-      && value.redistributionReviewReady))) {
-    throw new TypeError("Native media capability v2 readiness fields are inconsistent.");
+    throw new TypeError("Native media capability v2 is malformed or does not match the HTML video contract.");
   }
   return Object.freeze({ ...value });
 }
@@ -717,20 +700,17 @@ export function nativeRunStatusMatchesFence(status, run, fence) {
 }
 
 export function authorizeDesktopPlaybackMode(requestedMode, capability) {
-  const playbackMode = requestedMode ?? "nativeGstPlay";
+  const playbackMode = requestedMode ?? "unqualifiedWebview";
   if (!PLAYBACK_MODES.has(playbackMode)) throw new TypeError("Unknown native playback mode.");
   const validated = validateNativeMediaCapabilityV2(capability);
   if (validated.reasonCode === INTERFACE_ONLY_PLATFORM_REASON) {
-    throw new Error("This Tauri package is for Setup and interface evaluation only; native experiment acquisition requires the Windows build.");
+    throw new Error("This Tauri package is for Setup and interface evaluation only; experiment acquisition requires the complete Windows suite.");
   }
   if (playbackMode === "unqualifiedWebview") return playbackMode;
   if (playbackMode === "nativeLibvlc") {
     throw new Error("The native libVLC backend is retired and is retained only for historical evidence finalization.");
   }
-  if (validated.qualifiedStartAvailable !== true || validated.playerActorReady !== true) {
-    throw new Error(`Qualified native playback is unavailable (${validated.reasonCode}). Select WebView video explicitly only for unqualified testing.`);
-  }
-  return playbackMode;
+  throw new Error(`Qualified native playback is retired for this build (${validated.reasonCode}). Use the HTML video path.`);
 }
 
 export function mediaFailureReport({ runId, mediaErrorCode, stimulusId, stimulusPosition, mediaTimeMs }) {
@@ -1196,6 +1176,9 @@ export class NativeResearchRuntimeBridge {
     if (identity?.program !== "planner" || identity.schema !== "affect-research-desktop-identity" || identity.version !== 1) {
       throw new Error("This authoring surface requires the Experiment Planner executable.");
     }
+    if (identity.suite?.required && !identity.suite.complete) {
+      throw new Error(`Experiment Planner requires the complete Planner/Runner suite (${identity.suite.issues.join(", ")}).`);
+    }
     this.#bind();
     const [workspace, sources, media, input, inputStatus] = await Promise.all([
       this.invoke("research_workspace_status"), this.invoke("research_source_capabilities"),
@@ -1591,7 +1574,7 @@ export class NativeResearchRuntimeBridge {
   }
 
   #selectedPlaybackMode() {
-    return this.root.querySelector?.("#native-playback-mode")?.value ?? "nativeGstPlay";
+    return this.root.querySelector?.("#native-playback-mode")?.value ?? "unqualifiedWebview";
   }
 
   #listen(target, type, listener, options) {
