@@ -136,7 +136,7 @@ const serverUrl = requiredEnvironment("GITHUB_SERVER_URL");
 const artifacts = await identifyArtifacts(target);
 
 const receipt = {
-  schema: "AffectResearchUnqualifiedInternalPackageProvenanceV1",
+  schema: "AffectResearchUnqualifiedInternalPackageProvenanceV2",
   status: "unqualified-internal-alpha",
   product: "Affect Research",
   version: "0.4.0-alpha.1",
@@ -163,10 +163,10 @@ const receipt = {
     notarized: false,
     published: false,
     cargoFeatures: "no-default-features",
-    bundledWindowsGStreamerRuntime: false,
+    webviewPlaybackQualified: false,
   },
   qualification: {
-    nativeGstPlay: false,
+    standardRunnerWebView: false,
     lsl: false,
     nativeInput: false,
     installedWorkflow: false,

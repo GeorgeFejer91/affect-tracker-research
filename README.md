@@ -272,14 +272,11 @@ pnpm desktop:bundle
 Remove-Item Env:AFFECT_RESEARCH_PACKAGE_COMMIT
 ```
 
-Native-media staging instructions and the exact runtime pin are in
-[`src-tauri/native-media/README.md`](./src-tauri/native-media/README.md). A
-candidate intended for native playback must be built with the required runtime
-gate only after the redistribution closure, corresponding-source evidence,
-pre-main DLL loader design, and unsafe renderer are approved. Today,
-`pnpm desktop:bundle` deliberately uses `--no-default-features`, excludes the
-GStreamer runtime, and produces an interface-only Windows package whose Start
-commands fail closed.
+The current video paths and qualification boundary are in
+[`src-tauri/native-media/README.md`](./src-tauri/native-media/README.md).
+Standard Runner targets Windows WebView video; Flubber VLC Runner is a separate
+program. Today, `pnpm desktop:bundle` uses `--no-default-features` and produces
+an interface-only Windows package whose qualified Start commands fail closed.
 
 The displayed product version is `0.4.0-alpha.1`; it must not be described as stable or research-ready until the automated, timing, recovery, LSL, accessibility, and physical workflow gates in the charter pass.
 
@@ -287,7 +284,7 @@ The displayed product version is `0.4.0-alpha.1`; it must not be described as st
 
 - Pull requests and pushes to `research/video-protocol-v1` validate the isolated Pages artifact and Windows Tauri candidate. They do not deploy a public site.
 - A passing push to `main` deploys only the verified Research Pages artifact to the Research project URL.
-- Windows CI runs the Research tests/build plus Rust format, check, test, and clippy gates. Its ephemeral GStreamer tree exists only to compile and test the optional integration boundary; CI neither packages nor uploads it.
+- Windows CI runs the Research tests/build plus Rust format, check, test, and clippy gates. It does not qualify installed video playback or data recording.
 - One manual-only matrix builds an unsigned, interface-only Windows x64 NSIS,
   host-native macOS ARM64/x64 DMGs, and a Linux x64 DEB/AppImage pair. Every
   package excludes GStreamer and optional Cargo features; exact artifact

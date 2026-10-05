@@ -59,7 +59,7 @@ test("Windows CI validates the HTML-video desktop boundary without native media 
   assert.match(buildHook, /CARGO_FEATURE_NATIVE_ACQUISITION_WINDOWS/u);
 });
 
-test("the local Windows package is interface-only and excludes the unreviewed GStreamer closure", async () => {
+test("the local Windows package is interface-only without a native media closure", async () => {
   const [packageJson, helper, bundleConfigText, cargoToml, platform, gitignore] = await Promise.all([
     read("package.json"),
     read("scripts/build-unqualified-desktop-package.js"),

@@ -1,5 +1,17 @@
 # Research v1 roadmap
 
+## Four-program WebView pivot — 2026-10-06
+
+The user removed GStreamer and selected Windows WebView video for standard
+Runner. Current source still lacks the run-bound WebView-to-Rust media status
+handoff; `qualifiedStartAvailable` remains false. Planner video catalogue
+attestation also still needs WebView geometry validation. The standalone Planner
+installer and strict VLC recipe intake are source candidates, not installed
+qualification. Flubber VLC execution and FlubberRecorder same-PC control are
+open. Older native-player receipts below describe historical work and cannot
+qualify these four programs. See [16](16-COMPANION-APP-BOUNDARY.md) and
+[30](30-TESTING-AND-RELEASE.md).
+
 ## Web infrastructure — 2026-09-12
 
 The public root provides two icon links to separate permanent `planner/` and

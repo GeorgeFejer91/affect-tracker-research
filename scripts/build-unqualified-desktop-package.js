@@ -77,9 +77,6 @@ function verifyBoundary(target) {
     );
   }
   if (!existsSync(target.config)) fail(`missing Tauri override ${target.config}.`);
-  if (process.env.AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME === "1") {
-    fail("the retired native media runtime gate must not be active.");
-  }
   const suppliedSigningKey = SIGNING_ENVIRONMENT_KEYS.find((key) => process.env[key]);
   if (suppliedSigningKey) fail(`${suppliedSigningKey} must be absent from this unsigned job.`);
 

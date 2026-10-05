@@ -283,7 +283,7 @@ mod catalogue_export_tests {
             let scan = service.rescan_planner_videos(&id).unwrap();
             let item = &scan.stimuli[0];
             // This is a test-only software attestation, not decoded-media or
-            // installed GStreamer evidence. Production receipts stay P1-owned.
+            // Installed playback evidence. Production receipts stay P1-owned.
             let summary = service
                 .attest_native_decode(
                     &id,

@@ -1,5 +1,14 @@
 # Current primary goal and JSON authority — 2026-09-13
 
+## Four-installer playback update — 2026-10-06
+
+The user removed GStreamer and selected Windows WebView video for standard
+Runner. Flubber VLC Runner and same-PC FlubberRecorder remain separate
+installers, with FlubberRecorder also obtaining the independently installable
+player. Standard WebView and Flubber VLC require separate installed playback,
+timing, LSL, and independently read XDF receipts against the shared Runner
+contract. The previous native-player qualification route is retired.
+
 ## Parallel-agent amendment — 2026-10-06
 
 The user authorized ChatDev-style Planner and Runner development in parallel,

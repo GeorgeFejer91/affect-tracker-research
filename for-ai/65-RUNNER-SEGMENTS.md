@@ -1,5 +1,13 @@
 # Experiment Runner agent ledger
 
+## Windows WebView and separate VLC runners — 2026-10-06
+
+R1/RR-04 now targets Windows WebView video for standard Runner. RR-07/08 must
+bind observed playback lifecycle to Rust sampling, LSL, and XDF. A separate
+Flubber VLC Runner consumes the same Planner recipe and Runner data contract.
+Neither is installed-qualified. Earlier Gst-specific entries below are dated
+history and do not authorize restoring that backend.
+
 ## Published master plan immutability — 2026-10-05
 
 R1/RR-03 and RR-10 Backend Verification on

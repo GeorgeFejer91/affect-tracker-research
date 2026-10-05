@@ -127,13 +127,13 @@ test("provenance binds artifact hashes and sets every requested qualification cl
   const helper = await source(PROVENANCE_HELPER_PATH);
 
   assert.match(helper, /"windows-x64"[\s\S]*platform: "windows"[\s\S]*kind: "nsis"/u);
-  assert.match(helper, /AffectResearchUnqualifiedInternalPackageProvenanceV1/u);
+  assert.match(helper, /AffectResearchUnqualifiedInternalPackageProvenanceV2/u);
   assert.match(helper, /status: "unqualified-internal-alpha"/u);
   assert.match(helper, /commit,/u);
   assert.match(helper, /workflowRef,/u);
   assert.match(helper, /byteLength: details\.size/u);
   assert.match(helper, /sha256: await sha256\(path\)/u);
-  for (const claim of ["nativeGstPlay", "lsl", "nativeInput", "installedWorkflow", "timing", "researchReady"]) {
+  for (const claim of ["standardRunnerWebView", "lsl", "nativeInput", "installedWorkflow", "timing", "researchReady"]) {
     assert.match(helper, new RegExp(`${claim}: false`, "u"));
   }
   assert.match(helper, /unsigned: true/u);
