@@ -6,6 +6,7 @@ import { participantCatalogue, participantTimeline, participantPreviewTimeline }
 import { enumerateLanguageRoutesV1 } from "../site/src/research/experiment-package.js";
 import { reconstructPlannerRecipeSelectionV1 } from "../site/src/research/planner-recipe.js";
 import { assertMasterPlanParity, resolveMasterDesktopLayoutProjection } from "../runner/src/master-presentation.js";
+import { masterTimeline } from "../runner/src/master-recipe.js";
 const load = async name => readRunnerRecipe(await readFile(new URL(`./fixtures/${name}.canonical.json`, import.meta.url)));
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} != ${b}`);
 const inside = (box, screen) => box.x >= -1e-8 && box.y >= -1e-8
@@ -41,6 +42,20 @@ test("Runner does not infer allocation and distinguishes every repeated occurren
   assert.equal(a.events[0].payload.presentation.repeatLabelsEvery, 5);
   assert.notEqual(a.events[3].entryId, a.events[4].entryId);
   assert.equal(participantCatalogue(receipt).resolve("p100000"), "P100000");
+});
+
+test("published master plans cannot change after selection", async () => {
+  const receipt = await load("planner-recipe-locations-current-v1");
+  const plan = await resolveRunnerSelection(receipt, "P001", ["both", "en"], "variant-3");
+  const timeline = masterTimeline(plan);
+  const selected = structuredClone(plan.selected);
+  const hash = plan.planIdentitySha256;
+  assert.throws(() => plan.selector.languageSelectionPath.push("other"), TypeError);
+  assert.throws(() => { plan.steps[0].payload.definition.title = "changed"; }, TypeError);
+  assert.throws(() => { plan.selected.feedback.visual.opacity = 0; }, TypeError);
+  assert.equal(plan.planIdentitySha256, hash);
+  assert.deepEqual(plan.selected, selected);
+  assert.deepEqual(masterTimeline(plan), timeline);
 });
 test("Runner preview resolves the selected master version's participant-facing sequence", async () => {
   const receipt = await load("runner-master-v3-owner");

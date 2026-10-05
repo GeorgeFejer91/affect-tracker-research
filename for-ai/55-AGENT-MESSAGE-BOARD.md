@@ -1,5 +1,21 @@
 # Agent message board
 
+## 20261005 Runner master plan immutability
+
+Owner: root; branch `codex/segment-r1-plan-immutability`; isolated worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-plan`; base
+`058694cab918ed9b2e7a65cf1421182124a7f632`. Backend Verification for
+R1/RR-03 and RR-10. The user asked for a first app change alongside ChatDev
+workflow integration and selected the highest-priority bounded open gap.
+`resolveMasterPlan` previously froze only the outer plan object; nested
+selector, selected content and ordered steps could change after its identity
+was computed. This pass detaches and recursively freezes the published plan,
+with a mutation and timeline regression. It does not change recipe JSON,
+selection semantics, Runner recording, GStreamer, package or release readiness.
+The 15 focused master-plan tests passed in the originating isolated worktree
+before this exact patch was transferred to this R1 branch. Root still owns
+integration with the parallel workflow branch and final gate decisions.
+
 ## 20261004 Compartment and JSON handoff catalog
 
 Owner: current task; branch `codex/segment-contracts-compartment-catalog`,

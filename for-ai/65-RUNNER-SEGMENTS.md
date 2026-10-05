@@ -1,5 +1,16 @@
 # Experiment Runner agent ledger
 
+## Published master plan immutability — 2026-10-05
+
+R1/RR-03 and RR-10 Backend Verification on
+`codex/segment-r1-plan-immutability`: the selected master plan now detaches its
+owner-reconstructed content and recursively freezes selector, steps and nested
+payloads after computing the plan identity. A focused regression rejects
+post-selection nested mutation and confirms the timeline stays unchanged.
+This guards the already selected plan; it does not alter saved JSON, allocation,
+recording or native playback. The 15 focused master-plan tests passed. Installed
+correspondence and research qualification remain open under [72](72-RUNNER-FINAL-VALIDATION.md).
+
 
 ## Hidden fullscreen abort — 2026-09-13
 
