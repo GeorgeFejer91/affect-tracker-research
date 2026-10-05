@@ -124,6 +124,30 @@ Face or suite changes from the donor branch. Evidence now: bridge/readiness,
 Runner flow and build checks. Root will reconcile its native identity/CI work
 against this patch before combined verification.
 
+## 20261006-vlc-master-intake — R1/RR-02/03 owner handoff
+
+Owner branch `codex/segment-r1-vlc-master-intake` in the isolated VLC worktree,
+based on `b4a22ba`. Backend Verification pass: strict read-only Planner master1–5
+intake and explicit participant/language/variant selection for the proposed VLC
+Runner. `experiments/vlc-flubber/master-intake.js` delegates to the standard
+Runner's P7 reader and selected-plan resolver; no VLC schema copy, inferred
+allocation, playback, recorder, or remote authority was added. A supported
+master's exact source text/hash and immutable selected video/ISI/form plan are
+returned with `canStart: false`; a Start call rejects until RR-04/07/08/10
+correspondence exists. Historical sidequest input and `ExperimentPackageV1` do
+not alias a Planner master. The old VLC sidequest branch remains intact, and
+the dirty FlubberRecorder worktree was not edited.
+
+Focused `node --test test/research-vlc-master-intake.test.js`: 2 passed, 0
+failed, covering master1–5 parity, source hash, sidequest/package and corrupted
+source rejection, invalid participant/route/variant, missing master5 assets and
+the Start block. Baseline standard Runner master/recipe checks: 11 passed, 0
+failed. These are software contract checks only. Next binary owner should use
+the existing Rust `research_runner_master::PreparedMaster::read` with an
+explicit selected-plan receipt, not implement another master parser. Media
+binding, native playback, configured LSL, XDF reconstruction, installed
+ qualification and same-PC recorder control remain open.
+
 ## 20261005 Runner master plan immutability
 
 Owner: root; branch `codex/segment-r1-plan-immutability`; isolated worktree
