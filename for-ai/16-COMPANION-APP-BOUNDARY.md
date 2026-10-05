@@ -3,7 +3,7 @@
 ## Four-installer amendment — 2026-10-06
 
 The current Windows delivery target is four separate programs/installers:
-Planner, standard GStreamer Runner, Flubber VLC Runner, and remote
+Planner, standard WebView Runner, Flubber VLC Runner, and remote
 FlubberRecorder. Flubber VLC installs alone or as a dependency obtained by the
 FlubberRecorder installer. FlubberRecorder must not require a private bundled
 player copy as its only way to run. This direct user decision supersedes the

@@ -1,10 +1,22 @@
 # Testing and release gates
 
+## Standard Runner WebView qualification amendment — 2026-10-06
+
+The user removed GStreamer and selected Windows WebView video for standard
+Runner. The historical native-media gate below is superseded. Qualification
+requires an exact asset hash and decoded-frame/start receipt, run/step/generation
+fenced playback status, observed end, bounded stall/error handling, and Rust
+ownership of schedule, samples, outbound LSL, and XDF. The installed candidate
+must pass video/ISI/input timing and independent XDF readback with its exact
+artifact identity. Existing browser CSV or unqualified WebView preview receipts
+cannot satisfy these gates. The VLC Runner requires separate installed evidence
+against the same Runner data contract.
+
 ## Four-installer qualification amendment — 2026-10-06
 
 The four Windows installers named in [16](16-COMPANION-APP-BOUNDARY.md) require
 separate exact-artifact build, install, launch, upgrade/uninstall and provenance
-checks. Standard Runner retains the pinned GStreamer actor gates below. Flubber
+checks. Standard Runner follows the WebView gate above. Flubber
 VLC Runner must separately prove the same strict saved-recipe interpretation,
 observed video/ISI/feedback/input behavior, Runner-owned LSL/XDF recording,
 failure/recovery and installed playback with its declared VLC closure.

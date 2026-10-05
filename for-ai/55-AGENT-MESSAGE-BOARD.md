@@ -1,5 +1,39 @@
 # Agent message board
 
+## 20261006 WebView pivot and next parallel allocations
+
+Direct user decision: remove GStreamer from the active project and use Windows
+WebView video for standard Runner. Root reverted the restored Gst actor and JS
+bridge, removed its active CI/config/runtime staging, and preserved the separate
+Planner installer and strict VLC recipe intake on `codex/integration-four-installers`
+at `31fd46f`. The previous Gst restoration allocation below is revoked.
+Whether historical Git refs are to be rewritten remains an unanswered separate
+decision; current implementation does not depend on it.
+
+Stage: Backend Verification. Current pass goal is a truthful WebView authority
+handoff, Planner WebView catalogue compatibility, and executable VLC recipe
+inspection, with source and focused checks now. Installed playback/timing/XDF,
+four installer qualification and release claims remain open. Standard Runner R1
+RR-04 owns `runner/src/html-video-player.js`, `runner/src/app.js`,
+`runner/src/master-protocol.js`, and narrow native media status/worker seams;
+root coordinates shared Tauri registration. Its current HTML identity routes
+desktop to browser CSV, while native MasterWorker still sees an unavailable
+actor. The owner must fence WebView events to exact run, attempt, step, file,
+hash, and generation; Rust remains the sampling/LSL/XDF authority. Do not set
+qualified Start true from source tests.
+
+Planner P1 owns WebView catalogue attestation and geometry in
+`src-tauri/src/research_workspace.rs`, `site/src/research/native-bridge.js`,
+and narrow Planner projection/tests. Current validator accepts Gst-only video
+geometry while its WebView attestation clears display geometry. P1 may add the
+WebView path without changing master JSON or Runner policy. Root owns shared
+contract changes and integration. R1 VLC owns `PreparedMaster::read_file` and
+the read-only player `--inspect-master` intake, using the existing strict
+master1–5 reader and refusing Start. Neither VLC sidequest JSON nor playback
+claims may bypass this gate. All three owners use separate branches/worktrees,
+share contract mismatches via Root, and hand off focused checks. UI, function,
+recording, and packaging review follows integrated patches.
+
 ## 20261006 Four separate Windows programs — first parallel pass
 
 Root integration owner: `codex/integration-four-installers`, worktree

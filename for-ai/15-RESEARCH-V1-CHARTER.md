@@ -1,14 +1,26 @@
 # Affect Tracker Research v1 charter
 
+## Playback amendment — 2026-10-06
+
+The researcher removed GStreamer from this project. Standard Runner now targets
+Windows WebView video. Flubber VLC Runner remains a separate native player.
+Neither existing WebView preview nor a capability label qualifies execution:
+the standard Runner must bind exact media identity and observed playback state
+to its Rust scheduler, sampling, LSL, and XDF authority, then pass installed
+timing and independently checked recording gates. No runtime, SDK, package,
+feature, active source or qualification requirement may reintroduce GStreamer.
+Historical receipts remain dated evidence only. This amendment overrides all
+older native-media requirements below where they conflict.
+
 ## Four-program Windows delivery amendment — 2026-10-06
 
 The researcher now requires four separate Windows installers: Experiment
 Planner, standard Experiment Runner, VLC-based Experiment Runner (Flubber VLC),
 and remote FlubberRecorder. The Flubber VLC player remains independently
 installable; FlubberRecorder's installer also obtains it. This supersedes the
-earlier two-program exclusivity and the statement that every qualified Windows
-Runner must use GStreamer. The standard Runner retains its pinned GStreamer
-target; the VLC Runner is a separately identified playback implementation.
+earlier two-program exclusivity and prior native-media target. The standard
+Runner uses WebView video; the VLC Runner is a separately identified playback
+implementation.
 
 Both Runners consume the same complete Planner master recipe and preserve the
 same Runner-owned recording gates, outbound LSL, XDF and source-bound attempt
