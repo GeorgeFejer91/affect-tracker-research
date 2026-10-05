@@ -1,11 +1,60 @@
 # Native VLC Flubber side quest
 
 Status 2026-10-05: **experimental feasibility probe, historical Flubbercorder
-candidate, and separate Rust player installer candidate**, separate from the
+candidate, separate Rust player installer candidate, and Rust/Tauri runner
+installer candidate**, separate from the
 approved Experiment Planner and Experiment Runner. The user explicitly asked
 for this as an additional project. Passing its checks does not approve it as
 part of the main suite or change P1–P7/R1 requirements, saved recipe formats,
 LSL contracts, recording policy, or release qualification.
+
+## Frame-matched sampling follow-up, 2026-10-05
+
+The separate Rust launcher now probes the source's average frame rate as a
+rational number, converts to constant frame rate at that rate, and passes the
+exact numerator and denominator to the VLC filter. VLC writes one
+`time_s,valence,arousal` CSV row and publishes one two-channel affect LSL
+sample for each decoded frame of the **prepared clip's original-video
+interval**. The five-second lead and two-second tail produce neither affect
+rows nor affect LSL samples. For variable-frame-rate inputs, the rate is the
+source's probed average and FFmpeg may duplicate/drop source frames to form
+the prepared constant-rate clip; the claim is per prepared output frame.
+CSV times are frame index divided by the exact rational rate. XDF keeps the
+independent live LSL clock, so exact CSV/XDF timestamp equality is not claimed.
+
+The standalone no-Python installer candidate is
+`Flubber_VLC_Player_Setup_0.1.0_x64.exe`, 99,654,791 bytes, SHA-256
+`429040EBEC706336BC9F06AE5D1857AF2F2609C7F70D5FF0F029EF54F3B15C10`.
+Its fresh installation passed all seven manifest hashes. A 90-frame
+`30000/1001` synthetic clip yielded exactly 90 VLC time-series CSV rows,
+90 recorded XDF affect samples, and the exact filename Start/Stop markers.
+The CSV ran from 0.000000 to 2.969633 seconds.
+
+The separate no-Python Rust/Tauri NSIS candidate bundles this player, the
+native XDF recorder, the simple JSON and locally held Great Dictator clip.
+The locally installed candidate completed the same 90-frame fractional-rate
+trial with 90 CSV rows, 90 XDF affect samples, and an XDF validated for both
+exact markers. Its SHA-256 is
+`5E03A8A92311ABCDBA8B6FD1DCDA44D2A1AF1941DFF73745DA09D21E01589B5A`.
+An installed full Great Dictator run subsequently completed from this
+candidate. The source has 7,632 frames at 30 fps; VLC saved exactly 7,632
+CSV rows from 0.000000 to 254.366667 seconds. The XDF was promoted only
+after the native recorder confirmed the same affect count, exact
+`dictator-3-study.mp4_Start`/`_Stop` markers, and matching stream footers.
+The first uncached preparation exited early; a direct player preparation
+then succeeded, and the installed Tauri run passed using its cached media.
+The cause of that first conversion failure remains undiagnosed. Installed
+browser-to-native phone control and public release checks remain open. The
+user has stated they have
+redistribution permission for the clip. The old Python prerelease does not
+represent these candidates.
+
+A follow-up native controller check at `30000/1001` used a bounded 5 ms first
+pull on each preview LSL inlet. It received 90 live affect samples and both
+filename markers while the independent XDF recorder captured the same 90
+samples and marker pair. The phone page was inspected at 390 px without
+horizontal overflow; its Start command reached VLC. Installed phone control
+through all transport commands remains a release check.
 
 The user's main playback direction is FFmpeg conversion to a format the player
 can reliably play while preserving the clip's content. The earlier proposed
@@ -26,11 +75,12 @@ focused check completed 180/180 frames at 640x360/60 fps and 72/72 at
 show changing geometry and smooth edges; see the side-quest runbook and
 evidence. This is native SVG rendering at the *video output's pixel size*.
 Display-independent vector composition, full HTML/SVG setting parity,
-input-to-photon latency, and the Rust/Tauri recorder installer remain open.
+input-to-photon latency, and broader Rust/Tauri recorder qualification remain
+open.
 The previous 0.1 public installer is a historical Python-based prototype, not
 the requested new Rust/Tauri distribution.
 
-The separate `Flubber_VLC_Player_Setup_0.1.0_x64.exe` **local candidate** is a
+An earlier `Flubber_VLC_Player_Setup_0.1.0_x64.exe` **local candidate** was a
 99,665,240-byte, no-Python installer with SHA-256
 `FD49103CCB6BF9B2D8D5093A2954D60D4E95B66011118327D2E91EFF81464E78`.
 Its fresh installation verified all seven manifest hashes and had no Python
@@ -94,8 +144,9 @@ JSON run still recorded 300 affect samples. Edge and Chrome rendered the
 default-loaded desktop and narrow layouts without page errors or overflow.
 A full natural completion of the 254-second bundled clip subsequently passed
 with 15,264 matching CSV and XDF affect samples plus both exact XDF markers.
-This candidate has **not been publicly released**: redistribution rights for
-the film clip must be confirmed first.
+That historical candidate was **not publicly released** while redistribution
+rights for the film clip were unconfirmed. The user has since stated they have
+permission, as recorded in the newer section above.
 
 The earlier standalone probe and its receipts follow below.
 

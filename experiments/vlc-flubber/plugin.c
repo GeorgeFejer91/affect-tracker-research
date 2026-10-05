@@ -71,7 +71,7 @@ typedef struct {
     char *start_marker, *stop_marker;
     HANDLE control_handle;
     control_t *control;
-    int panel_percent, step_percent, render_fps, width, video_height, total_height;
+    int panel_percent, step_percent, rate_num, rate_den, width, video_height, total_height;
     double x, y, phase, pointy[N], rounded[N], phase_offset[WAVES], size_offset[WAVES];
     uint64_t frame_count;
     uint64_t blank_run;
@@ -92,7 +92,7 @@ static picture_t *Render(filter_t *, picture_t *);
 static int KeyEvent(vlc_object_t *, const char *, vlc_value_t, vlc_value_t, void *);
 static int OutletOpen(vlc_object_t *);
 static void OutletClose(vlc_object_t *);
-static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "csv", "marker-base", "control-name", "lsl", "sentinel", NULL };
+static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "render-fps-num", "render-fps-den", "csv", "marker-base", "control-name", "lsl", "sentinel", NULL };
 
 vlc_module_begin()
     set_shortname("Flubber")
@@ -108,6 +108,10 @@ vlc_module_begin()
         "Affect key step", "Arrow-key affect step in percent", false)
     add_integer_with_range(PREFIX "render-fps", 60, 1, 240,
         "Converted frame rate", "Constant frame rate of the padded video", false)
+    add_integer_with_range(PREFIX "render-fps-num", 0, 0, 12000000,
+        "Converted frame-rate numerator", "Exact constant frame rate numerator", false)
+    add_integer_with_range(PREFIX "render-fps-den", 1, 1, 100000,
+        "Converted frame-rate denominator", "Exact constant frame rate denominator", false)
     add_savefile(PREFIX "csv", "", "Affect CSV path", "CSV output path", false)
     add_string(PREFIX "marker-base", "video", "Marker video name", "Original video filename for LSL Start/Stop markers", false)
     add_string(PREFIX "control-name", "", "Affect control channel", "Private Windows mapping name for Flubber commands", false)
@@ -204,7 +208,7 @@ static void row(flubber_t *s, const char *event)
     }
     if (s->series_csv && strcmp(event, "sample") == 0) {
         fprintf(s->series_csv, "%.6f,%.6f,%.6f\n",
-                s->frame_count / (double)s->render_fps, s->x, s->y);
+                s->frame_count * s->rate_den / (double)s->rate_num, s->x, s->y);
         fflush(s->series_csv);
     }
     if (s->lsl.library) {
@@ -414,8 +418,14 @@ static int Open(vlc_object_t *object)
         (int)var_CreateGetInteger(f, PREFIX "video-height");
     int step = configured ? config.step_percent :
         (int)clip(var_CreateGetInteger(f, PREFIX "step-percent"), 1, 100);
-    int render_fps = configured ? config.render_fps :
-        (int)clip(var_CreateGetInteger(f, PREFIX "render-fps"), 1, 240);
+    int rate_num = configured ? config.render_fps :
+        (int)var_CreateGetInteger(f, PREFIX "render-fps-num");
+    int rate_den = configured ? 1 :
+        (int)var_CreateGetInteger(f, PREFIX "render-fps-den");
+    if (!rate_num) rate_num = (int)clip(var_CreateGetInteger(f, PREFIX "render-fps"), 1, 240);
+    if (rate_num < 1 || rate_num > 12000000 || rate_den < 1 ||
+        rate_den > 100000 || rate_num / (double)rate_den > 120.0)
+        return VLC_EGENERIC;
     if (height == 0) height = (total_height * 100 / (100 + percent)) & ~1;
     int panel = total_height - height;
     if (height < 64 || (height & 1) || panel < 4 ||
@@ -429,7 +439,8 @@ static int Open(vlc_object_t *object)
     InitializeCriticalSection(&s->lock);
     s->panel_percent = percent;
     s->step_percent = step;
-    s->render_fps = render_fps;
+    s->rate_num = rate_num;
+    s->rate_den = rate_den;
     s->sentinel = configured || var_CreateGetBool(f, PREFIX "sentinel");
     s->width = width;
     s->video_height = height;
@@ -757,9 +768,9 @@ static picture_t *Render(filter_t *f, picture_t *source)
         s->video_ms=0;
         row(s,"video_start");
     } else {
-        s->phase=fmod(s->phase+2.0*PI*(1.5+s->y)/s->render_fps,2.0*PI);
+        s->phase=fmod(s->phase+2.0*PI*(1.5+s->y)*s->rate_den/s->rate_num,2.0*PI);
     }
-    s->video_ms=(int64_t)((s->frame_count*1000 + s->render_fps/2)/s->render_fps);
+    s->video_ms=(int64_t)(s->frame_count*1000.0*s->rate_den/s->rate_num+0.5);
     if (s->lsl.library && s->replay_start_marker &&
         s->lsl.have_consumers(s->lsl.marker_outlet)) {
         const char *label = s->start_marker;

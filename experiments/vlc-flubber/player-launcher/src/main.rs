@@ -42,13 +42,18 @@ struct VideoStream {
     width: u32,
     height: u32,
     r_frame_rate: String,
+    #[serde(default)]
+    avg_frame_rate: String,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FrameRate { num: u32, den: u32 }
 
 struct Geometry {
     width: u32,
     video_height: u32,
     panel_height: u32,
-    fps: u32,
+    rate: FrameRate,
 }
 
 fn parse_args() -> Result<Args> {
@@ -105,15 +110,17 @@ fn value(args: &mut impl Iterator<Item = OsString>, flag: &str) -> Result<OsStri
         .ok_or_else(|| format!("{flag} requires a value").into())
 }
 
-fn parse_fps(rate: &str) -> Result<f64> {
+fn parse_fps(rate: &str) -> Result<FrameRate> {
     let (num, den) = rate.split_once('/').ok_or("Invalid video frame rate")?;
-    let num: f64 = num.parse()?;
-    let den: f64 = den.parse()?;
-    let fps = num / den;
-    if !fps.is_finite() || fps <= 0.0 || fps > 120.0 {
+    let num: u32 = num.parse()?;
+    let den: u32 = den.parse()?;
+    if num == 0 || den == 0 || num > 12_000_000 || den > 100_000 ||
+        num as f64 / den as f64 > 120.0 {
         return Err("Video frame rate must be above zero and at most 120 fps".into());
     }
-    Ok(fps)
+    let (mut a, mut b) = (num, den);
+    while b != 0 { (a, b) = (b, a % b); }
+    Ok(FrameRate { num: num / a, den: den / a })
 }
 
 fn geometry(stream: &VideoStream, panel_percent: u32) -> Result<Geometry> {
@@ -128,7 +135,8 @@ fn geometry(stream: &VideoStream, panel_percent: u32) -> Result<Geometry> {
     let width = (stream.width + 1) & !1;
     let video_height = (stream.height + 1) & !1;
     let panel_height = (video_height * panel_percent).div_ceil(200) * 2;
-    let fps = 60_u32.max(parse_fps(&stream.r_frame_rate)?.ceil() as u32);
+    let rate = parse_fps(&stream.avg_frame_rate)
+        .or_else(|_| parse_fps(&stream.r_frame_rate))?;
     if (width as u64) * (panel_height as u64) * 4 > 64 * 1024 * 1024
         || video_height + panel_height > 8192
     {
@@ -138,7 +146,7 @@ fn geometry(stream: &VideoStream, panel_percent: u32) -> Result<Geometry> {
         width,
         video_height,
         panel_height,
-        fps,
+        rate,
     })
 }
 
@@ -150,7 +158,7 @@ fn probe(ffprobe: &Path, video: &Path) -> Result<VideoStream> {
             "-select_streams",
             "v:0",
             "-show_entries",
-            "stream=width,height,r_frame_rate",
+            "stream=width,height,r_frame_rate,avg_frame_rate",
             "-of",
             "json",
         ])
@@ -208,14 +216,14 @@ fn prepare_video(
         .ok_or("Video filename is unavailable")?;
     let hash = sha256_prefix(source)?;
     let output = media_dir.join(format!(
-        "{stem}-{hash}-p{panel_percent}-f{}-lead5-tail2-v1.mkv",
-        geometry.fps
+        "{stem}-{hash}-p{panel_percent}-f{}-{}-lead5-tail2-v2.mkv",
+        geometry.rate.num, geometry.rate.den
     ));
     if output.is_file() {
         let existing = probe(ffprobe, &output)?;
         if existing.width == geometry.width
             && existing.height == geometry.video_height + geometry.panel_height
-            && parse_fps(&existing.r_frame_rate)?.round() as u32 == geometry.fps
+            && parse_fps(&existing.r_frame_rate)? == geometry.rate
         {
             return Ok((output, geometry));
         }
@@ -226,7 +234,7 @@ fn prepare_video(
     let temporary = media_dir.join(format!("{stem}-{hash}-{}.partial.mkv", std::process::id()));
     let filter = format!(
         "fps={},pad={}:{}:0:0:black,drawbox=x=0:y={}:w=4:h=4:color=white:t=fill,tpad=start_duration=5:start_mode=add:stop_duration=2:stop_mode=add",
-        geometry.fps,
+        format!("{}/{}", geometry.rate.num, geometry.rate.den),
         geometry.width,
         geometry.video_height + geometry.panel_height,
         geometry.video_height
@@ -275,7 +283,7 @@ fn prepare_video(
     let verified = probe(ffprobe, &temporary)?;
     if verified.width != geometry.width
         || verified.height != geometry.video_height + geometry.panel_height
-        || parse_fps(&verified.r_frame_rate)?.round() as u32 != geometry.fps
+        || parse_fps(&verified.r_frame_rate)? != geometry.rate
     {
         return Err("FFmpeg output did not match the requested Flubber layout".into());
     }
@@ -415,7 +423,8 @@ fn run() -> Result<()> {
             ])
             .arg(format!("--flubber-panel-percent={panel}"))
             .arg(format!("--flubber-video-height={}", geometry.video_height))
-            .arg(format!("--flubber-render-fps={}", geometry.fps))
+            .arg(format!("--flubber-render-fps-num={}", geometry.rate.num))
+            .arg(format!("--flubber-render-fps-den={}", geometry.rate.den))
             .arg(format!("--flubber-step-percent={step}"))
             .arg(format!("--flubber-marker-base={filename}"))
             .arg(format!("--flubber-csv={}", csv.display()));
@@ -508,7 +517,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{geometry, parse_fps, VideoStream};
+    use super::{geometry, parse_fps, FrameRate, VideoStream};
 
     #[test]
     fn converts_fractional_rate_and_preserves_even_layout() {
@@ -516,6 +525,7 @@ mod tests {
             width: 641,
             height: 361,
             r_frame_rate: "30000/1001".into(),
+            avg_frame_rate: "30000/1001".into(),
         };
         let result = geometry(&source, 25).unwrap();
         assert_eq!(
@@ -523,9 +533,9 @@ mod tests {
                 result.width,
                 result.video_height,
                 result.panel_height,
-                result.fps
+                result.rate
             ),
-            (642, 362, 92, 60)
+            (642, 362, 92, FrameRate { num: 30000, den: 1001 })
         );
         assert!(parse_fps("0/0").is_err());
     }

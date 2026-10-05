@@ -4,11 +4,23 @@ The [Flubbercorder 0.1 runner](flubbercorder/README.md) is a historical
 Python-based prototype. The requested replacement remains two separate
 installers: a standalone native VLC player and a Rust/Tauri HTML recorder and
 controller. This runbook covers the native player plugin and its current
-feasibility evidence. The separate Rust standalone player installer is a local
-candidate; the Rust/Tauri Flubbercorder installer remains open.
+feasibility evidence. Separate local installer candidates now exist for the
+Rust standalone player and Rust/Tauri Flubbercorder; broader installed and
+release qualification remains open.
 See [standalone player instructions](PLAYER-README.md) for the new installer
 and Rust launcher. The older `run.ps1` instructions below document the
 development probe.
+
+The current Rust launcher uses the source's probed average frame rate,
+preserving fractional rates such as `30000/1001`, and converts to that
+constant rate. The VLC filter writes one time-series CSV row and sends one
+affect LSL sample per decoded frame during the original-video interval. Its
+CSV times are calculated from the frame index and rational rate. A
+variable-rate source is sampled at its average rate during conversion, so
+source frames may be duplicated or dropped. A fresh installed test of the
+Rust player and Rust/Tauri recorder produced 90 CSV rows and 90 XDF affect
+samples for a 90-frame `30000/1001` clip, with exact filename Start/Stop
+markers. See [side-quest status](../../for-ai/74-VLC-FLUBBER-SIDE-QUEST.md).
 
 This is an experimental VLC 3.0.20 video-filter plugin for Windows x64. It is
 separate from Experiment Planner and Experiment Runner and is not an approved
@@ -123,7 +135,8 @@ time-series rows and a final video-end event.
 
 The earlier [LSL loopback receipt](evidence/lsl-loopback.json) and
 [C-raster frames](evidence/frame-000.png) are historical checks of the
-pre-SVG plugin. LSL loopback on the new SVG build remains to be repeated.
+pre-SVG plugin. The newer installed Rust player and recorder loopback is
+reported above and in [side-quest status](../../for-ai/74-VLC-FLUBBER-SIDE-QUEST.md).
 
 ## Current limits
 
@@ -142,5 +155,6 @@ pre-SVG plugin. LSL loopback on the new SVG build remains to be repeated.
 - LSL affect samples emitted before a receiver connects are held for at most
   1024 frames. A receiver that joins much later can miss early samples; the
   start marker is replayed to the first receiver with its original clock time.
-- This is not a research-qualified player, an XDF recorder, a packaged VLC
-  installer, or an approved main-suite integration.
+- This development probe is not a research-qualified player or an approved
+  main-suite integration. Separate packaged player and recorder candidates
+  are documented above; their installed results do not qualify research use.

@@ -8,68 +8,86 @@
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Flubbercorder</h1>
-    <span id="role"></span>
+  <header class="topbar">
+    <div><h1>Flubbercorder</h1><span class="subtitle">VLC experiment side project</span></div>
+    <div class="top-status"><span id="role"></span><span id="connection-indicator" class="indicator">Connecting</span></div>
   </header>
-  <main>
-    <section id="setup" aria-labelledby="setup-title">
-      <h2 id="setup-title">Experiment</h2>
-      <p id="demo-hint" hidden>Great Dictator demo loaded. Select Prepare video and recorder, then Start.</p>
-      <label for="recipe-path">Experiment JSON path</label>
-      <div class="path-row">
-        <input id="recipe-path" type="text" autocomplete="off" spellcheck="false">
-        <button type="button" data-action="load" class="fit">Load</button>
+  <main class="workspace">
+    <div class="left-column">
+      <section id="connection" class="segment" aria-labelledby="connection-title" hidden>
+        <div class="segment-head"><h2 id="connection-title">Player connection</h2></div>
+        <div class="segment-body">
+          <p>Pair with the standalone Flubber VLC player on the trusted local network.</p>
+          <label for="player-link">Player pairing link</label>
+          <input id="player-link" type="text" autocomplete="off" spellcheck="false">
+          <button type="button" data-action="connect" class="fit">Connect player</button>
+          <p id="player-status" class="muted"></p>
+        </div>
+      </section>
+      <section id="player-pair" class="segment" aria-labelledby="player-pair-title" hidden>
+        <div class="segment-head"><h2 id="player-pair-title">Remote recorder pairing</h2></div>
+        <div class="segment-body">
+          <p>Copy this link into Flubbercorder on the experimenter computer.</p>
+          <div class="path-row"><input id="player-pair-link" type="text" readonly spellcheck="false"><button id="copy-player" type="button" class="fit">Copy</button></div>
+          <p class="muted">Keep this link private. It grants control over this player on the local network.</p>
+        </div>
+      </section>
+      <section id="setup" class="segment" aria-labelledby="setup-title">
+        <div class="segment-head"><h2 id="setup-title">Experiment setup</h2><span class="segment-index">01</span></div>
+        <div class="segment-body">
+          <p id="demo-hint" hidden>Great Dictator demo loaded. Prepare the video, then start recording.</p>
+          <label for="recipe-path">Experiment JSON path</label>
+          <div class="path-row"><input id="recipe-path" type="text" autocomplete="off" spellcheck="false"><button type="button" data-action="load" class="fit">Load</button></div>
+          <button type="button" data-action="prepare" id="prepare-button" class="fit wide">Prepare player and recorder</button>
+          <dl class="compact-facts">
+            <div><dt>Video</dt><dd id="video">—</dd></div>
+            <div><dt>Flubber height</dt><dd id="ratio">—</dd></div>
+            <div><dt>Required streams</dt><dd id="required-streams">—</dd></div>
+          </dl>
+        </div>
+      </section>
+      <section id="files" class="segment" aria-labelledby="files-title">
+        <div class="segment-head"><h2 id="files-title">Recording files</h2><span class="segment-index">02</span></div>
+        <div class="segment-body">
+          <dl class="compact-facts">
+            <div><dt>Recorder</dt><dd id="recorder">Not started</dd></div>
+            <div><dt>XDF</dt><dd id="xdf">—</dd></div>
+            <div><dt>VLC fallback CSV</dt><dd id="csv">—</dd></div>
+          </dl>
+        </div>
+      </section>
+      <section id="phone-section" class="segment" aria-labelledby="phone-title">
+        <div class="segment-head"><h2 id="phone-title">Phone control</h2></div>
+        <div class="segment-body">
+          <p>Hand control to a phone on a trusted local network.</p>
+          <div class="controls"><button type="button" data-action="give_phone" class="fit">Give control</button><button type="button" data-action="revoke_phone" class="fit">Revoke</button></div>
+          <p id="phone-status" class="muted"></p>
+          <a id="phone-link" href="#" hidden>Open pairing link</a>
+          <button id="copy-phone" type="button" class="fit" hidden>Copy phone link</button>
+        </div>
+      </section>
+    </div>
+    <section id="signals-panel" class="segment" aria-labelledby="signals-title">
+      <div class="segment-head"><div><h2 id="signals-title">LSL streams</h2><p class="muted">Live discovery and recorder subscriptions</p></div><span class="segment-index">03</span></div>
+      <div class="segment-body signals-body">
+        <div class="stream-summary"><span id="streams">Scanning streams</span><span id="subscriptions">No subscriptions</span><span id="first-data">Waiting for data</span></div>
+        <div id="stream-list" class="stream-list" aria-live="polite"></div>
+        <section class="viewer" aria-labelledby="viewer-title">
+          <div class="viewer-head"><h3 id="viewer-title">Live affect</h3><span id="affect">Waiting for samples</span></div>
+          <div class="plot-legend"><span class="legend-valence">Valence</span><span class="legend-arousal">Arousal</span><span>Recent 10 seconds</span></div>
+          <svg id="affect-plot" viewBox="0 0 600 200" preserveAspectRatio="none" role="img" aria-label="Recent valence and arousal LSL samples">
+            <path class="grid-line" d="M0 25H600 M0 100H600 M0 175H600 M150 0V200 M300 0V200 M450 0V200"/>
+            <path id="valence-line" class="valence-line" d=""/>
+            <path id="arousal-line" class="arousal-line" d=""/>
+          </svg>
+        </section>
+        <section class="marker-view" aria-labelledby="marker-title"><h3 id="marker-title">Video markers</h3><ol id="marker-list"><li>Waiting for video</li></ol><span id="markers" class="sr-only"></span></section>
       </div>
-      <button type="button" data-action="prepare" class="fit">Prepare video and recorder</button>
     </section>
-
-    <section aria-labelledby="session-title">
-      <h2 id="session-title">Session</h2>
-      <dl class="facts">
-        <div><dt>Status</dt><dd id="phase">Connecting</dd></div>
-        <div><dt>Video</dt><dd id="video">—</dd></div>
-        <div><dt>Panel ratio</dt><dd id="ratio">—</dd></div>
-        <div><dt>LSL affect</dt><dd id="affect">Waiting for samples</dd></div>
-        <div><dt>Recorder</dt><dd id="recorder">Not started</dd></div>
-      </dl>
-      <p id="error" role="alert"></p>
-      <div class="controls">
-        <button type="button" data-action="start" class="primary fit">Start</button>
-        <button type="button" data-action="pause" class="fit">Pause</button>
-        <button type="button" data-action="resume" class="fit">Resume</button>
-        <button type="button" data-action="stop" class="fit">Stop</button>
-      </div>
-      <div class="pad" role="group" aria-label="Affect controls">
-        <button type="button" data-action="up" class="fit up">Arousal +</button>
-        <button type="button" data-action="left" class="fit left">Valence −</button>
-        <button type="button" data-action="right" class="fit right">Valence +</button>
-        <button type="button" data-action="down" class="fit down">Arousal −</button>
-      </div>
-    </section>
-
-    <section aria-labelledby="signals-title">
-      <h2 id="signals-title">Signals and files</h2>
-      <dl class="facts">
-        <div><dt>LSL streams</dt><dd id="streams">—</dd></div>
-        <div><dt>Recorder subscriptions</dt><dd id="subscriptions">—</dd></div>
-        <div><dt>First data</dt><dd id="first-data">—</dd></div>
-        <div><dt>Video markers</dt><dd id="markers">—</dd></div>
-        <div class="local"><dt>XDF</dt><dd id="xdf">—</dd></div>
-        <div class="local"><dt>VLC fallback CSV</dt><dd id="csv">—</dd></div>
-      </dl>
-    </section>
-
-    <section id="phone-section" aria-labelledby="phone-title">
-      <h2 id="phone-title">Phone control</h2>
-      <p>Opt in on a trusted local network. Open the pairing link on the phone.</p>
-      <div class="controls">
-        <button type="button" data-action="give_phone" class="fit">Give phone control</button>
-        <button type="button" data-action="revoke_phone" class="fit">Revoke phone control</button>
-      </div>
-      <p id="phone-status"></p>
-      <a id="phone-link" href="#" hidden>Open pairing link</a>
-      <button id="copy-phone" type="button" class="fit" hidden>Copy pairing link</button>
+    <section id="session" class="segment action-bar" aria-labelledby="session-title">
+      <div class="session-state"><h2 id="session-title">Experiment control</h2><span id="phase">Connecting</span><p id="error" role="alert"></p></div>
+      <div class="transport controls"><button type="button" data-action="start" class="primary fit">Start</button><button type="button" data-action="pause" class="fit">Pause</button><button type="button" data-action="resume" class="fit">Resume</button><button type="button" data-action="stop" class="fit">Stop</button></div>
+      <div class="pad" role="group" aria-label="Affect controls"><button type="button" data-action="left" class="fit">Valence −</button><button type="button" data-action="right" class="fit">Valence +</button><button type="button" data-action="down" class="fit">Arousal −</button><button type="button" data-action="up" class="fit">Arousal +</button></div>
     </section>
   </main>
 </body>

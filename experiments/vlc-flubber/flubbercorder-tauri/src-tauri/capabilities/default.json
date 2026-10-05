@@ -1,0 +1,6 @@
+{
+  "identifier": "experimenter",
+  "description": "Local Flubbercorder window",
+  "windows": ["experimenter"],
+  "permissions": ["core:default"]
+}

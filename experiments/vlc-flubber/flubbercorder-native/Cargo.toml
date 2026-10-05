@@ -1,0 +1,12 @@
+[package]
+name = "flubbercorder-native"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "Rust experiment controller for the separate VLC Flubber side project"
+
+[dependencies]
+labstream = "0.1.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"

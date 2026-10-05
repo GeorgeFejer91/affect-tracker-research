@@ -1,5 +1,21 @@
 # Agent message board
 
+## 20261005 VLC side quest frame-matched sampling and Rust/Tauri candidate
+
+Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,
+isolated side-project worktree; stage: Backend Verification. Scope remains
+`experiments/vlc-flubber/` and [74](74-VLC-FLUBBER-SIDE-QUEST.md), outside
+P1–P7/R1. The Rust launcher now preserves the source average frame rate as
+an exact rational rate for constant-rate preparation. The VLC native filter
+uses that rate for animation phase and CSV frame times. Fresh installed
+standalone and bundled Rust/Tauri sessions each recorded 90 affect samples
+and 90 CSV rows from a `30000/1001` 90-frame clip, with exact filename
+Start/Stop XDF markers. The installed bundled film then completed at 30 fps,
+with 7,632 CSV rows and an XDF promoted after matching count and marker
+validation. Both installer candidates remain local. Remote phone control
+and public release checks remain open. Main Planner/Runner source and
+contracts remain untouched.
+
 ## 20261005 Native SVG VLC Flubber and standalone time series
 
 Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,
