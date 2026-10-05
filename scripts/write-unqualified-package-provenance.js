@@ -104,6 +104,17 @@ async function identifyArtifacts(target) {
   return identities;
 }
 
+async function identifyPlannerCli() {
+  const path = resolve("src-tauri/target/planner-sidecars/affect-planner-cli-x86_64-pc-windows-msvc.exe");
+  const details = await stat(path);
+  if (!details.isFile() || details.size <= 0) fail("staged Planner CLI is missing or empty.");
+  return {
+    installedFileName: "affect-planner-cli.exe",
+    byteLength: details.size,
+    sha256: await sha256(path),
+  };
+}
+
 const { targetName, target, outputPath } = parseArguments();
 if (process.platform !== target.nodePlatform || process.arch !== target.nodeArch) {
   fail(`target ${targetName} does not match host ${process.platform}/${process.arch}.`);
@@ -163,6 +174,7 @@ const receipt = {
     researchReady: false,
   },
   artifacts,
+  ...(targetName === "windows-x64" ? { plannerCli: await identifyPlannerCli() } : {}),
   notice:
     "Workflow artifact only. This unsigned package is for internal interface evaluation and is not a supported download, qualified experiment build, or research-ready release.",
 };

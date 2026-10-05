@@ -93,15 +93,34 @@ test("platform overrides exclude the Windows runtime and select only requested b
   const linux = JSON.parse(await source("src-tauri/tauri.bundle-linux-unqualified.conf.json"));
 
   assert.deepEqual(windows.bundle.targets, ["nsis"]);
+  assert.equal(windows.mainBinaryName, "Experiment Planner");
   assert.deepEqual(macos.bundle.targets, ["dmg"]);
   assert.deepEqual(linux.bundle.targets, ["deb", "appimage"]);
   assert.deepEqual(windows.bundle.resources, []);
+  assert.deepEqual(windows.bundle.externalBin, ["target/planner-sidecars/affect-planner-cli"]);
   assert.deepEqual(macos.bundle.resources, []);
   assert.deepEqual(linux.bundle.resources, []);
+  assert.equal(macos.bundle.externalBin, undefined);
+  assert.equal(linux.bundle.externalBin, undefined);
   assert.equal(linux.bundle.linux.appimage.bundleMediaFramework, false);
   assert.match(windows.bundle.longDescription, /HTML-compatible video path/iu);
   assert.match(macos.bundle.longDescription, /not qualified/iu);
   assert.match(linux.bundle.longDescription, /not qualified/iu);
+});
+
+test("Windows package stages the embedded Planner CLI without granting WebView process access", async () => {
+  const helper = await source(BUILD_HELPER_PATH);
+  const provenance = await source(PROVENANCE_HELPER_PATH);
+  const manifest = await source("src-tauri/Cargo.toml");
+  const app = await source("src-tauri/src/lib.rs");
+
+  assert.match(helper, /build-planner-cli\.js", "--release", "--no-default-features"/u);
+  assert.match(helper, /affect-planner-cli-x86_64-pc-windows-msvc\.exe/u);
+  assert.match(provenance, /plannerCli: await identifyPlannerCli\(\)/u);
+  assert.match(provenance, /installedFileName: "affect-planner-cli\.exe"/u);
+  assert.match(provenance, /sha256: await sha256\(path\)/u);
+  assert.doesNotMatch(manifest, /tauri-plugin-shell/u);
+  assert.doesNotMatch(app, /tauri_plugin_shell/u);
 });
 
 test("provenance binds artifact hashes and sets every requested qualification claim false", async () => {

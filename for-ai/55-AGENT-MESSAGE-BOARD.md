@@ -85,6 +85,25 @@ The two owners must send contract mismatches to Root and each other. Review
 wave after patches: UI, function, recording and packaging reports, each
 separating source inspection from installed/physical observations.
 
+## 20261006 P7 standalone Planner installer handoff
+
+Owner: Planner agent, `codex/segment-p7-planner-installer` from `b4a22ba` in
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-installer`.
+Backend Verification; P7-04/05/09, CLI-P7 and CLI-SHARED packaging seam.
+The Windows NSIS path now names Experiment Planner as the main binary and
+bundles the existing embedded Planner CLI as a target-suffixed external binary.
+The package provenance records its exact staged SHA-256 and byte length.
+No Planner JSON, CLI protocol, Runner authority, Cargo feature, shell permission
+or other platform bundle changes are included.
+
+`pnpm surveyjs:check`, 20 focused packaging/Planner file tests, and
+`pnpm desktop:build` passed. The native NSIS build, fresh installation,
+installed CLI Open/edit/Save, video inspection and research qualification
+remain open; this machine's C: drive has less than 1 GiB available. Root owns
+integration, installed validation and release decisions. The other three
+Windows installers need distinct application identifiers and install paths;
+ Planner retains its existing identifier.
+
 ## 20261005 Runner master plan immutability
 
 Owner: root; branch `codex/segment-r1-plan-immutability`; isolated worktree
