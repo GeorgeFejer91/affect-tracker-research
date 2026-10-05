@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 const userCargo = resolve(process.env.CARGO_HOME ?? resolve(homedir(), ".cargo"), "bin", process.platform === "win32" ? "cargo.exe" : "cargo");
 const cargo = process.env.CARGO ?? (existsSync(userCargo) ? userCargo : "cargo");
 const options = new Set(process.argv.slice(2));
-if ([...options].some(option => !["--run", "--release"].includes(option))) throw new Error("Use --run and/or --release only.");
+if ([...options].some(option => !["--run", "--release", "--native-gstreamer"].includes(option))) throw new Error("Use --run, --release and/or --native-gstreamer only.");
 const env = { ...process.env, TAURI_CONFIG: readFileSync(resolve(root, "src-tauri/tauri.runner.conf.json"), "utf8") };
 function run(command, args) {
   const result = spawnSync(command, args, { cwd: root, env, stdio: "inherit", windowsHide: true });
@@ -19,4 +19,4 @@ function run(command, args) {
 }
 run(process.execPath, [resolve(require.resolve("vite/package.json"), "../bin/vite.js"), "build", "--config", "runner/vite.config.js"]);
 run(process.execPath, ["scripts/verify-runner-build.js"]);
-run(cargo, [options.has("--run") ? "run" : "build", "--manifest-path", "src-tauri/Cargo.toml", "--locked", "--bin", "affect-runner", "--features", "tauri/custom-protocol", ...(options.has("--release") ? ["--release"] : [])]);
+run(cargo, [options.has("--run") ? "run" : "build", "--manifest-path", "src-tauri/Cargo.toml", "--locked", "--bin", "affect-runner", "--features", options.has("--native-gstreamer") ? "tauri/custom-protocol,native-gstreamer" : "tauri/custom-protocol", ...(options.has("--release") ? ["--release"] : [])]);
