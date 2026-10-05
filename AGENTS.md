@@ -64,6 +64,12 @@ invariants.
 
 Each implementation pass owns one allocated segment. Follow the separate-branch,
 isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.
+For requested parallel or cross-app development, use the project
+[`Codex development team` skill](./for-ai/skills/affect-chatdev-codex/SKILL.md)
+to delegate Planner, Runner, and verification roles with explicit message
+barriers. The ChatDev YAML runner is optional; Codex can coordinate these roles
+directly without a separate model API key. This routing does not change segment
+ownership or qualification gates.
 Read matching entries and update `for-ai/55-AGENT-MESSAGE-BOARD.md` for ownership,
 cross-segment suggestions, dependencies, and compatibility issues; messages never override
 the user or charter. Do not edit another segment opportunistically.

@@ -54,7 +54,9 @@ CLI and SurveyJS extend that baseline. Correspondence is now allocated by
 [69](69-CLI-RUNNER-END-TO-END-GOAL.md) and
 [72](72-RUNNER-FINAL-VALIDATION.md); blanket Runner deferral is historical.
 Full native execution, geometry/timing and independent real-session XDF
-verification remain open. Root owns current Runner closure; no delegation.
+verification remain open. Root owns Runner integration, installed validation
+and release. The [2026-10-06 amendment](72-RUNNER-FINAL-VALIDATION.md#parallel-agent-amendment--2026-10-06)
+permits bounded R1 implementation and verification delegation in Codex.
 Do not reactivate historical owner tasks from old board assignments.
 
 Determine source checkout/branch from Git. At audit start the canonical branch
@@ -74,6 +76,8 @@ validation availability and controller override execution.
 | Planner or Runner text-bearing UI | [Project Uncodixfy Pretext skill](skills/uncodixfy-pretext/SKILL.md), its [Pretext reference](skills/uncodixfy-pretext/references/pretext.md), and the [accordion stretch reference](skills/uncodixfy-pretext/references/accordion-stretch.md) for requested bounded panels; [source pin](skills/uncodixfy-pretext/SOURCE.md) |
 | Optional XR authoring | [63](63-P6-XR-LAYOUT.md); desktop Runner cannot execute XR |
 | Build / qualification | Relevant [40](40-ROADMAP.md) receipts, [72](72-RUNNER-FINAL-VALIDATION.md), [73](73-CURRENT-APP-BUILD.md) |
+| Parallel Planner/Runner development in Codex | [Codex development team skill](skills/affect-chatdev-codex/SKILL.md), using existing owner contracts and gates |
+| Optional external ChatDev 2.0 runner | [74](74-CHATDEV-DEVELOPMENT.md), using the same role boundaries |
 | Historical context | [05](05-PROJECT-METADATA.md), [10](10-PRODUCT-REQUIREMENTS.md), [45](45-FUTURE-AGENT-CHECKLIST.md), [61](61-IMPLEMENTATION-AUDIT.md), [62](62-PLANNER-CLOSURE-PLAN.md), [64](64-SEGMENT-VISUAL-AUDIT.md), [67](67-PLANNER-COMPLETION-GOAL.md) |
 
 The [old entrypoint](../docs/history/00-READ-FIRST-2026-09-13.md) is preserved

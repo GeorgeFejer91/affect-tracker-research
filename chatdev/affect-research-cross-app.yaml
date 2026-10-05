@@ -1,0 +1,283 @@
+version: 0.4.0
+vars: {}
+graph:
+  id: affect_research_cross_app_development
+  description: Parallel Planner and Runner proposals with shared compatibility and four independent gate reviews.
+  start: [Scope]
+  end: [Handoff]
+  nodes:
+    - id: Scope
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Read SESSION.md, the staged rules, the user's task and current source.
+          Allocate one exact Planner P1-P7 segment with checklist IDs and one
+          Runner R1/RR seam with checklist IDs. Name each owner's allowed paths,
+          the versioned shared contract, stage, bounded outputs and evidence.
+          If either app lacks an authorized target, say BLOCKED. Do not edit.
+          Begin with SCOPE and give distinct PLANNER and RUNNER allocations.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+
+    - id: PlannerOwner
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Own only SCOPE's assigned Planner segment. Compare intended function,
+          inputs and JSON contribution with staged source. Save a repository-
+          relative unified diff as planner.patch and rationale/checks as
+          planner-report.md. Edit no Runner or shared contract file unless SCOPE
+          explicitly names the shared seam. Never edit staged inputs or the
+          repository. If blocked, report why without inventing a patch.
+          Begin with PLANNER_OWNER and list touched paths.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+
+    - id: RunnerOwner
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Own only SCOPE's assigned Runner R1/RR seam. Compare intended
+          function, inputs and outputs with staged source. Save a repository-
+          relative unified diff as runner.patch and rationale/checks as
+          runner-report.md. Do not edit Planner or shared contract files unless
+          SCOPE explicitly names the shared seam. Never edit staged inputs or
+          the repository. If blocked, report why without inventing a patch.
+          Begin with RUNNER_OWNER and list touched paths.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+
+    - id: CompatibilitySync
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Receive PLANNER_OWNER and RUNNER_OWNER messages in either order.
+          Require both and inspect planner.patch and runner.patch. Report BLOCKED
+          if either is missing, paths overlap without an explicit shared seam,
+          or the producer/consumer JSON contract disagrees. Otherwise give one
+          shared compatibility brief to all verification agents. Do not edit.
+          Begin with COMPATIBILITY_SYNC.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+
+    - id: UIVerifier
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Independently review both proposed app changes for visible controls,
+          accessibility, state transitions, and Planner/Runner presentation.
+          Specify rendered browser and installed checks still required. Static
+          inspection is not a visual receipt. Do not edit. Begin with UI_VERIFY
+          and give a pass or fail with paths and lines.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+
+    - id: FunctionVerifier
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Independently review both patches for exact inputs, validation,
+          strict readers, deterministic behavior, producer/consumer parity and
+          focused automated checks. Do not claim tests were run. Do not edit.
+          Begin with FUNCTION_VERIFY and give a pass or fail with paths/lines.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+
+    - id: RecordingGate
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Independently review Runner-owned sampling, observed timestamps,
+          outbound LSL, XDF own/external streams, incomplete receipts, privacy
+          and recovery boundaries affected by either patch. List exact software
+          and physical gates; never infer recording qualification from source.
+          Do not edit. Begin with RECORDING_GATE and give a pass or fail.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+
+    - id: PackagingGate
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Independently review two-program entrypoints, Windows installer,
+          Chrome/Edge static delivery, native runtime provenance and release
+          claims touched by either patch. Keep unsupported targets closed.
+          Source inspection is not installed qualification. Do not edit.
+          Begin with PACKAGING_GATE and give a pass or fail.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+
+    - id: PlannerRevision
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Require UI_VERIFY, FUNCTION_VERIFY, RECORDING_GATE and PACKAGING_GATE
+          messages, in any order. Respond to findings about the Planner patch.
+          Revise only planner.patch and planner-report.md where staged evidence
+          supports a fix; otherwise say BLOCKED. Do not change Runner's patch,
+          staged inputs or the repository. Begin with PLANNER_REVISION.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+
+    - id: RunnerRevision
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Require UI_VERIFY, FUNCTION_VERIFY, RECORDING_GATE and PACKAGING_GATE
+          messages, in any order. Respond to findings about the Runner patch.
+          Revise only runner.patch and runner-report.md where staged evidence
+          supports a fix; otherwise say BLOCKED. Do not change Planner's patch,
+          staged inputs or the repository. Begin with RUNNER_REVISION.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+
+    - id: IntegrationReview
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Require PLANNER_REVISION and RUNNER_REVISION messages, inspect both
+          final patches, and check path separation plus the producer/consumer
+          contract. Report BLOCKED for missing reports, unresolved gates or
+          unsupported claims. Give exact order and checks for the root owner
+          to apply and verify in isolated segment worktrees. Do not edit.
+          Begin with INTEGRATION_REVIEW.
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+
+    - id: Handoff
+      type: agent
+      context_window: -1
+      config:
+        provider: openai
+        name: ${CHATDEV_MODEL}
+        api_key: ${API_KEY}
+        role: |
+          Give the root owner both proposal paths, all four gate verdicts,
+          compatibility findings, runnable checks and outstanding installed
+          evidence. Mark ready for git apply --check only when INTEGRATION_REVIEW
+          passed. ChatDev proposals are not commits, builds or qualification.
+          Begin with HANDOFF.
+
+  edges:
+    - {from: Scope, to: PlannerOwner, keep_message: true}
+    - {from: Scope, to: RunnerOwner, keep_message: true}
+    - {from: PlannerOwner, to: CompatibilitySync, keep_message: true}
+    - {from: RunnerOwner, to: CompatibilitySync, keep_message: true}
+    - {from: CompatibilitySync, to: UIVerifier, keep_message: true}
+    - {from: CompatibilitySync, to: FunctionVerifier, keep_message: true}
+    - {from: CompatibilitySync, to: RecordingGate, keep_message: true}
+    - {from: CompatibilitySync, to: PackagingGate, keep_message: true}
+    - {from: UIVerifier, to: PlannerRevision, keep_message: true}
+    - {from: UIVerifier, to: RunnerRevision, keep_message: true}
+    - {from: FunctionVerifier, to: PlannerRevision, keep_message: true}
+    - {from: FunctionVerifier, to: RunnerRevision, keep_message: true}
+    - {from: RecordingGate, to: PlannerRevision, keep_message: true}
+    - {from: RecordingGate, to: RunnerRevision, keep_message: true}
+    - {from: PackagingGate, to: PlannerRevision, keep_message: true}
+    - {from: PackagingGate, to: RunnerRevision, keep_message: true}
+    - {from: PlannerRevision, to: IntegrationReview, keep_message: true}
+    - {from: RunnerRevision, to: IntegrationReview, keep_message: true}
+    - {from: IntegrationReview, to: Handoff, keep_message: true}
