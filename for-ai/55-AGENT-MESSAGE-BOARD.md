@@ -8,7 +8,9 @@ Root integration owner: `codex/integration-four-installers`, worktree
 four independently available installers: Experiment Planner, standard
 Experiment Runner, VLC-based Experiment Runner, and remote FlubberRecorder.
 FlubberRecorder additionally obtains the VLC player; the VLC player is also
-available on its own. The VLC Runner shares the standard Runner's saved recipe,
+available on its own. FlubberRecorder controls the custom player on the same
+PC only; LAN and internet control are out of scope. The VLC Runner shares the
+standard Runner's saved recipe,
 session recording gates, outbound LSL and XDF contract. The exact downloadable
 VLC component and remote authority are being audited before their source
 allocation. This is a direct product amendment; prior two-program and
@@ -72,9 +74,10 @@ ISIs and forms. Reject unsupported execution until the actual player and XDF
 pipeline match that plan. Existing `flubbercorder-experiment/v1` and
 `vlc-flubber-sidequest/v1` remain historical sidequest inputs, never a silent
 alias for the Planner master. Evidence now: focused intake/parity/rejection
-tests and a source-backed list of still unsupported actions. Remote network
+tests and a source-backed list of still unsupported actions. Local process
 control and the FlubberRecorder installer dependency are separately allocated
-passes; plaintext bearer-link prototype tests cannot qualify remote control.
+passes; plaintext bearer-link prototype tests cannot qualify the requested
+same-PC companion.
 
 Cross-owner handoff: Planner exports exact saved JSON plus declared assets;
 both Runner variants consume the same immutable source and selected plan.

@@ -13,9 +13,10 @@ target; the VLC Runner is a separately identified playback implementation.
 Both Runners consume the same complete Planner master recipe and preserve the
 same Runner-owned recording gates, outbound LSL, XDF and source-bound attempt
 evidence. Neither may silently substitute playback backends or reinterpret
-saved JSON. FlubberRecorder is a separate remote companion of Flubber VLC; its
-remote authority, installation dependency and any recording role must be
-explicitly versioned and verified before qualification. The old VLC sidequest
+saved JSON. FlubberRecorder is a separate same-PC companion of Flubber VLC;
+its local control authority, installation dependency and any recording role
+must be explicitly defined and verified before qualification. LAN and internet
+control are outside this request. The old VLC sidequest
 JSON and its installer builds do not establish recipe compatibility or release
 readiness. Existing Windows, browser, safety, privacy and claim-specific gates
 remain; each new installer requires exact installed-artifact evidence.

@@ -2,7 +2,7 @@
 
 The 2026-10-06 user amendment expands Windows delivery to four separate
 installers: Experiment Planner, standard Experiment Runner, VLC-based Experiment
-Runner (the Flubber VLC player), and remote FlubberRecorder. FlubberRecorder's
+Runner (the Flubber VLC player), and same-PC FlubberRecorder. FlubberRecorder's
 installer also obtains the separately installable Flubber VLC player. Both
 Runner variants must consume the same Planner recipe and preserve the same
 Runner-owned recording gates, outbound LSL, and XDF evidence contract. See

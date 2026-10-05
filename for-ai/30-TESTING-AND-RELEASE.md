@@ -7,9 +7,10 @@ separate exact-artifact build, install, launch, upgrade/uninstall and provenance
 checks. Standard Runner retains the pinned GStreamer actor gates below. Flubber
 VLC Runner must separately prove the same strict saved-recipe interpretation,
 observed video/ISI/feedback/input behavior, Runner-owned LSL/XDF recording,
-failure/recovery and installed playback with its declared VLC closure. Remote
-FlubberRecorder must prove the bounded paired protocol, dependency download
-integrity, disconnect/reconnect and authority behavior on installed artifacts.
+failure/recovery and installed playback with its declared VLC closure.
+FlubberRecorder must prove bounded same-PC process/control authority,
+dependency download integrity, disconnect/reconnect and shutdown behavior on
+installed artifacts. No LAN or internet controller is in this scope.
 No passing standard-Runner receipt transfers to VLC or FlubberRecorder, and no
 historic VLC sidequest build is current qualification evidence.
 
