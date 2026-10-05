@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import { waitForNativeMediaReadiness, NATIVE_MEDIA_STARTUP_BUDGET_MS } from "../site/src/research/native-media-readiness.js";
 
 const ready = {
-  backend: "html-video",
-  api: "webview-video",
-  defaultPlaybackMode: "unqualifiedWebview",
-  requiredForQualifiedRun: false,
-  runtimeIntegrityVerified: false,
-  playerActorReady: false,
+  backend: "gstreamer-gstplay",
+  api: "gstplay",
+  defaultPlaybackMode: "nativeGstPlay",
+  requiredForQualifiedRun: true,
+  runtimeIntegrityVerified: true,
+  playerActorReady: true,
   qualifiedStartAvailable: false,
 };
 test("cold startup can finish after one minute within the original command limit", async () => {
@@ -18,9 +18,9 @@ test("cold startup can finish after one minute within the original command limit
   assert.equal(NATIVE_MEDIA_STARTUP_BUDGET_MS, 90_000);
   assert.ok(NATIVE_MEDIA_STARTUP_BUDGET_MS < 120_000);
 });
-test("startup observes pending phase and returns exact HTML video capability", async () => {
+test("startup observes pending phase and returns ready GstPlay capability", async () => {
   const values = [{ reasonCode: "native-runtime-verification-pending" },
-    { reasonCode: "native-player-startup-pending" }, ready];
+    { reasonCode: "native-gstplay-startup-pending" }, ready];
   let reads = 0;
   assert.equal(await waitForNativeMediaReadiness({ readCapability: async () => values[reads++] }), ready);
   assert.equal(reads, 3);
@@ -58,7 +58,7 @@ test("abort and disposal interrupt a pending capability RPC", async () => {
 test("deadline remains absolute across pending observations", async () => {
   let clock = 0, reads = 0;
   await assert.rejects(waitForNativeMediaReadiness({ deadline: 10, now: () => clock,
-    readCapability: async () => { reads++; clock = 11; return { reasonCode: "native-player-startup-pending" }; },
+    readCapability: async () => { reads++; clock = 11; return { reasonCode: "native-gstplay-startup-pending" }; },
   }), /timed out/u);
   assert.equal(reads, 1);
 });
