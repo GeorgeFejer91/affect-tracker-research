@@ -1,5 +1,12 @@
 # Current project entrypoint
 
+The 2026-10-06 user amendment in [15](15-RESEARCH-V1-CHARTER.md) and
+[16](16-COMPANION-APP-BOUNDARY.md) expands Windows delivery to four separate
+installers: Planner, standard Runner, Flubber VLC Runner, and FlubberRecorder.
+Both Runners share one Planner recipe and Runner evidence contract. Earlier
+two-program wording in this entrypoint describes the original boundary and
+does not narrow the new delivery target.
+
 Updated 2026-09-13; audit base `32c7c2d`. This is the current instruction
 router. Historical receipts retain their original source and date.
 

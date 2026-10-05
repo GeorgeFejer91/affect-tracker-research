@@ -1,5 +1,24 @@
 # Planner and Runner companion programs
 
+## Four-installer amendment — 2026-10-06
+
+The current Windows delivery target is four separate programs/installers:
+Planner, standard GStreamer Runner, Flubber VLC Runner, and remote
+FlubberRecorder. Flubber VLC installs alone or as a dependency obtained by the
+FlubberRecorder installer. FlubberRecorder must not require a private bundled
+player copy as its only way to run. This direct user decision supersedes the
+two-program count below while preserving the two purposes of authoring and
+running an experiment.
+
+The two Runner variants share strict Planner master1–5 readers and the same
+selected sequence, session recording gates, outbound LSL and XDF information
+stream. The playback backend and its installed provenance are explicit attempt
+evidence. FlubberRecorder interfaces with Flubber VLC through a bounded remote
+contract; it cannot silently become a second recipe, playback, timing or
+recording authority. Its existing `flubbercorder-experiment/v1` input is not a
+substitute for the Planner master recipe. Contract, dependency, installed,
+remote and data evidence remain open until implemented and tested.
+
 ## Planner CLI extension — 2026-09-12
 
 The subsequent user request authorizes CLI access to Planner settings, saved-JSON

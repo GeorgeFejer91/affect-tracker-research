@@ -1,5 +1,25 @@
 # Affect Tracker Research v1 charter
 
+## Four-program Windows delivery amendment — 2026-10-06
+
+The researcher now requires four separate Windows installers: Experiment
+Planner, standard Experiment Runner, VLC-based Experiment Runner (Flubber VLC),
+and remote FlubberRecorder. The Flubber VLC player remains independently
+installable; FlubberRecorder's installer also obtains it. This supersedes the
+earlier two-program exclusivity and the statement that every qualified Windows
+Runner must use GStreamer. The standard Runner retains its pinned GStreamer
+target; the VLC Runner is a separately identified playback implementation.
+
+Both Runners consume the same complete Planner master recipe and preserve the
+same Runner-owned recording gates, outbound LSL, XDF and source-bound attempt
+evidence. Neither may silently substitute playback backends or reinterpret
+saved JSON. FlubberRecorder is a separate remote companion of Flubber VLC; its
+remote authority, installation dependency and any recording role must be
+explicitly versioned and verified before qualification. The old VLC sidequest
+JSON and its installer builds do not establish recipe compatibility or release
+readiness. Existing Windows, browser, safety, privacy and claim-specific gates
+remain; each new installer requires exact installed-artifact evidence.
+
 ## Questionnaire asset amendment — 2026-09-13
 
 Direct user approval changes fresh Planner saves to a master5 manifest and

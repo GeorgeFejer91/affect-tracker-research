@@ -1,5 +1,16 @@
 # Affect Research agent entrypoint
 
+The 2026-10-06 user amendment expands Windows delivery to four separate
+installers: Experiment Planner, standard Experiment Runner, VLC-based Experiment
+Runner (the Flubber VLC player), and remote FlubberRecorder. FlubberRecorder's
+installer also obtains the separately installable Flubber VLC player. Both
+Runner variants must consume the same Planner recipe and preserve the same
+Runner-owned recording gates, outbound LSL, and XDF evidence contract. See
+[`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
+This supersedes the two-program and GStreamer-only exclusivity below; standard
+Runner's pinned GStreamer target remains. No VLC or remote release qualification
+is inferred from historical sidequest builds.
+
 The 2026-09-12 user amendment requires two separate companion programs. Read
 [`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
 Planner authors JSON and retains Flubber previews. Runner alone executes, plays

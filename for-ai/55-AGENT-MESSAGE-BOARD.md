@@ -58,6 +58,24 @@ session contract. Evidence now: actor/runtime verifier tests, feature compile,
 focused lifecycle bridge tests and Windows CI. Keep qualified Start false until
 installed playback and research gates pass; no new unsafe boundary.
 
+Flubber VLC intake allocation: R1 primary, RR-02 strict saved-recipe intake
+and RR-03 selected-plan correspondence. Owner uses a new
+`codex/segment-r1-vlc-master-intake` branch in the clean
+`C:/Users/gfeje/.codex/worktrees/vlc-flubber-sidequest/affect-tracker-research`
+worktree from merged main, preserving the old sidequest branch ref. The dirty
+`flubbercorder` worktree and its uncommitted Python/native experiments are
+untouched. Selectively bring in only the needed VLC player/recorder source
+under `experiments/vlc-flubber/`; do not merge the sidequest branch wholesale.
+Intended function: use the existing strict Runner master1–5 contract and shared
+fixtures to bind exact JSON bytes/hash, selected variant/language, videos,
+ISIs and forms. Reject unsupported execution until the actual player and XDF
+pipeline match that plan. Existing `flubbercorder-experiment/v1` and
+`vlc-flubber-sidequest/v1` remain historical sidequest inputs, never a silent
+alias for the Planner master. Evidence now: focused intake/parity/rejection
+tests and a source-backed list of still unsupported actions. Remote network
+control and the FlubberRecorder installer dependency are separately allocated
+passes; plaintext bearer-link prototype tests cannot qualify remote control.
+
 Cross-owner handoff: Planner exports exact saved JSON plus declared assets;
 both Runner variants consume the same immutable source and selected plan.
 The two owners must send contract mismatches to Root and each other. Review
