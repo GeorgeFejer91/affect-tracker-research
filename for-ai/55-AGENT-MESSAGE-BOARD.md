@@ -1,5 +1,69 @@
 # Agent message board
 
+## 20261006 Four separate Windows programs — first parallel pass
+
+Root integration owner: `codex/integration-four-installers`, worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-chatdev`, base
+`b4a22ba2272d6f5a6b4050ceab65e4ea8488c5d7`. The researcher requests
+four independently available installers: Experiment Planner, standard
+Experiment Runner, VLC-based Experiment Runner, and remote FlubberRecorder.
+FlubberRecorder additionally obtains the VLC player; the VLC player is also
+available on its own. The VLC Runner shares the standard Runner's saved recipe,
+session recording gates, outbound LSL and XDF contract. The exact downloadable
+VLC component and remote authority are being audited before their source
+allocation. This is a direct product amendment; prior two-program and
+GStreamer-only text is historical where it conflicts.
+
+Stage: Backend Verification. Current pass goal: restore one bounded standard
+Runner playback seam and package Planner as its own program while VLC and
+FlubberRecorder source/contract audit proceeds. Root owns shared contract,
+integration, installed evidence and release decisions. Focused source, native
+and packaging checks are due now; installed media, independent XDF, timing,
+accessibility and release claims remain open. The old `codex/p7-windows-suite`
+combines two applications into one FFmpeg-based installer and must not be
+merged wholesale. Current `main` has no native GstPlay actor and the D: drive
+named in historical installed receipts is unavailable here.
+
+Planner allocation: P7 primary, P7-04/05/09 with CLI-P7/CLI-SHARED handoff.
+Owner uses a new `codex/segment-p7-planner-installer` branch in the clean
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-installer` worktree
+from the merged main base, preserving its former suite branch ref. Intended
+function: a standalone unsigned
+Planner NSIS containing the Planner and embedded Planner CLI, retaining strict
+master5 Save/Open and questionnaire asset readback. Allowed source:
+`scripts/build-unqualified-desktop-package.js`,
+`scripts/build-planner-cli.js`, the Planner Tauri bundle configuration, and
+focused packaging tests/docs; coordinate any shared manifest or build-script
+touch with Root. The Planner still authors the same canonical JSON and owns no
+Runner session or recording policy. Evidence now: locked SurveyJS check,
+focused Planner/packaging tests, build closure and exact installed-file/CLI
+receipt when a build host has capacity. Media and research qualification stay
+open. Do not mark unrelated CLI/E2E catalogue rows complete.
+
+Standard Runner allocation: R1 primary, RR-04 native playback with RR-07
+playback-to-sampling lifecycle dependency. Owner uses a new
+`codex/segment-r1-gst-restore` branch in the clean
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-plan`
+worktree from the merged main base, preserving the merged plan branch ref.
+Intended function: restore only the pinned optional GstPlay actor
+and runtime verifier from `codex/r1-native-gst-restore` as a source donor,
+preserving the two approved FFI adapters byte-for-byte. Allowed source:
+`src-tauri/Cargo.toml`/lock/build script,
+`src-tauri/native-media/` runtime manifests/staging,
+`src-tauri/src/research_native_media.rs` and its owned media modules,
+`src-tauri/src/research_workspace.rs`, and focused native tests. Root owns
+shared JS bridge, Runner app/adapter, packaging and CI integration. The
+consumer remains the same strict Planner recipe and Runner-owned LSL/XDF
+session contract. Evidence now: actor/runtime verifier tests, feature compile,
+focused lifecycle bridge tests and Windows CI. Keep qualified Start false until
+installed playback and research gates pass; no new unsafe boundary.
+
+Cross-owner handoff: Planner exports exact saved JSON plus declared assets;
+both Runner variants consume the same immutable source and selected plan.
+The two owners must send contract mismatches to Root and each other. Review
+wave after patches: UI, function, recording and packaging reports, each
+separating source inspection from installed/physical observations.
+
 ## 20261005 Runner master plan immutability
 
 Owner: root; branch `codex/segment-r1-plan-immutability`; isolated worktree
