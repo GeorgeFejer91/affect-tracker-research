@@ -22,7 +22,7 @@ test("Research production builds have closed, Research-only input boundaries", a
   assert.doesNotMatch(pages, /vendor|overlay\.html|study\.html|webxr/iu);
 });
 
-test("Windows CI checks the pinned GstPlay feature while interface-only packages exclude its runtime", async () => {
+test("Windows CI validates the HTML-video desktop boundary without native media runtime staging", async () => {
   const [checksWorkflow, packageWorkflow, buildHook, cargoToml] = await Promise.all([
     read(".github/workflows/desktop.yml"),
     read(".github/workflows/desktop-release.yml"),
@@ -43,10 +43,9 @@ test("Windows CI checks the pinned GstPlay feature while interface-only packages
     "Compile native Research tests with all features",
     "Lint native Research backend",
   ]) {
-    assert.match(checksWorkflow, new RegExp(`- name: ${step}\\n\\s+env:[\\s\\S]*?run: \\|`, "u"));
+    assert.match(checksWorkflow, new RegExp(`- name: ${step}\\n\\s+run: cargo`, "u"));
   }
-  assert.match(checksWorkflow, /prepare-gstreamer-windows-ci\.ps1/u);
-  assert.match(checksWorkflow, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "1"/u);
+  assert.doesNotMatch(checksWorkflow, /prepare-gstreamer|GSTREAMER|native-gstreamer|gstreamer-runtime|native-media\/runtime|PATH =/iu);
   assert.doesNotMatch(packageWorkflow, /prepare-gstreamer|--all-features|GSTREAMER|native-gstreamer|native-media\/runtime/iu);
   assert.doesNotMatch(checksWorkflow, /tauri build|bundle\/nsis|upload-artifact|desktop:bundle|write-gstreamer-artifact-provenance/iu);
   assert.match(packageWorkflow, /build-unqualified-desktop-package\.js \$\{\{ matrix\.target \}\}/u);
@@ -55,8 +54,8 @@ test("Windows CI checks the pinned GstPlay feature while interface-only packages
   assert.match(packageWorkflow, /bundle\/nsis\/\*\.exe/u);
   assert.doesNotMatch(packageWorkflow, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME:\s*"1"|write-gstreamer-artifact-provenance|native-media\/runtime\/gstreamer/iu);
 
-  assert.match(buildHook, /CARGO_FEATURE_NATIVE_GSTREAMER/u);
-  assert.match(cargoToml, /native-gstreamer/u);
+  assert.doesNotMatch(buildHook, /REQUIRE_NATIVE_MEDIA_RUNTIME|CARGO_FEATURE_NATIVE_GSTREAMER|native-gstreamer|GSTREAMER/iu);
+  assert.doesNotMatch(cargoToml, /native-gstreamer|gstreamer|gstreamer-play|gstreamer-pbutils|async-channel/iu);
   assert.match(buildHook, /CARGO_FEATURE_NATIVE_ACQUISITION_WINDOWS/u);
 });
 

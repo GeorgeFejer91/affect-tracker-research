@@ -77,14 +77,7 @@ pub fn research_desktop_identity(
         version: 1,
         program: *role,
         build_commit: env!("AFFECT_TRACKER_BUILD_COMMIT"),
-        playback_surface: match *role {
-            DesktopRole::Runner
-                if cfg!(all(target_os = "windows", feature = "native-gstreamer")) =>
-            {
-                "nativeGstPlay"
-            }
-            _ => "htmlVideo",
-        },
+        playback_surface: "htmlVideo",
         suite: DesktopSuiteStatus {
             schema: "affect-research-desktop-suite",
             version: 1,
