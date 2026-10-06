@@ -35,6 +35,14 @@ editor works while idle or during playback. **Cancel** leaves the current
 settings alone. Recorder-controlled `--arm` sessions disable this menu entry
 because the Recorder owns those experiment values.
 
+**Flubber → Load settings from JSON...** opens the same in-player editor with a
+file path field. Paste an absolute path to a `vlc-flubber-sidequest/v1` JSON
+file, then select **Load JSON** or press Enter in the path field. Both values
+are validated together and applied to the running player immediately. The
+loaded values last for this session unless you select **Save as default**.
+Experiment Planner and Flubbercorder experiment JSON files have different
+contracts and are rejected by this player settings loader.
+
 Place `<video stem>.flubber.json` beside a video or in that presets folder to
 override the default. An adjacent preset wins over the shared folder; explicit
 `--panel-percent` and `--step-percent` arguments win over both. A Recorder

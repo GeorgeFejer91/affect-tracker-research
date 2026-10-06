@@ -1,5 +1,33 @@
 # Agent message board
 
+## 20261006 VLC JSON settings audit and hotload
+
+Owner: root; branch `codex/segment-vlc-json-hotload`; isolated worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-vlc-json`; base
+`fd21f18` (native Flubber menu). Backend Verification under the separate VLC
+side quest in `for-ai/74`, outside P1–P7/R1. Audit the current main Planner
+recipe policy/P1–P6 against the side quest's `flubbercorder-experiment/v1` and
+`vlc-flubber-sidequest/v1` contracts. Add a native menu JSON load path that
+validates before applying player-owned settings to the live window; preserve
+Recorder-controlled `--arm` authority and existing preset precedence. No
+Planner recipe reader/editor, Runner scheduler, questionnaire, variant, LSL/XDF
+or recording-policy changes are allocated. User clarification of the intended
+JSON scope is pending; common menu/path UI and audit are independent.
+Baseline `cargo fmt --check` and two Rust tests passed in the isolated worktree.
+The source audit is in `experiments/vlc-flubber/SETTINGS-AUDIT.md`. The bounded
+implementation accepts `vlc-flubber-sidequest/v1` JSON through the native menu,
+validates both effective values, and hot-applies panel height and arrow step.
+It rejects full Planner and Flubbercorder experiment JSON rather than silently
+field-picking; the user's format choice remains pending. Three focused Rust
+tests, clippy with the three pre-existing lint categories excluded, release
+build, and a hidden process check of the staged standalone and armed player
+passed. The staged `FlubberVLC.exe` SHA-256 is
+`457F574A6E58AD86CB24174A93D7045D1582735F2078628BB3E8D224B493E7F7`.
+Foreground visual inspection, video-in-progress UI behavior, and broader
+Planner/Runner correspondence remain open.
+The older idle review player was closed and the exact staged player was opened
+for researcher inspection; no foreground controls were exercised by the agent.
+
 ## 20261006 VLC Flubber menu settings
 
 Owner: root; branch `codex/segment-vlc-flubber-menu`; isolated worktree

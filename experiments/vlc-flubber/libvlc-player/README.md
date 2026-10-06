@@ -56,6 +56,14 @@ command-line values retain startup precedence. Recorder-controlled `--arm`
 sessions disable the menu entry so experiment settings stay under Recorder
 control.
 
+**Flubber → Load settings from JSON...** focuses an in-window absolute-path
+field. Load JSON (or Enter in that field) reads a `vlc-flubber-sidequest/v1`
+preset, validates the complete effective panel and step values, and applies
+both immediately without restarting VLC or changing the saved default.
+Unsupported JSON schemas and invalid values leave the current player settings
+unchanged. The full Planner and Flubbercorder experiment files are separate
+contracts; their other fields are not interpreted by this settings loader.
+
 `cargo build --release --bins` also builds `probe.exe`. Start that receiver
 before playback to check 30 Hz delivery and the filename markers. For bounded
 local runs, set `FLUBBER_TEST_EXIT_MS` to 1000–30000. The prototype's window

@@ -6,11 +6,11 @@ use libloading::Library;
 use serde::Deserialize;
 use std::collections::VecDeque;
 use std::env;
-use std::ffi::{c_char, c_int, c_void, CString, OsStr};
+use std::ffi::{c_char, c_int, c_void, CString, OsStr, OsString};
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::net::TcpListener;
-use std::os::windows::ffi::OsStrExt;
+use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::path::{Path, PathBuf};
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -39,17 +39,17 @@ use windows_sys::Win32::UI::HiDpi::{
     GetDpiForWindow, SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
 };
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
-    SetFocus, VK_DOWN, VK_ESCAPE, VK_LEFT, VK_RIGHT, VK_SPACE, VK_UP,
+    SetFocus, VK_DOWN, VK_ESCAPE, VK_LEFT, VK_RETURN, VK_RIGHT, VK_SPACE, VK_UP,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreateMenu, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyMenu,
     DestroyWindow, DispatchMessageW, GetClientRect, GetMessageW, GetWindowLongPtrW,
     GetWindowTextLengthW, GetWindowTextW, IsDialogMessageW, MoveWindow, PostMessageW,
     PostQuitMessage, RegisterClassW, SendMessageW, SetWindowLongPtrW, SetWindowPos, SetWindowTextW,
-    ShowWindow, TranslateMessage, BS_DEFPUSHBUTTON, CW_USEDEFAULT, ES_NUMBER, GWLP_USERDATA,
-    GWL_STYLE, HMENU, MF_GRAYED, MF_POPUP, MF_STRING, MSG, SWP_FRAMECHANGED, SWP_NOZORDER,
-    SWP_SHOWWINDOW, SW_HIDE, SW_SHOW, WM_APP, WM_CLOSE, WM_COMMAND, WM_DESTROY, WM_KEYDOWN,
-    WM_PAINT, WM_SETFONT, WM_SIZE, WNDCLASSW, WS_BORDER, WS_CHILD, WS_CLIPCHILDREN,
+    ShowWindow, TranslateMessage, BS_DEFPUSHBUTTON, CW_USEDEFAULT, ES_AUTOHSCROLL, ES_NUMBER,
+    GWLP_USERDATA, GWL_STYLE, HMENU, MF_GRAYED, MF_POPUP, MF_STRING, MSG, SWP_FRAMECHANGED,
+    SWP_NOZORDER, SWP_SHOWWINDOW, SW_HIDE, SW_SHOW, WM_APP, WM_CLOSE, WM_COMMAND, WM_DESTROY,
+    WM_KEYDOWN, WM_PAINT, WM_SETFONT, WM_SIZE, WNDCLASSW, WS_BORDER, WS_CHILD, WS_CLIPCHILDREN,
     WS_OVERLAPPEDWINDOW, WS_POPUP, WS_TABSTOP, WS_VISIBLE,
 };
 
@@ -62,6 +62,9 @@ const ID_FLUBBER_SETTINGS: u16 = 1001;
 const ID_PANEL_INPUT: u16 = 1002;
 const ID_STEP_INPUT: u16 = 1003;
 const ID_SAVE_DEFAULT: u16 = 1004;
+const ID_LOAD_SETTINGS: u16 = 1005;
+const ID_JSON_PATH: u16 = 1006;
+const ID_JSON_LOAD: u16 = 1007;
 const ID_APPLY: u16 = 1;
 const ID_CANCEL: u16 = 2;
 
@@ -858,6 +861,9 @@ struct SettingsControls {
     step_label: HWND,
     step_input: HWND,
     step_range: HWND,
+    json_label: HWND,
+    json_path: HWND,
+    json_load: HWND,
     apply: HWND,
     save: HWND,
     cancel: HWND,
@@ -920,6 +926,14 @@ impl SettingsControls {
                 ID_STEP_INPUT,
             )?,
             step_range: add("STATIC", "1–100%", 0, 0)?,
+            json_label: add("STATIC", "Settings JSON file", 0, 0)?,
+            json_path: add(
+                "EDIT",
+                "",
+                WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL as u32,
+                ID_JSON_PATH,
+            )?,
+            json_load: add("BUTTON", "Load JSON", WS_TABSTOP, ID_JSON_LOAD)?,
             apply: add(
                 "BUTTON",
                 "Apply",
@@ -932,7 +946,7 @@ impl SettingsControls {
         })
     }
 
-    fn all(&self) -> [HWND; 11] {
+    fn all(&self) -> [HWND; 14] {
         [
             self.title,
             self.panel_label,
@@ -941,6 +955,9 @@ impl SettingsControls {
             self.step_label,
             self.step_input,
             self.step_range,
+            self.json_label,
+            self.json_path,
+            self.json_load,
             self.apply,
             self.save,
             self.cancel,
@@ -980,10 +997,19 @@ impl SettingsControls {
                 width - hint_left - px(24),
                 px(22),
             ),
-            (self.apply, left, top + px(111), px(80), px(28)),
-            (self.save, left + px(92), top + px(111), px(130), px(28)),
-            (self.cancel, left + px(234), top + px(111), px(80), px(28)),
-            (self.status, left, top + px(149), width - px(48), px(20)),
+            (self.json_label, left, top + px(110), width - px(48), px(22)),
+            (self.json_path, left, top + px(133), width - px(154), px(26)),
+            (
+                self.json_load,
+                width - px(118),
+                top + px(133),
+                px(94),
+                px(26),
+            ),
+            (self.apply, left, top + px(174), px(80), px(28)),
+            (self.save, left + px(92), top + px(174), px(130), px(28)),
+            (self.cancel, left + px(234), top + px(174), px(80), px(28)),
+            (self.status, left, top + px(210), width - px(48), px(20)),
         ];
         for (handle, x, y, w, h) in positions {
             // SAFETY: All controls are owned by this UI thread and parent.
@@ -1017,6 +1043,27 @@ fn edit_percent(edit: HWND, min: u32, max: u32) -> Result<u32> {
     let copied = unsafe { GetWindowTextW(edit, buffer.as_mut_ptr(), buffer.len() as i32) };
     let value = String::from_utf16(&buffer[..copied as usize])?;
     parse_percent(&value, min, max)
+}
+
+fn edit_json_path(edit: HWND) -> Result<PathBuf> {
+    // SAFETY: The edit control is live on this UI thread during the callback.
+    let length = unsafe { GetWindowTextLengthW(edit) };
+    if !(1..=32_767).contains(&length) {
+        return Err("Enter an absolute JSON file path".into());
+    }
+    let mut buffer = vec![0_u16; length as usize + 1];
+    // SAFETY: The buffer has room for the current text and its terminator.
+    let copied = unsafe { GetWindowTextW(edit, buffer.as_mut_ptr(), buffer.len() as i32) } as usize;
+    let text = if copied >= 2 && buffer[0] == b'"' as u16 && buffer[copied - 1] == b'"' as u16 {
+        &buffer[1..copied - 1]
+    } else {
+        &buffer[..copied]
+    };
+    let path = PathBuf::from(OsString::from_wide(text));
+    if !path.is_absolute() {
+        return Err("Enter an absolute JSON file path".into());
+    }
+    Ok(path)
 }
 
 fn save_default_preset(folder: &Path, panel_percent: u32, step_percent: u32) -> Result<()> {
@@ -1063,6 +1110,7 @@ fn create_player_menu(recorder_controlled: bool) -> Result<HMENU> {
     }
     let tab = wide(OsStr::new("Flubber"));
     let item = wide(OsStr::new("Settings..."));
+    let load_item = wide(OsStr::new("Load settings from JSON..."));
     // SAFETY: AppendMenuW copies both temporary strings, and ownership of the
     // popup transfers to the menu after its successful append.
     let item_added = unsafe {
@@ -1073,8 +1121,17 @@ fn create_player_menu(recorder_controlled: bool) -> Result<HMENU> {
             item.as_ptr(),
         )
     } != 0;
+    let load_added = item_added
+        && unsafe {
+            AppendMenuW(
+                flubber,
+                MF_STRING | if recorder_controlled { MF_GRAYED } else { 0 },
+                ID_LOAD_SETTINGS as usize,
+                load_item.as_ptr(),
+            )
+        } != 0;
     let tab_added =
-        item_added && unsafe { AppendMenuW(menu, MF_POPUP, flubber as usize, tab.as_ptr()) } != 0;
+        load_added && unsafe { AppendMenuW(menu, MF_POPUP, flubber as usize, tab.as_ptr()) } != 0;
     if !tab_added {
         unsafe {
             DestroyMenu(flubber);
@@ -1126,7 +1183,7 @@ impl App {
         let dpi = unsafe { GetDpiForWindow(hwnd) }.max(1);
         let preferred_video_height = height * 100 / (100 + self.panel_percent as i32);
         let video_height = if self.settings_open {
-            preferred_video_height.min((height - (180 * dpi as i32 / 96)).max(1))
+            preferred_video_height.min((height - (240 * dpi as i32 / 96)).max(1))
         } else {
             preferred_video_height
         };
@@ -1176,6 +1233,48 @@ impl App {
         controls.show(true);
         // SAFETY: The visible edit belongs to this player window.
         unsafe { SetFocus(controls.panel_input) };
+    }
+
+    fn open_json_settings(&mut self, hwnd: HWND) {
+        self.open_settings(hwnd);
+        if self.settings_open {
+            if let Some(controls) = &self.settings_controls {
+                // SAFETY: The JSON path edit is a live child of this window.
+                unsafe { SetFocus(controls.json_path) };
+            }
+        }
+    }
+
+    fn load_json_settings(&mut self, hwnd: HWND) {
+        if !self.settings_open || self.recorder_controlled {
+            return;
+        }
+        let Some(controls) = &self.settings_controls else {
+            return;
+        };
+        let result =
+            edit_json_path(controls.json_path).and_then(|path| load_player_settings(&path));
+        let (panel_percent, step_percent) = match result {
+            Ok(settings) => settings,
+            Err(error) => {
+                controls.status(&format!("Could not load JSON: {error}"));
+                return;
+            }
+        };
+        self.panel_percent = panel_percent;
+        self.step_percent = step_percent;
+        self.layout(hwnd);
+        let Some(controls) = &self.settings_controls else {
+            return;
+        };
+        let panel = wide(OsStr::new(&panel_percent.to_string()));
+        let step = wide(OsStr::new(&step_percent.to_string()));
+        // SAFETY: Both edit controls outlive the synchronous text update.
+        unsafe {
+            SetWindowTextW(controls.panel_input, panel.as_ptr());
+            SetWindowTextW(controls.step_input, step.as_ptr());
+        }
+        controls.status("JSON settings applied to this session.");
     }
 
     fn close_settings(&mut self, hwnd: HWND) {
@@ -1509,6 +1608,8 @@ unsafe extern "system" fn window_proc(
                 unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
                 match (wparam & 0xffff) as u16 {
                     ID_FLUBBER_SETTINGS if lparam == 0 => app.open_settings(hwnd),
+                    ID_LOAD_SETTINGS if lparam == 0 => app.open_json_settings(hwnd),
+                    ID_JSON_LOAD => app.load_json_settings(hwnd),
                     ID_APPLY => app.apply_settings(hwnd, false),
                     ID_SAVE_DEFAULT => app.apply_settings(hwnd, true),
                     ID_CANCEL => app.close_settings(hwnd),
@@ -1569,6 +1670,32 @@ struct Preset {
     step_percent: Option<u32>,
 }
 
+fn read_preset(path: &Path) -> Result<Preset> {
+    if fs::metadata(path)?.len() > 64 * 1024 {
+        return Err("Flubber settings JSON exceeds 64 KiB".into());
+    }
+    let bytes = fs::read(path)?;
+    let value: serde_json::Value = serde_json::from_slice(&bytes)?;
+    if value.get("schema").and_then(serde_json::Value::as_str) != Some("vlc-flubber-sidequest/v1") {
+        return Err("Use a vlc-flubber-sidequest/v1 settings JSON file".into());
+    }
+    let settings: Preset = serde_json::from_slice(&bytes)?;
+    if settings.schema != "vlc-flubber-sidequest/v1" {
+        return Err("Use a vlc-flubber-sidequest/v1 settings JSON file".into());
+    }
+    Ok(settings)
+}
+
+fn load_player_settings(path: &Path) -> Result<(u32, u32)> {
+    let settings = read_preset(path)?;
+    let panel = settings.panel_percent.unwrap_or(25);
+    let step = settings.step_percent.unwrap_or(10);
+    if !(10..=100).contains(&panel) || !(1..=100).contains(&step) {
+        return Err("Flubber panel must be 10–100%, and step must be 1–100%".into());
+    }
+    Ok((panel, step))
+}
+
 fn ensure_preset_folder(root: &Path) -> Result<PathBuf> {
     let folder = root.join("presets");
     fs::create_dir_all(&folder)?;
@@ -1597,13 +1724,7 @@ fn preset_settings(video: Option<&Path>, folder: &Path) -> Result<(Option<u32>, 
     candidates.push(folder.join("default.flubber.json"));
     for path in candidates {
         if path.is_file() {
-            if fs::metadata(&path)?.len() > 64 * 1024 {
-                return Err(format!("Flubber preset exceeds 64 KiB: {}", path.display()).into());
-            }
-            let settings: Preset = serde_json::from_slice(&fs::read(&path)?)?;
-            if settings.schema != "vlc-flubber-sidequest/v1" {
-                return Err(format!("Unsupported Flubber preset: {}", path.display()).into());
-            }
+            let settings = read_preset(&path)?;
             return Ok((settings.panel_percent, settings.step_percent));
         }
     }
@@ -1967,6 +2088,19 @@ fn run() -> Result<()> {
     let mut message = MSG::default();
     // SAFETY: Ordinary single-threaded Win32 message loop for owned window.
     while unsafe { GetMessageW(&mut message, null_mut(), 0, 0) } > 0 {
+        if app.settings_open
+            && message.message == WM_KEYDOWN
+            && message.wParam as u16 == VK_RETURN
+            && app
+                .settings_controls
+                .as_ref()
+                .is_some_and(|controls| message.hwnd == controls.json_path)
+        {
+            // SAFETY: The command is dispatched synchronously to our live UI
+            // window, and the child edit's Enter key is consumed here.
+            unsafe { SendMessageW(hwnd, WM_COMMAND, ID_JSON_LOAD as usize, 0) };
+            continue;
+        }
         // SAFETY: The settings controls are children of this live window.
         // IsDialogMessageW provides native Tab, Enter, and Escape handling.
         if app.settings_open && unsafe { IsDialogMessageW(hwnd, &message) } != 0 {
@@ -2047,6 +2181,42 @@ mod tests {
         fs::remove_file(folder.join("default.flubber.json"))?;
         fs::remove_dir(folder)?;
         fs::remove_dir(root)?;
+        Ok(())
+    }
+
+    #[test]
+    fn json_load_accepts_existing_preset_and_rejects_other_contracts() -> Result<()> {
+        let path = env::temp_dir().join(format!(
+            "flubber-json-load-{}-{}.json",
+            std::process::id(),
+            SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+        ));
+        fs::write(
+            &path,
+            b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":45,\"stepPercent\":7}",
+        )?;
+        assert_eq!(load_player_settings(&path)?, (45, 7));
+        fs::write(
+            &path,
+            b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":60}",
+        )?;
+        assert_eq!(load_player_settings(&path)?, (60, 10));
+        fs::write(
+            &path,
+            b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":9,\"stepPercent\":7}",
+        )?;
+        assert!(load_player_settings(&path).is_err());
+        fs::write(
+            &path,
+            b"{\"schema\":\"flubbercorder-experiment/v1\",\"video\":\"clip.mp4\"}",
+        )?;
+        assert!(load_player_settings(&path).is_err());
+        fs::write(
+            &path,
+            b"{\"schema\":\"affect-research-planner-recipe\",\"version\":5}",
+        )?;
+        assert!(load_player_settings(&path).is_err());
+        fs::remove_file(path)?;
         Ok(())
     }
 }
