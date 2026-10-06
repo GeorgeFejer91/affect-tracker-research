@@ -1,0 +1,28 @@
+# Installed WebView Runner evidence, one selected video
+
+This is the R1 RR-04/RR-07/RR-08/RR-09 **Final Runtime Correspondence** source harness. It reads an actual Windows Experiment Runner validation attempt and its real XDF file. It does not launch a browser simulation or enable research Start.
+
+## Collect one candidate
+
+1. Install the exact Runner installer being evaluated. Record the installer SHA-256, the installed executable SHA-256, and the full source commit from the build provenance. Use the installed executable, not a build-tree copy.
+2. Before the run, declare the minimum decoded-frame count and maximum acceptable absolute difference between the video's declared duration and each observed media/marker span. In that installed Runner, load one saved Planner master3–5 JSON with a selected video. Enable recording of Runner's own LSL streams, test the configured input, acknowledge the **local unqualified validation** label, and complete the full attempt. Record the selected video's one-based plan position. Keep the participant output and XDF file unchanged.
+3. Run the verifier on Windows with Node, Python, `pyxdf`, and `numpy` available. Use a new output path:
+
+```powershell
+node scripts/qualification/runner-installed-webview.mjs `
+  --installer 'C:\Evidence\Experiment_Runner_setup.exe' `
+  --installed-exe 'C:\Program Files\Experiment Runner\Experiment Runner.exe' `
+  --source-commit '<40-hex build commit>' `
+  --installer-sha256 '<64-hex hash from build provenance>' `
+  --installed-exe-sha256 '<64-hex hash from install provenance>' `
+  --session 'C:\Study\outputs\...\attempt-directory' `
+  --xdf 'C:\Study\recording.xdf' `
+  --video-position 3 `
+  --min-decoded-frames '<predeclared integer of at least 2>' `
+  --max-video-span-error-ms '<predeclared nonnegative integer>' `
+  --out 'C:\Evidence\runner-installed-webview.json'
+```
+
+The verifier computes both artifact hashes, compares the attempt and XDF startup build commit, run/attempt IDs and recipe/plan identities, checks the selected video has a file/hash/generation-bound decoded Playing and End observation, checks native video markers and sample timing, and invokes the independent `pyxdf` reader plus the XDF-only information reconstruction. It requires the recorded state stream's exact run-specific source ID, compares every recorded eight-channel state timestamp and value with the native sample journal, and enforces the predeclared frame and video-span limits against the selected video's JSON duration. The receipt also reports missed slots and maximum scheduler lateness, without treating this one video as the separate 30-minute timing qualification. A missing prerequisite or failed read writes a failure receipt when the output path is available. The XDF reader is bounded to 512 MiB.
+
+The result `source-evidence-pass-installed-review-required` means these file checks passed. The script reads evidence paths; it does not launch the installed executable or establish which process produced the files. Expected installer/executable hashes are supplied by the operator and need separately retained build/install provenance. An operator must still witness the actual installed program and video, verify physical input and video/ISI timing against the study's acceptance limits, test stalled/error/stop and recovery cases, and record installation, upgrade and uninstall evidence for the exact installer. Selected external LSL streams are outside this one-video own-stream check. The receipt does not turn a validation attempt into a qualified research run. Normal master Start still calls the retired `NativeGstPlay` authorization path in `runtime.rs`; that authority gap must be resolved only after installed LSL/XDF/timing evidence passes. Already returned media response bytes cannot be recalled after a grant is revoked.
