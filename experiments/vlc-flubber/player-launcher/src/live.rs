@@ -111,7 +111,6 @@ fn rc(port: u16, command: &str) -> Result<()> {
 fn controls(port: u16, binding: Binding, stopped: Arc<AtomicBool>) {
     let stdin = io::stdin();
     let mut input = BufReader::new(stdin.lock());
-    let mut paused_requested = false;
     loop {
         let mut bytes = Vec::new();
         let read = input
@@ -145,18 +144,13 @@ fn controls(port: u16, binding: Binding, stopped: Arc<AtomicBool>) {
             continue;
         }
         let (accepted, state) = match request.command {
-            Action::Pause if !paused_requested => (rc(port, "pause").is_ok(), "pause-requested"),
-            Action::Resume if paused_requested => (rc(port, "pause").is_ok(), "resume-requested"),
+            Action::Pause | Action::Resume => (false, "unsupported"),
             Action::Stop => {
                 stopped.store(true, Ordering::Release);
                 let accepted = rc(port, "stop").and_then(|_| rc(port, "quit")).is_ok();
                 (accepted, "stop-requested")
             }
-            _ => (false, "invalid-state"),
         };
-        if accepted && !matches!(request.command, Action::Stop) {
-            paused_requested = !paused_requested;
-        }
         let _ = emit(
             json!({"protocol":PROTOCOL,"kind":"command","requestId":request.request_id,"generation":binding.generation,"ok":accepted,"state":state}),
         );

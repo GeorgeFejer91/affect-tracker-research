@@ -37,9 +37,11 @@ feedback until the shared Runner's feedback state is projected into VLC in a
 separate pass. The legacy FlubberRecorder/player mode retains its controls.
 
 The supervising process may send JSON lines on stdin with `protocol`,
-`requestId`, `generation`, and `command: "pause" | "resume" | "stop"`.
-Command replies have `kind: "command"` and a requested state. They are not
-observed playback states and cannot open or close the Runner's sample clock.
+`requestId`, `generation`, and `command: "stop"`. Pause and resume requests
+return `ok: false` and `state: "unsupported"` until VLC can report an observed
+paused state. Command replies have `kind: "command"` and a requested state.
+They are not observed playback states and cannot open or close the Runner's
+sample clock.
 Closing stdin requests VLC shutdown. The launcher retains and reaps its VLC
 child, and a missing decoded completion fails closed. This source seam does
 not yet connect a VLC child to `MasterWorker`; pause needs an observed state
