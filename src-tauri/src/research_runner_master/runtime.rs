@@ -1,4 +1,6 @@
 //! Native master session authority, separate from the frozen package worker.
+#[path = "playback.rs"]
+pub(crate) mod playback;
 use super::{
     markers::MasterMarkers, storage::MasterStorage, worker::MasterWorker, MasterSelector,
     PreparedMaster,
