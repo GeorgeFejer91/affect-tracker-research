@@ -19,7 +19,7 @@ const components = [
 ];
 
 function run(stage) {
-  const shell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+  const shell = 'pwsh';
   return spawnSync(shell, ['-NoProfile', '-File', script, '-StagePath', stage], {
     encoding: 'utf8',
     timeout: 30_000,
