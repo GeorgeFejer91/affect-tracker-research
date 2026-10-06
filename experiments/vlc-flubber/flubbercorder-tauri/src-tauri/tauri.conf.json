@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Flubbercorder",
+  "version": "0.2.0",
+  "identifier": "io.github.georgefejer91.flubbercorder",
+  "build": {
+    "beforeBuildCommand": "powershell -NoProfile -ExecutionPolicy Bypass -File build-ui.ps1",
+    "frontendDist": "../web"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [{
+      "label": "experimenter",
+      "title": "Flubbercorder",
+      "width": 1280,
+      "height": 850,
+      "minWidth": 760,
+      "minHeight": 560,
+      "center": true
+    }],
+    "security": {
+      "csp": "default-src 'self'; base-uri 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data:; object-src 'none'; frame-src 'none'; style-src 'self'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "nsis",
+    "category": "Education",
+    "shortDescription": "VLC Flubber experimenter and LSL recorder",
+    "windows": { "nsis": { "compression": "zlib" } },
+    "resources": ["resources/recorder/", "resources/demo/", "resources/player/", "resources/web/"]
+  }
+}

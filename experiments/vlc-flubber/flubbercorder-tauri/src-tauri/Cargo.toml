@@ -1,0 +1,20 @@
+[package]
+name = "flubbercorder-tauri"
+version = "0.2.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "Flubbercorder experimenter window"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+flubbercorder-native = { path = "../../flubbercorder-native" }
+labstream = "0.1.0"
+serde_json = "1"
+tauri = { version = "2", features = [] }
+getrandom = "0.2"
+tiny_http = "0.12"
+
+[profile.release.package.flubbercorder-tauri]
+opt-level = 0

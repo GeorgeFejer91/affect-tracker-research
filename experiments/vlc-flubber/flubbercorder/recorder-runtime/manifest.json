@@ -1,0 +1,40 @@
+{
+  "source": {
+    "revision": "ce74750748c784774d07b6938b482c4e0608071b",
+    "repository": "https://github.com/labstreaminglayer/App-LabRecorder",
+    "liblsl": {
+      "url": "https://github.com/sccn/liblsl/releases/download/v1.18.0.b5/liblsl-1.18.0-Win_amd64.zip",
+      "sha256": "284ae61714eb1c3054eed425f6ad45cdbdcc1f0e38e9dcae7b51a3d135ae7b73"
+    },
+    "files": {
+      "xdfwriter/xdfwriter.h": "eb6a89bcc79e4511f2fd18079cd8745d500ea6a562426a9ae2b7cfb809b19b4c",
+      "xdfwriter/xdfwriter.cpp": "a6d797fe33c2155be4f20cd7216752e98152031bda5d03110e614865c9803516",
+      "LICENSE": "4ee06783a0d641898e875e71b501abd7b427e257a29dbbbceafe9d4c063e5da5",
+      "src/recording.cpp": "5f76b25ae4745c0b52318308ef391dea80b223b3d995622ebe06f35568779b57",
+      "src/recording.h": "dbabf71df133a48ab92efdcc118525043b6c4e5563e85f6b639e990f975608c4",
+      "xdfwriter/conversions.h": "04f6b3be579a5ea1960132b3def02c9507f01f2559911ed2ccf13581d8fb8e1b"
+    }
+  },
+  "patches": "9d8f406e427d4879189ad98cd17cae2c58bb200dec629ad4db7b83794e2142a8",
+  "adapter": {
+    "main.cpp": "6cf7d854602260702a098aa96bbcd12c55dad7b955b91b29482782d3013453de",
+    "CMakeLists.txt": "1a3971694c75f512b5c94c910360cc810b78c3eea824d32062443238ff7d87b7",
+    "source-lock.json": "2dd2819b7ed150e12a8130bfbc00b4a23c350fb75f8250d4cda477e7685fefa0"
+  },
+  "files": {
+    "concrt140.dll": "2405355f0a58067b258f8df33c327e3a3d716eaac5a3a5aebb757842d85bd376",
+    "LABRECORDER-LICENSE": "4ee06783a0d641898e875e71b501abd7b427e257a29dbbbceafe9d4c063e5da5",
+    "LIBLSL-LICENSE": "8bdb24b98360b96b74ffc982d43b2db05e8bc74cc8a1081fb3e72ab6d213fd76",
+    "lsl.dll": "5644c663e45a6215b339eb633c00ef9fb80762d11ff4a88653bdf9e742973417",
+    "msvcp140.dll": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9",
+    "msvcp140_1.dll": "bfad5aef4c63a669e3c140655cdfdf395b6c979b400a447bd5dcb65ed8826c3d",
+    "msvcp140_2.dll": "3ea06f0ee098b4823cb79599df3780e7f23cce52c19aac31d2a0d47efe33a5e9",
+    "msvcp140_atomic_wait.dll": "640b2aefced484d0368eea5bdd06addd0658a3a70a49256e560d6923b404a479",
+    "msvcp140_codecvt_ids.dll": "f2069a52880ec885ee7f0511186100eb7fada0411a2b4948fafea7735b878a18",
+    "respyrecorder.exe": "56e31aa13ddc6f16627d69946b03bdc040a0457be4af03c1635c8d5658a11dc0",
+    "vccorlib140.dll": "19839407c3fdbc824e5bce189bf68ddf8097f12ec28b757797ffa0415c144ddd",
+    "vcruntime140.dll": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066",
+    "vcruntime140_1.dll": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f",
+    "vcruntime140_threads.dll": "219915cf20822f34d5e7c1fdd4e21ae7f3396881096c51036225fb8f84b47afa"
+  }
+}

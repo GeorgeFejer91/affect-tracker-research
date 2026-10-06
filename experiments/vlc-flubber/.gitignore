@@ -1,0 +1,5 @@
+build/
+*.csv
+*.log
+__pycache__/
+.for-ai-local/

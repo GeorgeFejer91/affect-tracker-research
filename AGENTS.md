@@ -5,6 +5,8 @@ builds, packaging, and qualification. Standard Runner targets Windows WebView
 video; the separate VLC Runner has its own playback path. Historical
 GStreamer instructions below are evidence only and do not authorize restoring
 its runtime or SDK. See for-ai/15-RESEARCH-V1-CHARTER.md.
+The separate experimental VLC Runner is tracked in
+[`for-ai/75-VLC-FLUBBER-SIDE-QUEST.md`](./for-ai/75-VLC-FLUBBER-SIDE-QUEST.md).
 
 The 2026-09-12 user amendment requires two separate companion programs. Read
 [`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).

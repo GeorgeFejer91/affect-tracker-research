@@ -1,5 +1,124 @@
 # Agent message board
 
+## VLC mouse rating and control markers — 2026-10-06
+
+Owner: current task; `codex/segment-vlc-mouse-markers` in
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-vlc-mouse-markers`,
+base `b43e8e1`; stage: Backend Verification, followed by a separate
+Repository/Web Synchronization pass to make `main` the one canonical VLC
+Runner line. This is the bounded `experiments/vlc-flubber/` side-project
+concern in [75](75-VLC-FLUBBER-SIDE-QUEST.md), outside P1–P7/R1. The player
+owns relative two-axis mouse input, 30 Hz affect LSL, video control marker
+LSL, and a unique CSV backup beside the played video. The Recorder remains a
+separate subscriber/controller; its marker receipt and XDF validators are the
+only consumer seam. No experiment JSON contribution or schema change is
+planned. Before this pass, source had arrow-only rating, filename Start/Stop markers,
+CSV under local app data or a Recorder data directory, and a Recorder that
+rejects additional markers and treats any non-playing RC state as completion.
+Allowed implementation files are the LibVLC player, Recorder marker validation,
+focused tests, current VLC runbooks, this board, and [75]. Evidence now:
+baseline Rust tests, focused input/marker tests, local build and stream/XDF
+session where available. Installed input latency, broad codec support, and
+research qualification remain open. The older 0.1.x filter, launcher and
+Python packaging are historical Git evidence, not a second active VLC line;
+dirty or unrelated worktrees will not be overwritten.
+Implementation result on this branch: LibVLC owns foreground relative mouse
+rating, a compact two-axis grid, observed intermediate control markers, and
+CSV backup beside the video. Recorder changes only its path/marker acceptance
+and the premature non-playing completion rule; it remains a separate process.
+Focused Rust tests and a local four-second player/independent-inlet run passed.
+A separate Recorder run promoted XDF with 219 affect samples and Start/End/Stop,
+while the VLC CSV had 120 rows in the video directory. Physical mouse input
+and installed timing are unverified. The local focus-loss observation emitted
+Start/Interrupt/Pause, but a direct RC pause/resume probe was inconclusive;
+the pure state-transition test covers its marker ordering. The final candidate
+was rebuilt and rechecked after source cleanup before synchronizing to `main`.
+Final staged player hash `945FFD4D8656B8494127373D3403006046DC80ACE9482D7E845498E7CCAD2ED9`;
+the post-cleanup Recorder run promoted XDF with 166 affect samples and
+Start/End/Stop, with 120 VLC CSV rows beside the source clip. This merge
+promotes the sole active VLC source line to `main`.
+The 0.2.0 Tauri Recorder with pinned demo was staged at the existing PC app
+location and opened; executable hash
+`48D1062D304A4CB085B907F804698F1D4C467F2C6EB6E27DED961875E96261C5`.
+The previous local app files are archived in the ignored side-project build
+directory. Installed and physical-input qualification remain open.
+
+## 20261005 VLC side quest frame-matched sampling and Rust/Tauri candidate
+
+Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,
+isolated side-project worktree; stage: Backend Verification. Scope remains
+`experiments/vlc-flubber/` and [75](75-VLC-FLUBBER-SIDE-QUEST.md), outside
+P1–P7/R1. The Rust launcher now preserves the source average frame rate as
+an exact rational rate for constant-rate preparation. The VLC native filter
+uses that rate for animation phase and CSV frame times. Fresh installed
+standalone and bundled Rust/Tauri sessions each recorded 90 affect samples
+and 90 CSV rows from a `30000/1001` 90-frame clip, with exact filename
+Start/Stop XDF markers. The installed bundled film then completed at 30 fps,
+with 7,632 CSV rows and an XDF promoted after matching count and marker
+validation. Both installer candidates remain local. Remote phone control
+and public release checks remain open. Main Planner/Runner source and
+contracts remain untouched.
+
+## 20261005 Native SVG VLC Flubber and standalone time series
+
+Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,
+isolated side-project worktree; stage: Backend Verification. Scope is the
+native VLC side quest only: `experiments/vlc-flubber/` and [75](75-VLC-FLUBBER-SIDE-QUEST.md),
+outside P1–P7/R1. The filter now renders generated SVG paths through a Rust
+`resvg` DLL loaded inside VLC and writes a separate three-variable
+`time_s,valence,arousal` CSV automatically. Focused 640x360 and 1920x1080
+60-fps YUV captures retained all expected frames and show changing,
+antialiased geometry. Main Planner/Runner source and contracts are untouched.
+The new Rust/Tauri split installers, installed SVG check, external LSL
+loopback on the exact SVG build, display-resolution overlay, and broader
+video/input qualification remain open. The 0.1 public prototype is historical.
+
+## 20261004 Flubbercorder bundled default demo
+
+Owner: current task; branch `codex/segment-flubbercorder-default-demo`, isolated
+side-project worktree; stage: Repository/Web Synchronization. Follow-up to the
+0.1 experimental VLC release, outside P1–P7/R1. The 0.2 candidate includes
+an exact-hash Great Dictator study clip and a simple default JSON, preloads that
+JSON at installed startup, and retains explicit custom-recipe loading. A local
+installed candidate passed default clip Start/Stop with XDF/CSV and exact
+filename markers, plus the existing synthetic custom-recipe run. Full natural
+completion of the 254-second study clip produced 15,264 matching CSV/XDF
+affect samples and both exact XDF markers. Public clip
+redistribution remains unconfirmed; no 0.2 release is claimed. Main Planner
+and Runner contracts/source are untouched.
+
+## 20261004 Flubbercorder VLC runner experiment
+
+Owner: current task; branch `codex/segment-flubbercorder-runner`, isolated
+worktree; stage: Repository/Web Synchronization after installed Backend
+Verification. Bounded side-project concern:
+`experiments/vlc-flubber/flubbercorder/`, the native plugin's remote affect
+command bridge, and [75](75-VLC-FLUBBER-SIDE-QUEST.md). This is outside P1–P7/R1.
+The existing Planner and Runner implementation, JSON contracts, and release
+claims remain under their segment owners. The side project tests a local HTML
+experimenter window, VLC process control, LSL/CSV/XDF recording, and a paired
+phone control surface. It does not promote VLC into the main suite.
+The offline Windows installer passed five installed LSL/XDF/CSV scenarios and
+was published as a [public experimental prerelease](https://github.com/GeorgeFejer91/affect-tracker-research/releases/tag/vlc-experimentrunner-v0.1.0)
+from source commit `40e8493f1443c484afbd85c881451c9f6b8ea512`.
+The branch-only GitHub workflow could not be dispatched, so these are local
+installed checks, not clean CI evidence. See [75](75-VLC-FLUBBER-SIDE-QUEST.md)
+for the asset digest and claim boundary.
+
+## 20261004 Native VLC Flubber side quest
+
+Owner: current task; branch `codex/segment-vlc-flubber-sidequest`, isolated
+worktree; stage: Backend Verification. Bounded experimental concern:
+`experiments/vlc-flubber/` and [75](75-VLC-FLUBBER-SIDE-QUEST.md), outside
+P1–P7/R1. No Planner or Runner source, JSON contract, or qualification status
+changed. Dependencies are VLC 3.0.20 x64, FFmpeg, and optional liblsl.
+The plugin, launcher, CSV, arrow controls, and independent LSL loopback passed
+the focused checks in [75](75-VLC-FLUBBER-SIDE-QUEST.md). The concurrent
+`codex/segment-media-ffmpeg-cleanup` worktree owns main-source playback cleanup;
+this side quest does not migrate the main application. Reconcile the small
+entrypoint/board edits when integrating those branches. Any VLC integration
+into Runner requires an explicit product decision and separate R1 gates.
+
 ## 20261006 Retired GStreamer asset cleanup on main
 
 R1 RR-04/RR-10 Repository/Web Synchronization: the current default branch
@@ -6192,3 +6311,28 @@ The focused headless Chrome check passed 13 synthetic master5 renderer assertion
 and a screenshot was inspected. Reproduction command, screenshot, and claim limit
 are in `docs/runner-master5-display-modes-qualification.md`. There was no
 participant execution or native recording in this pass.
+
+## VLC Flubber side quest — 2026-10-05
+
+The isolated side project now has a separate no-Python Rust launcher and local
+Windows player installer candidate. Fresh installed playback, CSV boundaries,
+idle LSL outlet discovery, and exact filename Start/Stop marker loopback passed
+with the native SVG filter. The new `--arm` control path held playback until
+the native recorder reported both subscriptions, then recorded a local XDF
+with 180 affect samples and exact Start/Stop markers. The future Rust/Tauri
+Flubbercorder must enforce that same gate. No P1–P7/R1 status changes
+follow from this side-quest work, and no new public package was released.
+
+## VLC image quality and experiment controls — 2026-10-06
+
+The isolated `codex/segment-vlc-quality-controls` pass remains outside
+P1–P7/R1. The Rust launcher removes forced WinGDI output, keeps VLC's normal
+Qt/embedded-video window, and prepares smaller clips at a 1080-pixel video
+height with Lanczos scaling so the native SVG Flubber has enough pixels for a
+1080p display. The Rust/Tauri Recorder gains a shared standalone preset-folder
+button, session label/value metadata beside XDF, and VLC volume control. Its
+transport bar moves above the long recording paths. Installed short-clip
+checks confirmed exact CSV/XDF markers and frame counts; current phone pairing
+needs a private IPv4 route, unavailable on this validation PC. VLC's own
+Media > Open File bypasses FFmpeg preparation and is not an automatic-Flubber
+path. No Planner/Runner contract or main-suite qualification is claimed.
