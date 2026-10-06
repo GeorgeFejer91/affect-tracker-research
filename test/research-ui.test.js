@@ -455,7 +455,7 @@ test("Review and Start carries privacy, participant-state, format, and fail-clos
     assert.match(markup, new RegExp(`id="${id}"`, "u"));
   }
   assert.match(markup, /HTML video · desktop and browser/u);
-  assert.doesNotMatch(markup, /GStreamer \/ GstPlay · qualification required/u);
+  assert.doesNotMatch(markup, /GStreamer|GstPlay|nativeGstPlay/u);
 });
 
 test("Run has mutually exclusive questionnaire and stimulus stages with bounded controls", () => {
@@ -590,6 +590,9 @@ test("manifest readiness is fail-closed and the adapter exposes authoritative ne
   assert.match(source, /resetAffect\(reason = "safe-boundary"\)/u);
   assert.match(source, /inputController\.resetNeutral\(reason\)/u);
   assert.match(source, /representative WebView frames attested \(unqualified playback\)/u);
+  assert.match(source, /result: "block",\s*label: "Playback"/u);
+  assert.match(source, /research Start remains closed until installed playback, physical input, LSL, and XDF qualification passes/u);
+  assert.doesNotMatch(source, /value\("native-playback-mode", "nativeGstPlay"\)/u);
   assert.match(source, /installed-hardware qualification pending/u);
   assert.equal((source.match(/new CustomEvent\(RESEARCH_UI_EVENTS\.workspaceReady/gu) ?? []).length, 2, "selection and permission renewal both request a manifest rescan");
   for (const event of ["pointerup", "pointercancel", "lostpointercapture"]) {

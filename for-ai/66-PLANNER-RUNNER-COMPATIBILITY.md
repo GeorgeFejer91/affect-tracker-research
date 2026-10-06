@@ -1,5 +1,14 @@
 # Planner JSON and Runner correspondence
 
+## Playback correspondence update — 2026-10-06
+
+Both standard WebView Runner and Flubber VLC Runner must consume the same
+master1–5 Planner recipe and produce the same Runner-owned LSL/XDF information
+contract. Planner's browser-decoder video geometry must be accepted through its
+own attestation path; neither Runner may reinterpret media metadata or use an
+unqualified preview as recording evidence. Executable parity and installed
+validation remain open.
+
 Current source audit: `32c7c2d`, 2026-09-13. This maintained map points to
 exact contracts; it does not define another schema.
 The [prior ledger](../docs/history/66-PLANNER-RUNNER-COMPATIBILITY-2026-09-13.md)

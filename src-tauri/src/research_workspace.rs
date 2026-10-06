@@ -7,7 +7,8 @@ use crate::research_experiment_package::{ExperimentPackageV1, EXPERIMENT_PACKAGE
 use crate::research_protocol::ResearchSettingsDocument;
 use crate::research_video_geometry::{derive_native_display_geometry_v1, NativeDisplayGeometryV1};
 use crate::research_workspace_contribution::{
-    validate_video_catalogue_contribution, VideoCatalogueContribution,
+    validate_video_catalogue_contribution, VideoCatalogueContribution, VideoDisplayGeometry,
+    VideoRatio,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -65,6 +66,8 @@ pub struct ScannedStimulusSummary<G = NativeDisplayGeometryV1> {
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
     pub display_geometry: Option<G>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub webview_display_geometry: Option<VideoDisplayGeometry>,
     pub source: Option<WorkspaceSourceContract>,
 }
 
@@ -231,6 +234,7 @@ pub(crate) struct ScannedStimulus {
     pub decode_attestation: Option<DecodeEvidence>,
     pub decoded_positions_ms: Vec<f64>,
     pub display_geometry: Option<NativeDisplayGeometryV1>,
+    pub webview_display_geometry: Option<VideoDisplayGeometry>,
     pub native_decode_receipt_v2: Option<crate::research_native_media::NativeMediaDecodeReceiptV2>,
 }
 
@@ -479,7 +483,7 @@ impl WorkspaceService {
     }
 
     /// Validates one P1 v2 catalogue against the exact currently selected,
-    /// freshly readable and natively qualified Planner media closure. This is
+    /// freshly readable and decoded Planner media closure. This is
     /// the safe Rust seam for P3 export and P7 persistence; it grants no path.
     pub fn validate_planner_video_catalogue(
         &self,
@@ -529,14 +533,29 @@ impl WorkspaceService {
                     && value.fract() == 0.0
                     && *value <= crate::research_contracts::MAX_SAFE_INTEGER as f64
             });
-            let observed_geometry = candidate.display_geometry.as_ref().ok_or_else(|| {
-                CommandError::forbidden(
-                    "A current Planner video has no verified oriented display geometry.",
-                )
+            let native_proof = candidate.decode_status == DecodeStatus::AttestedQualified
+                && candidate.decode_backend == Some(DecodeBackend::NativeGstPlay)
+                && candidate.decode_attestation == Some(DecodeEvidence::NativeDecodedSnapshotsV1);
+            let webview_proof = candidate.decode_status == DecodeStatus::AttestedUnqualified
+                && candidate.decode_backend == Some(DecodeBackend::WebviewVideoFrameCallback)
+                && candidate.decode_attestation == Some(DecodeEvidence::RepresentativeFramesV1)
+                && candidate.duration_ms.is_some_and(|duration| {
+                    validate_representative_positions(duration, &candidate.decoded_positions_ms)
+                        .is_ok()
+                });
+            let observed_geometry = if native_proof {
+                serde_json::to_value(&candidate.display_geometry)
+            } else if webview_proof {
+                serde_json::to_value(&candidate.webview_display_geometry)
+            } else {
+                return Err(CommandError::forbidden(
+                    "A current Planner video has no verified display geometry.",
+                ));
+            }
+            .map_err(|_| {
+                CommandError::invalid_contract("Planner display geometry could not be validated.")
             })?;
-            if candidate.decode_status != DecodeStatus::AttestedQualified
-                || candidate.decode_backend != Some(DecodeBackend::NativeGstPlay)
-                || candidate.decode_attestation != Some(DecodeEvidence::NativeDecodedSnapshotsV1)
+            if observed_geometry.is_null()
                 || observed.path != candidate.path
                 || observed.sha256 != entry.sha256
                 || observed.sha256 != candidate.sha256
@@ -545,15 +564,12 @@ impl WorkspaceService {
                 || entry.asset_id != format!("asset-{}", observed.sha256)
                 || entry.package_relative_path != format!("assets/{}", entry.source_relative_path)
                 || observed_duration_ms.map(|value| value as u64) != Some(entry.duration_ms)
-                || serde_json::to_value(observed_geometry).map_err(|_| {
-                    CommandError::invalid_contract(
-                        "Planner display geometry could not be validated.",
-                    )
-                })? != serde_json::to_value(&entry.geometry).map_err(|_| {
-                    CommandError::invalid_contract(
-                        "Catalogue display geometry could not be validated.",
-                    )
-                })?
+                || observed_geometry
+                    != serde_json::to_value(&entry.geometry).map_err(|_| {
+                        CommandError::invalid_contract(
+                            "Catalogue display geometry could not be validated.",
+                        )
+                    })?
             {
                 return Err(CommandError::forbidden(
                     "A current Planner video no longer matches the accepted catalogue.",
@@ -903,6 +919,17 @@ impl WorkspaceService {
         })
     }
 
+    /// Consume one opaque URL grant without altering the selected file or its
+    /// decode attestation. A workspace switch already clears its former grants.
+    pub(crate) fn revoke_media_url_grant(&self, workspace_id: &str, media_grant_id: &str) -> bool {
+        let mut guard = self.lock_selected();
+        guard
+            .as_mut()
+            .filter(|workspace| workspace.id == workspace_id)
+            .and_then(|workspace| workspace.media_grants.remove(media_grant_id))
+            .is_some()
+    }
+
     pub(crate) fn issue_native_media_grant(
         &self,
         workspace_id: &str,
@@ -993,12 +1020,13 @@ impl WorkspaceService {
         candidate.decode_attestation = Some(DecodeEvidence::NativeDecodedSnapshotsV1);
         candidate.decoded_positions_ms = receipt.decoded_positions_ms.clone();
         candidate.display_geometry = Some(display_geometry);
+        candidate.webview_display_geometry = None;
         candidate.native_decode_receipt_v2 = None;
         Ok(scanned_summary(candidate))
     }
 
-    /// Consumes one exact locked-file grant. WebView frame evidence remains
-    /// explicitly unqualified and cannot satisfy a future GstPlay verifier.
+    /// Consumes one exact locked-file grant and records WebView frame evidence
+    /// for Planner authoring without granting participant playback authority.
     pub fn attest_workspace_decode(
         &self,
         request: DecodeAttestationRequest,
@@ -1096,12 +1124,30 @@ impl WorkspaceService {
             ));
         }
         let candidate = &mut workspace.scanned[candidate_index];
-        candidate.duration_ms = Some(observed_duration_ms);
+        candidate.duration_ms = Some(observed_duration_ms.round());
         candidate.decode_status = DecodeStatus::AttestedUnqualified;
         candidate.decode_backend = Some(DecodeBackend::WebviewVideoFrameCallback);
         candidate.decode_attestation = Some(DecodeEvidence::RepresentativeFramesV1);
         candidate.decoded_positions_ms = request.decoded_positions_ms;
         candidate.display_geometry = None;
+        let mut a = video_width;
+        let mut b = video_height;
+        while b != 0 {
+            (a, b) = (b, a % b);
+        }
+        candidate.webview_display_geometry = Some(VideoDisplayGeometry {
+            status: "verified".to_owned(),
+            source: "browser-decoder".to_owned(),
+            display_width_px: u64::from(video_width),
+            display_height_px: u64::from(video_height),
+            display_aspect: VideoRatio {
+                numerator: u64::from(video_width / a),
+                denominator: u64::from(video_height / a),
+            },
+            rotation_degrees: None,
+            pixel_aspect_ratio: None,
+            metadata_interpretation: "decoder-oriented-display".to_owned(),
+        });
         candidate.native_decode_receipt_v2 = None;
         Ok(scanned_summary(candidate))
     }
@@ -1692,6 +1738,7 @@ fn scan_package_videos(
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
+                webview_display_geometry: None,
                 native_decode_receipt_v2: None,
             });
         }
@@ -1778,6 +1825,7 @@ fn scan_videos(root: &Path) -> ResearchResult<Vec<ScannedStimulus>> {
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
+                webview_display_geometry: None,
                 native_decode_receipt_v2: None,
             });
         }
@@ -1848,6 +1896,7 @@ fn scan_planner_videos(package_assets_root: &Path) -> ResearchResult<Vec<Scanned
                 decode_attestation: None,
                 decoded_positions_ms: Vec::new(),
                 display_geometry: None,
+                webview_display_geometry: None,
                 native_decode_receipt_v2: None,
             });
         }
@@ -1923,6 +1972,7 @@ fn scanned_summary(entry: &ScannedStimulus) -> ScannedStimulusSummary {
         decode_attestation: entry.decode_attestation,
         decoded_positions_ms: entry.decoded_positions_ms.clone(),
         display_geometry: entry.display_geometry.clone(),
+        webview_display_geometry: entry.webview_display_geometry.clone(),
         source,
     }
 }
@@ -3766,6 +3816,50 @@ mod tests {
             service.protocol_response("research", request).status(),
             StatusCode::NOT_FOUND
         );
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn revoking_one_media_url_grant_preserves_other_readers() {
+        let base = temporary_directory("media-grant-scoped-revoke");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let selected = service.select(workspace.clone()).unwrap();
+        fs::write(workspace.join("stimuli").join("clip.mp4"), b"video").unwrap();
+        let workspace_id = selected.workspace_id.unwrap();
+        let item = service.rescan(&workspace_id).unwrap().stimuli.remove(0);
+        let issue = || {
+            service
+                .issue_media_url(
+                    &workspace_id,
+                    &item.workspace_file_id,
+                    &item.sha256,
+                    item.byte_length,
+                    &item.mime_type,
+                )
+                .unwrap()
+        };
+        let runner = issue();
+        let other = issue();
+        let read = |url: &str| {
+            service.protocol_response(
+                "research",
+                Request::builder()
+                    .method(Method::GET)
+                    .uri(url)
+                    .body(Vec::new())
+                    .unwrap(),
+            )
+        };
+        assert_eq!(read(&runner.media_url).status(), StatusCode::OK);
+        assert!(!service.revoke_media_url_grant("other-workspace", &runner.media_grant_id));
+        assert!(service.revoke_media_url_grant(&workspace_id, &runner.media_grant_id));
+        assert!(!service.revoke_media_url_grant(&workspace_id, &runner.media_grant_id));
+        assert_eq!(read(&runner.media_url).status(), StatusCode::NOT_FOUND);
+        assert_eq!(read(&other.media_url).status(), StatusCode::OK);
+        assert!(service.revoke_media_url_grant(&workspace_id, &other.media_grant_id));
+        assert_eq!(read(&other.media_url).status(), StatusCode::NOT_FOUND);
         fs::remove_dir_all(base).unwrap();
     }
 

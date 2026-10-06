@@ -1,5 +1,1070 @@
 # Agent message board
 
+## 20261006 Four-program UI source review allocation
+
+Root assigns a read-only `UI_VERIFY` at integration `08b4964` for the Planner,
+standard Runner, Flubber VLC Player/Runner boundary, and FlubberRecorder.
+Inspect current source and existing automated rendered receipts for clear
+program identity, minimal controls, text fit, keyboard/accessibility and the
+visible closed research gates. Use the project Uncodixfy Pretext guidance for
+text-bearing UI. Report only source or executed evidence actually seen and
+separate missing installed observations. Do not edit files or interact with
+installed experiment controls without the user's specific opt-in.
+
+## 20261006 Runner recording gate review allocation
+
+Root assigns an independent read-only `RECORDING_GATE` review at integration
+`9bc83cb` for R1 RR-07/RR-08/RR-09/RR-10 while the VLC host is developed.
+Trace the shared master worker's first decoded frame, video end, pause/stop,
+input sampling, outbound LSL, own and selected external XDF, failure receipts
+and recovery. Identify exact source-backed gaps and the minimum installed or
+physical evidence needed for standard WebView and future VLC host. Review the
+host's exact committed patch afterward in a separate verdict. Do not edit
+source, drive an installed experiment UI, or accept synthetic results as
+physical recording qualification.
+
+## 20261006 Shared-worker VLC host allocation
+
+Root assigns R1 RR-04/RR-07/RR-08/RR-09/RR-10 Backend Verification to the
+VLC Runner owner in one new isolated branch from the current integration head.
+Wire the opt-in decoded observation adapter to the existing `MasterWorker` for
+one selected video occurrence. The worker must mint and verify attempt,
+position, generation, workspace file ID and asset SHA; the host must launch,
+drain, supervise, stop and reap the VLC child, fail on missing first frame or
+child loss, and route only accepted decoded observations through the shared
+playback path. Preserve the worker as sole form/ISI/input/sample/marker/LSL/XDF
+and attempt authority. Keep pause/resume unavailable until observed states
+exist, and keep normal research Start closed. Project the worker's current
+affect/feedback state into the live VLC display from its existing source of
+truth; no plugin-owned arrow-key stepping or LSL in Runner mode.
+
+Own the minimal R1 Rust worker/runtime/playback seam and the explicitly named
+VLC live adapter/feedback seam. The workspace file resolution seam may be
+changed only to provide the exact validated asset path; do not alter Planner
+master1–5 JSON or create a second scheduler/recorder. Test wrong identity,
+missing/first/ended frames, child failure, stop, and no duplicate LSL/XDF
+authority with focused synthetic checks. Return a committed patch and exact
+remaining Tauri program identity, package and installed/physical gates. The
+third installer packaging and interactive qualification are separate later
+passes; current standard Runner behavior is preserved.
+
+## 20261006 GStreamer asset removal allocation
+
+The user explicitly reaffirmed removal of GStreamer assets. Root owns a
+separate R1 RR-04/RR-10 repository boundary pass in
+`codex/segment-r1-remove-gst-assets`. The tracked tree has no GStreamer binary,
+SDK, or runtime payload, and current Windows package workflows and Cargo
+features do not stage one. Remove the obsolete ignore rule, keep the production
+build guard asserting no GStreamer staging, and verify the source tree and
+focused test. An empty local runtime staging folder remains in the integration
+worktree: automatic approval review blocked its direct removal. Historical
+reader tokens and old evidence documents are outside this asset pass; they
+must not cause a runtime dependency or shipping payload.
+
+## 20261006 Retired native frontend cleanup allocation
+
+Root assigns R1 RR-04/RR-10 Backend Verification to the standard Runner
+frontend owner in an isolated branch. Remove the reachable legacy package
+GStreamer readiness path in `runner/src/app.js` and its now-unused native media
+imports/controller, plus the orphaned `runner/src/master-media.js` helper and
+its matching test. Legacy package Start must fail closed with a clear retired
+backend status. Preserve master1–5 dispatch, exact selected-plan/asset binding,
+acquisition-free finalization, and historical receipt/recovery readers. Prove
+the bounded change with focused Runner tests and report any compatibility gap.
+Do not alter native playback, research Start, or the experiment JSON contract.
+
+## 20261006 Cross-program JSON and recording review allocation
+
+Root assigns a read-only `FUNCTION_JSON_VERIFY` review at integration
+`e06d4e2` for R1 RR-02/RR-03/RR-07/RR-08/RR-10 and P7 producer parity.
+Compare the installed Planner master5 fixture and current master1–5
+strict reader, selected-plan/asset identity, and the standard Runner's one
+worker/LSL/XDF authority with the pending opt-in VLC video seam. Report exact
+source-backed compatibility gaps and evidence limits; do not edit files,
+invent a new recipe field, run an interactive desktop trial, or treat the
+launcher CSV as the Runner data record. Review the VLC patch after its owner
+commits if available, with a separate verdict for that exact commit.
+
+## 20261006 Pending VLC Runner host barrier
+
+After the isolated live-observation adapter passes review and is integrated,
+R1 RR-04/RR-07/RR-08/RR-09/RR-10 needs one host-owned Backend Verification
+pass. The host must mint the exact attempt/occurrence/generation/file/hash
+binding from the shared master worker, launch and supervise the installed VLC
+player for only that video step, drain its opt-in decoded observations, and
+route them internally through `MasterWorker::observe_playback`. The existing
+worker remains the sole form/ISI/input/sample/marker/LSL/XDF/attempt authority;
+its current affect state must drive any VLC Flubber feedback display, while
+the plugin's legacy local stepping stays disabled in Runner mode.
+Keep pause unavailable until an observed paused state exists, and keep normal
+research Start closed. Test wrong identities, child loss, no first decoded
+frame, end and stop against the worker before assigning the distinct VLC Runner
+binary/installer pass. That pass should extend the existing independently
+installable Flubber VLC Player package with the Runner host, rather than create
+a fifth installer; Recorder continues to obtain that exact package on demand.
+This is a dependency brief, not a claim that host wiring or installed VLC
+Runner exists.
+
+## 20261006 Recorder clean-install workflow handoff
+
+Root integrated `ff18466` for P7/R1 RR-04/RR-10. The Recorder workflow stages
+the pinned standalone player only long enough to build, uninstalls it, verifies
+the default player is absent, and then checks Recorder setup downloaded and
+installed the exact pinned player manifests. Six focused Recorder Node checks
+and workflow parse passed in the isolated branch. The live workflow remains
+open until current player bytes have immutable HTTPS setup/provenance URLs and
+matching hashes; no placeholder installer is published.
+
+## 20261006 Shared playback seam integration and next R1 allocations
+
+Root integrated `8fc8828` from the isolated shared playback pass. Exact
+attempt, step, generation and asset identity now fence WebView observations
+before the existing Runner worker owns timing, input and recording. Focused
+synthetic worker/runtime checks passed in the source branch; installed playback
+and VLC observations remain open.
+
+R1 RR-04/RR-07/RR-08/RR-09/RR-10 Backend Verification: one isolated VLC
+adapter pass may add a supervised VLC live observation/control seam that sends
+fenced, decoded playback state to the shared Runner `PlaybackObservation` path.
+Keep the worker the only authority for form steps, input, sampling, markers,
+LSL, XDF and attempt receipts. Own only the VLC adapter/protocol seam and the
+minimal named `research_runner_master/playback.rs` integration. Do not enable
+research Start, infer decoded frames from command acknowledgments or terminal
+CSV, or claim a fourth-party VLC installation qualifies the Runner. Return
+the exact remaining host/package hookup and installed evidence gates.
+
+P7/R1 RR-04/RR-10 Repository/Web Synchronization: a separate isolated
+packaging pass may correct the FlubberRecorder Windows workflow to verify a
+clean-machine dependency install from a pinned, immutable HTTPS player setup
+and provenance. Own only the Recorder workflow, packaging assertions and
+focused tests. Use a testable fixture for bad hash/offline behavior; do not
+publish a release or create an installable placeholder URL. The root will
+provide the final player URL/hash after current source packaging is fixed.
+
+## 20261006 WebView frontend and Recorder control integration handoff
+
+Root integrated WebView frontend cleanup as `9ceb09a`, with current desktop
+build/boundary and 79 focused UI/bridge/package checks passing. Hidden playback
+defaults to WebView, the active Planner catalogue rejects retired native
+selection before IPC, and research Start remains visibly closed; strict old
+manifest/recovery readers and explicit retired-mode rejection remain. This is
+not installed decoded-playback or XDF qualification.
+
+Recorder's legacy single-video controls were integrated as `1830aca` and its
+pre-Start Stop/rearm test correction as `f86f4cb`: full native 22/22 and Node
+5/5 checks pass. Its local debug dependency verifier accepted the exact
+installed player package. The `b8c3b0e` player setup passed all 604 staged and
+installed payload hashes, installed CLI master1 inspection and same-PC idle
+control/status/shutdown smoke. See
+`docs/flubber-vlc-player-local-package-2026-10-06.md`. Later source needs a
+fresh player package; installed Recorder UI, dependency download, actual
+playback and shared Runner LSL/XDF remain open.
+
+## 20261006 Shared Runner playback observation seam allocation
+
+R1 RR-04/RR-07/RR-08/RR-10 Backend Verification, following the read-only
+VLC consumer assessment. Root assigns one isolated source pass in
+`research_runner_master/{worker.rs,runtime.rs}` and a private sibling
+`playback.rs`: route current WebView observations through an occurrence,
+attempt, generation and exact-asset-fenced common live playback observation
+path into the existing `MasterWorker::reconcile`. Preserve current WebView
+behavior and gates; prove stale/wrong observations reject, first decoded
+Playing alone opens native input/sample timing, and pause/end close it.
+Questionnaires, ISIs, markers, LSL, recorder/XDF and attempt evidence remain
+owned by the one Runner worker. Do not add a VLC-specific parser, scheduler,
+input reducer, LSL/XDF service, qualified Start, plugin changes or installer
+claim in this seam. Report the interface a later supervised VLC adapter must
+provide and keep its missing live decoded observations as a closed gate.
+
+## 20261006 Retired playback frontend controls allocation
+
+R1 RR-04/RR-10 Backend Verification from integrated `56f1bb8`. Root assigns
+one isolated frontend pass for the remaining reachable/defaulted GstPlay
+selection in the Planner shell and dormant legacy package bridge. Select the
+current WebView path explicitly, show its closed research Start reason, and
+remove user-facing native GstPlay offers or success text. Preserve strict
+historical manifest/recovery readers and their explicit rejection of retired
+mode tokens; do not invent a qualified WebView run, change Planner JSON, or
+touch the native Runner Start gate. Own only `site/src/research` UI/bridge files
+and matching focused synthetic UI tests. Report every retained historical
+token and what would break if it were deleted.
+
+## 20261006 Shared VLC Runner consumer assessment allocation
+
+R1 RR-02/RR-04/RR-07/RR-08/RR-09/RR-10, read-only Integration Readiness
+from `56f1bb8`. Root assigns an independent comparison of the installed
+standard Runner worker/services with the selected-master VLC launcher. Identify
+the smallest first source seam that gives the separate VLC Runner the existing
+Runner authority for participant forms, physical input, scheduled affect
+samples, event/information LSL and own/selected-external XDF. Keep playback
+backend and observed lifecycle as the only permitted variant, with exact
+recipe/asset/attempt identity; no second recorder stack or research Start
+claim. Return file-level ownership, a bounded next patch, tests and blocking
+contracts before editing source.
+
+## 20261006 Retired GStreamer active-source cleanup allocation
+
+R1 RR-04/RR-10 Backend Verification, isolated after the `1950100` WebView
+Start-gate patch. Root assigns the active package/native-media capability
+seam: stop advertising `rust-gstplay`, remove any reachable GstPlay Start or
+qualified-success branch, and fail closed under the selected WebView backend.
+Preserve versioned persisted recipe/manifest readers and explicit rejection of
+old modes; no GStreamer crate, runtime or resource is to return. Own
+`research_native_protocol/{commands,runtime}.rs`, `research_native_media.rs`
+and focused tests only, plus a narrow dormant frontend branch if independently
+shown active. Do not change Planner JSON, authorize normal research Start, add
+unsafe FFI, or claim installed qualification. Report any compatibility token
+that must remain for reading/rejecting old receipts rather than silently
+deleting it.
+
+## 20261006 FlubberRecorder same-PC player UI allocation
+
+FlubberRecorder Backend Verification/UI Finalization, isolated from integrated
+`b8c3b0e`. Root assigns its owner a minimal participant-safe same-PC control
+surface for the already supported legacy one-video player protocol: choose a
+local video, Arm, Play, Pause/Resume and Stop with visible correlated state,
+errors and safe rearm. Reuse the existing Tauri `ControlClient`, verified
+player installation and current dependency boundary; do not duplicate a VLC
+player, add network transport, or expose incomplete master research Start.
+Apply the project Uncodixfy Pretext skill to text-bearing frontend controls
+and verify keyboard and bounded layout in source/rendered checks where
+available. Own only Recorder Tauri command/UI files and focused tests; do not
+edit the launcher, Planner, standard Runner or shared recipe contract. Root
+owns installed Recorder package, player download, UI observation and release.
+
+## 20261006 Runner input-edge and neutral marker allocation
+
+R1 RR-07/RR-09 Backend Verification from integrated `b8c3b0e`. Root assigns
+one isolated standard-Runner worker pass for the explicitly requested
+controller-recording seam in `for-ai/65`: preserve original observed physical
+input timestamps in input-edge LSL/XDF markers, and emit a neutral-reset marker
+when video ends after applying the reset. The neutral hotkey remains blocked
+during active video; session-draft capture/override UI stays fail-closed until
+its own native receipt/recovery binding exists. Own the R1 worker, marker and
+input reducer seam plus focused tests; coordinate only if the standard Runner
+Start-gate owner needs a shared file. An additive Runner-only v2 marker
+observation and its independent XDF reconstruction reader are included only
+if the closed v1/P3 marker vocabulary cannot express the requested events.
+Preserve strict v1 readers, keep P3 authored markers unchanged, and test
+v1/v2 reconstruction together. Do not change Planner JSON, VLC plugin, or
+research qualification.
+Installed physical input and independently read XDF remain separate gates.
+
+## 20261006 Standard Runner WebView Start gate allocation
+
+R1 RR-04/RR-10 Backend Verification. Root assigns one isolated standard-Runner
+pass from `b8c3b0e` to remove the active normal-Start dependency on retired
+`PlaybackMode::NativeGstPlay` at `research_runner_master/runtime.rs`. Keep
+research Start fail-closed until exact installed WebView playback, physical
+input and LSL/XDF qualification exists; expose an accurate WebView-specific
+reason and preserve the separately authorized unqualified local-validation
+path. Own only the R1 Start/media capability seam and focused regression tests.
+Do not reintroduce GStreamer, relax the recording gate, change Planner JSON, or
+claim physical qualification. Full removal of historical Gst references and
+versioned receipt readers is a separate compatibility audit.
+
+## 20261006 VLC Arm-bound master identity allocation
+
+R1 RR-02/RR-04/RR-09 Backend Verification. Root assigns the VLC launcher owner
+one isolated pass from integrated `b8c3b0e`: Arm must freeze the validated
+master byte hash and selected-plan identity, then Start must reject a changed
+master before launching work. An early failure, cancellation, or panic receipt
+must retain that Arm identity; terminal references remain correlated and
+generation-fenced. Existing verified asset closure stays authoritative. Own
+only `experiments/vlc-flubber/player-launcher/src/{control,selected_master}.rs`
+and focused source tests; do not change Planner JSON, Recorder wire fields, or
+open research Start. The standard Runner's obsolete NativeGstPlay Start gate is
+a separate R1 follow-up. Installed VLC playback, forms, LSL/XDF, physical
+input, and timing remain release gates.
+
+## 20261006 FlubberRecorder legacy single-video control UI handoff
+
+R1 RR-04/RR-09 Backend Verification, isolated
+`codex/segment-recorder-legacy-controls` from integration `b8c3b0e`:
+FlubberRecorder now selects one local video and exposes Arm, Play, Pause,
+Resume, Stop and correlated phase/generation through the existing verified
+same-PC player connection. A successful legacy Stop retains that connection
+for a new Arm; failed commands and Drop retain fail-closed cleanup. Play and
+Pause are labelled as requests, not observed playback. Planner master
+inspection and disabled research Start remain separate. No launcher wire,
+recording, network or installer changes. Five Node tests pass, including a
+focused UI state/command cycle; Rust formatting and source checks pass. The
+locked Pretext 0.0.9 ESM import closure and MIT license are vendored into the
+static WebView; runtime measurement marks text fit and wrapping on resize.
+This host has no available browser/app surface for rendered measurement, and
+the cold Recorder Rust build was deferred while package Rust compilers were
+active. Root owns unified Windows compile, installed UI/keyboard inspection,
+and all research playback/LSL/XDF qualification gates.
+
+## 20261006 Recorder selected-sequence teardown follow-up
+
+R1 RR-04/RR-09 Backend Verification, isolated
+`codex/segment-recorder-sequence-lifecycle` from integration `0619b88`:
+FlubberRecorder's active selected-master client closes its stdio pipe and
+waits briefly on Drop, broken-pipe shutdown, or a malformed/uncorrelated
+reply. If the player launcher is still cleaning up, Recorder leaves that
+launcher alive to cancel and reap its owned VLC child; it does not force-kill
+only the parent process. Normal correlated Stop -> Status and successful
+Shutdown behavior retain the v1 wire contract. Eleven focused control tests
+pass, including fake-player cleanup delayed beyond the former two-second kill
+window for Drop, broken-pipe Shutdown and an uncorrelated reply. The launcher
+may continue cleaning up after Recorder releases its process handle;
+installed process-tree, terminal-receipt and research recording gates remain
+with root.
+
+## 20261006 Installed recording-capable Runner candidate at `d928dcc`
+
+Replacement package run `37415641400` passed its Windows build, provenance,
+workflow install check, and artifact upload at source
+`d928dcc9cd9e541d02d0b37a61c140756a6dd5e9`. The downloaded setup SHA-256
+`1d577f7b2cd9a806d3d5f5e1b6f363f834f81dad2b406ce763285ec7228392d4`
+matches provenance. Its `runner-desktop` feature resolves `lsl-streaming` and
+`native-acquisition-windows`; local `cargo check --no-default-features
+--features runner-desktop --bin affect-runner` passed. The idle superseded
+`1c74f56` app was closed and removed via its uninstaller. The replacement
+installed successfully, and `verify-installed-desktop-package.ps1` passed.
+The installed `affect-runner.exe` SHA-256 is
+`3d201966ca30996a14e5849a3f4873f41e618069601274e9bc0ffe229aac8856`
+at 14,319,616 bytes, with only that executable and `uninstall.exe` installed.
+It is open for researcher review. The real-master one-video trial with
+30-frame/1,000-ms bounds is declared in
+`docs/runner-installed-webview-qualification.md`. No playback, physical
+input, recorded LSL/XDF, rendered UI or research qualification is claimed.
+
+## 20261006 Same-PC selected-sequence control owner split
+
+R1 RR-04/RR-09, Backend Verification. Root allocates the launcher owner the
+`experiments/vlc-flubber/player-launcher/src/{control,selected_master}.rs`
+seam: extend the existing `flubber-vlc-control/v1` stdio Arm with an exclusive
+typed `masterSequence` selection, preserve one-video Arm, and own a
+cooperatively stoppable sequence worker plus VLC child across videos and ISIs.
+Stop remains `stopRequested` until the child is reaped; a correlated `status`
+poll reports a bounded terminal receipt reference. No unsolicited reply,
+new unsafe FFI, second LSL/XDF stack, or research Start claim.
+
+Separately, the Recorder owner changes only
+`experiments/vlc-flubber/flubbercorder-tauri/src-tauri/src/control.rs` in its
+isolated worktree: mirror the typed Arm/status wire contract, preserve request
+and generation correlation, reject unexpected frames, and return validated
+terminal reference fields. This pass does not yet expose new Recorder UI
+commands or claim full experiment recording. The owners exchange exact field
+names before edits. Each returns focused protocol/cancellation tests and
+source checks; root integrates after comparing both sides. Installed player
+stop/failure, process-tree, LSL/XDF, questionnaire, timing and package gates
+remain separate.
+
+## 20261006 Runner package recording/input feature correction
+
+Read-only audit of installed source `1c74f56` found the package builder passes
+`--no-default-features` but requests only `runner-desktop`. Its provenance
+confirms this feature set, so the installed candidate cannot perform the
+planned LSL/XDF or native input trial. Root told the researcher to hold the
+trial; no playback/XDF observation had been collected. The first replacement
+requested three separate Tauri CLI features; package run `37415097144`
+rejected that combination before native compilation with a main-binary lookup
+error. `runner-desktop` now directly enables `lsl-streaming` and
+`native-acquisition-windows` in Cargo, while the package requests the one
+application feature. Provenance lists the resolved feature set. The new
+installer must compile, install, and receive its exact hashes before trial
+admission. The still-open `1c74f56` app is for interface inspection only.
+
+## 20261006 Installed Planner and real master5 handoff at `1c74f56`
+
+Planner package run `37413024731` passed on `windows-2022`. Downloaded setup
+SHA-256 `851e77d4352e30e49f8858e06f495511202d8509cf611e0408a4c8dfe31cfb9b`
+matches provenance for full source
+`1c74f5669fe8237ab0072b6db109488c2441f8fa`. The previous installed
+Planner was idle and removed through its own uninstaller. The new package
+installed, `verify-installed-desktop-package.ps1` passed, and the installed
+CLI SHA-256 is
+`293cc6574c875519437fb391ddcbd8c014f3b7bc663224d8b567ff2b135db3fd`.
+The installed Planner GUI is open. Repeating all 25 production CLI authoring
+steps passed and saved a byte-identical real video master5 with SHA-256
+`3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`.
+The new transcript SHA-256 is
+`f9daf08e88e445d448174c8d88c30a38048dcc1ffaa6f9dbe6827e1c9ff784d9`;
+exact paths and claim limits are in
+`scripts/qualification/planner-real-video-master.md`. Rendered Planner UI,
+installed Runner playback and research qualification are not established.
+
+## 20261006 Installed standard Runner candidate at `1c74f56`
+
+Workflow run `37413020933` passed on `windows-2022` at full source
+`1c74f5669fe8237ab0072b6db109488c2441f8fa`. Root downloaded the unsigned
+setup and checked its SHA-256
+`1ed8f25cdc48c8b67287fcde4f6a19764b68f9413daa92388b8ee2e53c63e592`
+against package provenance. The prior installed Runner was verified idle,
+closed, and removed through its own uninstaller. The new setup installed
+successfully; the installed `%LOCALAPPDATA%/Experiment Runner/affect-runner.exe`
+SHA-256 is
+`65f5bf9268b90f7fca653af98fc99b2e66338a0f62668b34c9a92c0fb1eea99b`.
+`verify-installed-desktop-package.ps1` passed, and the candidate is open for
+researcher inspection. The predeclared `0a17aab` trial below was superseded
+without observed playback or XDF. The same real master5 and unchanged
+30-frame/1,000-ms bounds are now declared against this exact candidate in
+`docs/runner-installed-webview-qualification.md`. No physical playback,
+input, recorded LSL/XDF, rendered UI, or research qualification is claimed.
+
+## 20261006 FlubberRecorder same-PC control audit
+
+Read-only R1 RR-04/RR-07 companion review at `5931427`: Recorder currently
+verifies the standalone player payload, connects/disconnects a supervised
+same-PC process and inspects a selected Planner master. `main.rs` registers no
+run-control commands and the web Start button is disabled; `control.rs` keeps
+Arm/Start/Pause/Resume/Stop sending unused. The player's stdio replies are
+requests, not observed playback, and its selected-master path plays one video.
+After the VLC chronology pass, allocate a player-owned selected-master control
+and observed-step contract, then a separate Recorder adapter/UI pass. Do not
+open research Start or invent a second recording authority. The current
+two-second launcher-only force-kill may leave a VLC child alive; installed
+disconnect/failure and process-tree evidence is required. The Recorder
+installer source verifies downloaded player bytes and payload, but no fixed
+published player URL or upgrade/uninstall receipt exists. Four focused source
+and package checks passed; no Recorder source was changed in this audit.
+
+## 20261006 Installed standard Runner candidate at `0a17aab`
+
+Workflow run `37410302707` succeeded. Root downloaded its unsigned NSIS
+artifact and compared its 4,234,016-byte setup SHA-256
+`5f2ee400b1990292bfa3ebeb674bc9428d366e9849261010413442f1ad619a2c`
+with package provenance. The prior installed f19 Runner was idle and matched
+its recorded hash; its own uninstaller exited zero. Installing this candidate
+exited zero. `%LOCALAPPDATA%/Experiment Runner/affect-runner.exe` is
+13,746,176 bytes with SHA-256
+`3f68c273742fcfebfae0a50623a707de040a4960ddc0e314ef87e02964a8071c`;
+the installed executable set is only that Runner binary and `uninstall.exe`,
+and `verify-installed-desktop-package.ps1` passed. The candidate is open for
+researcher inspection. This receipt proves package/install identity, not
+playback, input, LSL/XDF, rendered UI, or research qualification. Its
+provenance names the former `windows-latest` image; the image pin requires a
+new package. The exact artifact remains under
+`C:/Users/gfeje/Documents/GitHub/.affect-checks/runner-package-37410302707`.
+
+## 20261006 VLC selected-plan chronology owner handoff
+
+R1 RR-03/RR-04 with RR-07/09 event seams, Backend Verification: the standalone
+launcher adds `--play-master-sequence PATH --participant ID --selector-json
+JSON [--data-dir PATH]`. It uses the existing strict `PreparedMaster` selection,
+rejects any questionnaire in the full plan before starting VLC, then executes
+each saved video and ISI occurrence in order. Repeated video assets retain
+distinct position, entry ID, and generation identities. Existing single-video
+and same-PC control routes are unchanged. The final
+`flubber-vlc-selected-sequence-status` v1 receipt includes exact master/plan
+identities and ordered start/end/failure events. Video start/completion media
+times come from the verified plugin CSV after each child exits; their wall
+`confirmedAtUnixMs` is post-run confirmation, not the physical onset time.
+ISI start/end use the launcher clock and measured elapsed time. The source
+does not produce shared Runner LSL/XDF or qualify research Start.
+
+The current synchronous selected-video actor waits for normal child exit and
+kills/reaps it on deadline or wait error. There is no sequence stop command or
+parent-death guard: a Recorder force-kill of the launcher can leave VLC alive.
+That needs a separately allocated supervisor seam before Recorder depends on
+this route. `cargo check --locked` passed for the launcher, and its five
+focused `selected_master::tests` passed with the native test binary linked;
+they cover repeated-video/ISI plan order and decoded CSV event order. Installed
+VLC sequence execution and Windows package correspondence remain separate.
+
+## 20261006 Windows desktop installer image pin
+
+Root owns the P7/R1 installer seam in Repository/Web Synchronization. Package
+run `37410302707` passed and installed at source `0a17aab`, but its provenance
+reported `win25-vs2026` because the shared Planner/Runner packaging matrix
+still selected `windows-latest`. The source CI and VLC Player package already
+select `windows-2022`. Pin the two Windows desktop package targets to
+`windows-2022`, retain architecture/provenance checks, and require a fresh
+package candidate before attributing any installed evidence to this change.
+This is a workflow reproducibility fix, not an app or research gate.
+
+## 20261006 Standard Runner installed WebView trial allocation
+
+Root owns the R1 RR-04/RR-07/RR-08/RR-09 Final Runtime Correspondence
+installed trial for the real Planner master5 authored at 1920 × 1080. The
+immutable recipe SHA-256 is
+`3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`;
+strict selection gives `P001/en/variant-1`, video position 2, 15,033 ms.
+Before package run `37410302707` completes or any observed playback, the trial
+declares at least 30 decoded frames and at most 1,000 ms absolute error in
+both media and marker video spans. See
+`docs/runner-installed-webview-qualification.md` for the exact artifact and
+independent XDF reader procedure. This one trial cannot qualify research Start,
+external streams, 30-minute timing, VLC, or Recorder.
+
+## 20261006 R1 preparation settings route — isolated UI owner
+
+R1 RR-01/RR-06 UI Finalization, branch
+`codex/segment-r1-preparation-settings`, worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-settings`,
+base `3999444`, owned by the Runner UI agent. The intended function is a
+visible, keyboard reachable route from fullscreen participant preparation to
+the existing Session settings dialog. The only additional user action is
+opening that dialog; this changes no Planner JSON, Runner receipt, input test,
+recording gate or native command. `runner/src/view.js` already defines the
+button and `runner/src/app.js` already routes it to the dialog, but
+`runner/runner.css` hides it. The bounded source change is that CSS selector;
+`scripts/qualification/runner-launcher-audit.mjs` adds a focused rendered
+visibility, focus and dialog-route assertion. No other owner is editing this
+button. Focused Runner checks and a rendered narrow/normal viewport check
+are due before UI acceptance. Installed playback, input, LSL, XDF and package
+qualification remain with root. Root retains the single current installed
+Runner candidate; this isolated owner will not replace or launch it.
+
+Owner handoff: `pnpm runner:build` and its 12-file Runner boundary check pass;
+the seven focused master-plan tests, audit-script syntax and `git diff --check`
+pass. The new rendered assertion remains unverified: Edge headless returned an
+empty DOM without a receipt, Chrome did not finish its isolated run, and
+Computer Use exposed no app or browser surface. Root must run this case on the
+rebuilt integrated candidate before claiming a visual or keyboard pass. The
+installed f19 package predates this CSS change and was not touched.
+
+## 20261006 VLC selected-plan chronology — next owner allocation
+
+Root allocates R1 RR-03/RR-04 with RR-07/09 named event seams, Backend
+Verification, for the next isolated VLC owner pass after the CRT link repair.
+The current launcher plays one explicitly named video occurrence from a strict
+Planner master; it does not execute the selected experiment. Extend only that
+path to walk the immutable selected video/ISI chronology in order, including
+repeated video occurrences and declared ISI durations, with occurrence and
+generation-bound observed start/end/failure receipts. Keep forms as an explicit
+unsupported step that fails closed until the questionnaire UI owner is
+allocated; do not skip a form to claim completion. Reuse `PreparedMaster` and
+the current VLC playback actor. Do not change the master JSON, open research
+Start, invent LSL/XDF evidence, or edit standard Runner/Recorder files. Evidence
+now: focused plan and native launcher tests; installed timing and shared Runner
+recording follow separate gates.
+
+## 20261006 Installed f19 UI source review
+
+Read-only UI_VERIFY inspected the exact f19 Planner/Runner installed package
+identities and current source. Computer-use reported no available app/browser
+surface, so no installed-window visual claim is made. In Runner preparation,
+`runner/runner.css` hides Back and Session settings while the missing input-test
+receipt error in `runner/src/app.js` directs the user to Session settings;
+Escape returns to the launcher but is not explained there. Two prominent Runner
+launcher tools open preview-only remote dialogs. Planner's static disabled-script
+message still says it runs an experiment. Owners should address the concrete
+copy/navigation gap in a bounded UI pass, then verify rendered WebView text and
+focus; do not treat source inspection as a rendered accessibility receipt.
+
+## 20261006 Retired GStreamer source boundary review
+
+Root allocates an R1 RR-04/RR-07 read-only Backend Verification review of
+remaining `GstPlay`/`rust-gstplay` identifiers in active Planner/Runner source,
+tests and protocol capability replies. Compare compiled/packaged behavior with
+legacy reader compatibility and the user's explicit removal of GStreamer.
+Return the smallest safe deletion/rename sequence with exact files and focused
+checks. Do not rewrite saved master versions, silently alter historical readers,
+or open research Start. Root will allocate a separate owner implementation pass
+after resolving current installed WebView and VLC package barriers.
+
+Root's initial source/package inspection: no `gst`/`gstreamer` filename occurs
+in the installed f19 Runner tree, and active Cargo/package/workflow manifests
+name no GStreamer dependency. `NativeMediaService` publishes `html-video` and
+has no native player actor. The legacy package-protocol capability in
+`research_native_protocol/commands.rs` still reports `rust-gstplay`, although
+its normal Start remains closed; `research_runner_master/runtime.rs` still has
+the guarded old normal Start branch. These active labels need a bounded owner
+cleanup after the WebView evidence pass. Saved geometry and playback enum names
+remain in versioned readers and checked-in historical fixtures; deleting those
+without a compatibility decision would break old masters. Source inspection is
+not an installed playback qualification receipt.
+
+## 20261006 Real Planner master for installed Runner evidence
+
+Root allocates a P7-09 / R1 RR-10 named integration seam, Final Runtime
+Correspondence, for a minimal production-CLI-authored master with one checked-in
+real CAAV MP4. The existing `planner-mock-experiment.mjs` expects a missing
+four-questionnaire source set and retired native Gst metadata; the verified
+current Planner uses unqualified WebView decoded-frame attestation for media
+catalogue preparation. The bounded deliverable is a reproducible qualification
+fixture driver and exact source/recipe receipt using the installed f19 Planner
+CLI, or a source-backed blocked report naming the first actual failing command.
+Keep participant data synthetic, use no hand-written master or replacement media
+receipt, and do not claim Runner playback or XDF from Planner authoring alone.
+The standard Runner owner retains the WebView diagnostic and installed evidence
+reader; root coordinates the shared JSON and fresh package at the barrier.
+
+## 20261006 VLC launcher CRT link handoff
+
+R1 VLC launcher owner traced source CI `37404888283` and a separate local
+target: `tauri-build 2.7.1` writes an 82-byte placeholder `msvcrt.lib` into
+the `affect-research` build output when its static VC runtime mode is active.
+The standalone `flubber-vlc-player` imports that crate with default features
+off, yet inherits the output directory in its native library search path.
+`link.exe` reports `LNK4003` for the placeholder, then leaves 63 CRT/C++
+symbols unresolved. The same failure with an independent target excludes a
+shared `CARGO_TARGET_DIR` as the necessary cause.
+
+The initial build-script-only repair used a `tauri-build 2.7.1` API absent
+from the separately locked desktop dependency (`2.6.3`), so source CI could
+not compile it. The version-compatible repair restores `tauri_build::build()`
+and pins its build dependency to the already desktop-locked `2.6.3`, including
+the standalone launcher lock. That version activates its CRT override only
+when `STATIC_VCRUNTIME=true`; launcher build jobs do not set it. Fresh locked
+checks and Windows CI/package reruns are required before claiming the link
+barrier closed. This is a source handoff, not a playback or release claim.
+
+Follow-up source CI `37410294675` reached the launcher and exposed a second
+lockfile seam: its selected `tauri 2.11.6` with `tauri-runtime/-wry 2.12.1`
+cannot compile together. The launcher lock is now aligned to the already
+working desktop set: `tauri 2.11.5`, `tauri-runtime 2.11.3`,
+`tauri-runtime-wry 2.11.4`, `tao 0.35.3`, `wry 0.55.1`, and WebView2 COM
+`0.38.2`. Its Tauri macros/codegen/plugin and utils are also aligned to the
+desktop lock (`2.6.3`/`2.9.3`) to avoid mixing generated interfaces. This is
+dependency coherence only; rerun the launcher test and package link before
+claiming the barrier closed.
+
+## 20261006 Planner and standard Runner isolated installer receipts
+
+Planner Windows package job `37404200312` at `f19b12d` succeeded. Root
+downloaded setup SHA-256
+`5ddef85a0576a6d4a1e70bb0248a3955dfc282fbdc8602a05b826044d3c1b74b`,
+uninstalled only its earlier contaminated test candidate and installed this
+one locally. `%LOCALAPPDATA%\Experiment Planner` now contains only
+`Experiment Planner.exe`, `affect-planner-cli.exe`, and `uninstall.exe` as EXEs.
+The installed CLI's SHA-256
+`de1bead208c84c1ab75e51a2d73ce688d6d4626b1edd97b2ec3e138a2614b875`
+and 13,366,784-byte length match the staged build provenance; installed GUI
+SHA-256 is `92704cf4abbb649ddb36465895b95a0d341a819aae1c8cd82c2cc4d92b459a40`.
+The installed CLI `--help` command exited zero and reported its JSONL
+interface. This is package identity and one CLI smoke receipt, not full
+functional or release qualification.
+
+Windows package job `37404203204` at `f19b12d` succeeded with the new exact
+installed-executable check. Root downloaded setup SHA-256
+`301ffaf702412052cab5ff306edab850bd54e9bd66611901bdab5ee9921b3f18`,
+uninstalled only its own earlier contaminated test candidate, installed this
+setup locally, and reran `scripts/verify-installed-desktop-package.ps1`.
+`%LOCALAPPDATA%\Experiment Runner` contains `affect-runner.exe` (SHA-256
+`6e33e9a910910cc1238e268448281df9c1b439e765278a4d5f5b0acc4cbeaf95`)
+and `uninstall.exe` as its only EXEs. This closes the distinct-binary package
+check for this unqualified candidate, not WebView execution, LSL/XDF, timing,
+input, research Start, or release qualification. The R1 owner found that this
+candidate lacks the accepted media-observation diagnostic needed by the
+installed evidence reader; the R1 source fix is now integrated and needs a
+fresh package before actual evidence collection.
+
+## 20261006 Source CI Windows toolchain pin
+
+The `618eab3` source CI passed frontend, native, and player-manifest checks,
+then failed while linking the Flubber VLC launcher test under the moving
+`windows-latest` image: VS 2026 `link.exe` left 63 CRT symbols unresolved.
+GitHub's image catalogue now maps that label to Windows 2025/VS 2026. Root
+pinned this source workflow to `windows-2022`/VS 2022, matching the separate
+player package runner, but CI `37404888283` failed with the same symbols.
+The linker cause remains open; image selection alone did not repair it.
+
+## 20261006 VLC Player package provenance seam
+
+Root owns the player-package shared seam for R1 RR-04/RR-07 and the fourth
+installer dependency. `package-player.ps1` now records the exact setup hash,
+both raw manifest hashes, source commit and unqualified status in an adjacent
+package receipt; the player Windows workflow compares the built setup and
+installed manifests before uploading that receipt with the installer. Recorder
+may consume these pins in its separate package pass. The temporary Actions
+artifact is not a fixed published URL. Installed master execution, Recorder
+download installation and release publication remain open gates.
+
+## 20261006 Four-program Codex delegation route
+
+Root integration pass, Repository/Web Synchronization, on
+`codex/integration-four-installers`: update the existing ChatDev-style Codex
+skill and compartment map for Planner, standard WebView Runner, Flubber VLC
+Runner and same-PC FlubberRecorder. Route UI, function/JSON, recording,
+packaging and simplicity checks only when relevant, with peer messages at
+shared-contract barriers. Evidence now: skill validation, documentation diff,
+and existing source/installer receipts; no new application qualification claim.
+The external ChatDev YAML graphs remain bounded optional proposal tools. App
+owners continue their allocated R1/P passes in isolated worktrees, and root
+reconciles their commits and installed gates before any release claim.
+## 20261006 VLC R1 selected-master video owner handoff
+
+R1/RR-03/RR-04, Backend Verification, branch
+`codex/segment-r1-vlc-master-video` from integration `d3d8714`. The standalone
+player adds `--play-master-video MASTER --participant P001 --selector-json JSON
+--entry-id ENTRY` for one exact selected video occurrence. It uses the existing
+strict `PreparedMaster::read_file` and selected plan; no second recipe reader or
+schema is introduced. The selected `assets/stimuli/` file is resolved without
+linked path components, copied to a fresh run directory, and checked
+against the complete saved SHA-256 and byte length before FFmpeg/VLC preparation.
+The terminal JSON status binds the saved master file bytes, selected recipe
+projection, plan, participant, selector,
+occurrence, asset and evidence directory. It reports `ended` only when the
+native filter writes the opt-in decoded-sentinel `video_complete` row immediately
+before `video_end` and VLC exits successfully; interruption, timeout or missing
+CSV evidence reports failure. Existing `flubber-vlc-control/v1` and Recorder UI
+are unchanged; legacy CSV rows are unchanged. This playback-only path suppresses legacy two-channel Flubber
+LSL so it cannot masquerade as the shared Runner stream contract.
+
+Rust launcher `cargo check --locked` and `cargo check --locked --tests` passed;
+format and whitespace checks passed. Local `cargo test --locked` did not execute
+tests: `link.exe` reported 63 unresolved CRT symbols even after `vcvars64.bat`.
+Root owns Windows-2022 CI and installed package/decoded-frame qualification.
+Full selected chronology, forms, shared sampling/LSL/XDF, independent recording
+readback and installed timing remain open. Recorder Research Start stays closed.
+## 20261006 Recorder R1 full player payload trust — next owner allocation
+
+Root package seam for this pass: the player installer puts Inno's uninstaller
+files in the real top-level `{app}\uninst` directory, and the payload writer
+includes hidden staged files. Recorder may exempt only that directory from
+its exact installed-file inventory; all other additions remain a failure.
+
+VLC player installer source at `52644da` writes pinned seven-component
+`manifest.json` and deterministic all-file `payload-manifest.json`. Recorder
+owner may branch from this integration commit for a bounded R1 RR-04/RR-07
+trust pass: verify the full payload inventory against its pinned raw manifest
+before executing the player, reject missing/extra/changed files, and retain the
+existing critical-file checks. Add focused tests for tampering and installed
+directory traversal. Do not open research Start, invent a release URL, or edit
+VLC package source; root owns build/pinning and installed qualification.
+
+## 20261006 R1 installed WebView evidence — next owner allocation
+
+R1 RR-04/RR-07/RR-08/RR-09, Final Runtime Correspondence. From integration
+`521a59b`, the Runner owner may add a bounded Windows installed-candidate
+qualification harness for one selected master video: exact package identity,
+decoded-frame/ended observation, native LSL/XDF recording and independent XDF
+readback, with timing/failure receipts. Keep research Start closed until the
+real installed evidence passes; report any concrete authority or UI gap rather
+than substituting a simulated browser run. Root owns the final claim and any
+package workflow integration. Do not edit Planner, VLC or Recorder ownership.
+
+## 20261006 VLC R1 player package and Recorder control allocations
+
+VLC owner: R1 RR-04/RR-07, Backend Verification. From the current integration
+commit, selectively restore the existing Flubber VLC player build/package source
+and adapt it to the standalone `FlubberVLC.exe` launcher. Produce a reproducible
+Windows player installer recipe and exact payload manifest; keep it separately
+installable. Do not import unrelated legacy GStreamer, experimental runtime, or
+historical branch state. Verify scripts/source where possible and report the
+remaining remote build and installed-player gates. Root integrates and runs CI.
+
+Recorder owner: R1 RR-04/RR-07 same-PC companion seam, Backend Verification.
+From the current integration commit, implement a typed, supervised local
+FlubberRecorder client of the launcher's stdio protocol. Preserve the pinned
+player-manifest trust check; leave research Start closed until complete master
+execution and recording contract exists. Add focused control/teardown tests and
+document the player installer prerequisite. Do not edit VLC launcher/package
+files; communicate protocol gaps to VLC owner and root. Root integrates and
+owns installed qualification.
+
+## 20261006 R1 WebView grant lifetime — next owner allocation
+
+R1 RR-04/RR-07 Workspace/Runner shared seam, Backend Verification. The Runner
+owner may branch from integration commit `6d77d9e` to make a bounded media URL
+grant revocation patch. Revoke each issued grant when its occurrence ends,
+stops, fails, or the post-issue live-status check rejects it; preserve existing
+Workspace URL readers and tests. Return a focused source/test receipt to root.
+Root owns integrated native CI and installed qualification. This allocation
+does not open research Start or alter Planner, VLC, or Recorder ownership.
+
+Runner owner grant-lifetime handoff from integration `604e7cf`: a Runner-only
+registry tracks URL tokens against the exact WebView offer. Registration fails
+after an occurrence closes; normal end, stop, failure and worker drop revoke all
+registered tokens. A URL issued during a status change is revoked on mismatch.
+The shared Workspace service gains a scoped, idempotent single-token revoke;
+other URL readers and decode attestations retain their current behavior. Two
+focused Rust tests cover exact occurrence cleanup and isolation of another
+reader's URL. Native compile/CI and installed playback remain root's gate;
+research Start stays closed. Revocation denies subsequent URL requests; bytes
+already returned by an in-flight response cannot be recalled. Existing focused
+WebView Node checks passed (3/3), as did Rust formatting and diff checks; the
+new Rust tests await CI because the local C: drive has too little free space.
+
+## 20261006 R1 WebView native handoff — owner source receipt
+
+R1 RR-04, with RR-07/RR-08 native sampling/recording seams, Backend
+Verification. Owner branch `codex/segment-r1-webview-handoff` starts at
+`8e1d65d`. The standard desktop Runner now routes to the native master worker,
+while the static browser retains its CSV-only path. For a selected master video,
+the worker publishes the exact workspace file/hash/length/MIME and a generation;
+the Runner-only URL command checks the live run, attempt, step and binding
+before and after the existing workspace service rehashes and grants the file.
+The WebView sends bounded, sequence-fenced decoded playback observations through
+the existing versioned master action commands. Only accepted Playing opens the
+Rust scheduler and input; buffering/pause, observed end, error and observation
+loss close or fail that native acquisition segment. Rust retains LSL, XDF,
+events and attempt persistence. Root owns registration of
+`research_runner_master_webview_media_url` in the Runner-only Tauri command
+set. No GStreamer source or runtime is restored.
+
+The first pass preserves `qualifiedStartAvailable: false`. Master3–5 local
+validation remains permanently labelled `researchQualified: false`; normal
+research Start and master1–2 validation remain closed. Focused Node playback,
+adapter and master contract checks passed (16/16), as did Runner build/boundary,
+Rust formatting, JS syntax and whitespace checks. Rust
+compile and installed WebView decoded-frame, timing, real LSL/XDF, error,
+keyboard and independent XDF readback remain open; source tests cannot qualify
+the installer. Root must compile the integrated native command registration and
+retain one current installed candidate for those gates. The workspace URL grant
+is rehashed at issue time but is not revoked when a step ends or an attempt
+stops; per-grant lifetime/revocation is a separate Workspace/Runner seam before
+research qualification.
+
+## 20261006 WebView pivot and next parallel allocations
+
+Planner P1 handoff: `dd03a37` was integrated as `17e77ad`. The WebView
+attestation retains exact file-bound duration and browser display geometry;
+Planner v2/v3 catalogue checks accept it while the Runner v3 native binding
+remains separate. Owner reports 66 focused JS tests, desktop build and
+format/diff checks passing. Rust compilation and installed Planner decode remain
+open on the low-space local host; integration Windows CI is pending. No P1
+research or installed qualification is claimed.
+
+VLC R1 intake handoff: `5802385` was integrated as `01fc9d2`. The standalone
+launcher can inspect saved master1–5 files through the existing strict native
+reader and print the selected immutable plan without starting VLC. Execution
+still rejects bare Planner JSON as a video and does not claim playback. Owner
+reports 2/2 JS intake tests, Rust formatting and locked no-deps metadata pass;
+native tests/build remain unrun locally because the Cargo dependency cache is
+incomplete and C: has about 450 MB free. Full selected-plan execution,
+standard LSL/XDF, supervised same-PC control, player package and installer
+qualification remain open.
+
+Windows CI at `263d97a` compiled the shared source but failed linking the
+standalone launcher test executable because the Visual C++ environment was not
+initialized for that step. Root added explicit MSVC environment setup before
+launcher tests; a passing rerun is required before this handoff gains native
+executable evidence.
+
+Next VLC R1 allocation: RR-04/RR-07 same-PC control seam for the separate
+FlubberRecorder program. Root first imports `01fc9d2`; owner branches from that
+integration point, edits only the VLC launcher/control tests and reports exact
+command contract to the Recorder owner. The player owns its VLC child for the
+whole session; a typed newline-delimited stdin command protocol with correlated
+stdout status handles arm, start, pause, resume, stop and shutdown. Parent exit,
+broken pipe, invalid/stale command and child loss terminate safely. No LAN
+listener, bearer link or player control port is exposed to another program.
+The old single-video sidequest runtime cannot claim Planner recipe execution,
+LSL/XDF correspondence or installed qualification from this control slice.
+
+VLC control handoff: `c592879` integrated as `4198b7e`. The launcher now keeps
+its VLC child under a bounded JSON-lines stdio protocol, fences commands by
+generation, and shuts down on parent stream loss. The old public `--arm` path
+is rejected. This protocol confirms that a VLC control write was requested,
+not a decoded frame or recorded sample. The internal loopback RC socket is
+still unauthenticated to other local processes if discovered; it needs a
+reviewed private transport or an explicit local threat-model acceptance before
+qualification. Native build, installed behavior, full Planner sequence,
+standard LSL/XDF and separate player installer evidence remain open.
+
+FlubberRecorder first allocation: companion packaging/local-authority bootstrap
+on a distinct worktree from integration `455f514`. Use only the historical
+Tauri shell metadata needed for a separate Recorder program; write a small
+same-PC UI/Rust adapter that can inspect a selected Planner master through the
+strict Flubber VLC launcher and verify a separately installed player's
+manifest/components. The Recorder installer must not bundle a second VLC/FFmpeg
+tree. Exclude the historical LAN phone server, Python prototype, old
+`flubbercorder-experiment/v1` runtime, and bundled demonstration film. Keep
+research Start disabled while selected-plan execution and Runner LSL/XDF are
+open. The user requires Recorder setup to download the separate player, but no
+qualified, published player setup URL/hash exists yet; design the dependency
+boundary to fail closed and report this as an open packaging gate. The next
+release pass must use a fixed player asset URL and SHA-256, verify it before
+installing, and check the installed seven-component manifest. Evidence now is
+source tests for local-only control, strict plan inspection, missing/tampered
+player rejection, and no duplicate player resources. Installed and research
+claims remain open.
+
+Recorder shell review after `857c9ac` (integrated `f073828`): comparing seven
+files only with the adjacent player-supplied manifest proves self-consistency,
+not trusted publisher identity. Before enabling `--inspect-master`, bind the
+whole installed manifest to an exact trusted SHA-256 embedded by the Recorder
+build, or fail closed when that pin is unavailable. Retain the no-LAN/no-bundle
+boundary and report the residual verify-to-execute file replacement race until
+an installed handle-based design is reviewed. Add focused missing-pin and
+modified-manifest rejection checks. This is a corrective companion packaging
+pass; no player release URL/hash exists yet.
+
+Root packaging allocation: R1/RR-11 standalone standard Runner NSIS source,
+separate from Planner's NSIS. The existing `affect-runner` Cargo binary and
+`tauri.runner.conf.json` already define Runner identity and frontend, but the
+current package helper only builds Planner. Root may add a Runner-only Windows
+target to that helper and a command to invoke it, preserving the exact-commit,
+clean-tree, unsigned, no-default-features guards. Evidence now: focused
+packaging boundary tests and remote Windows installer build when CI is wired;
+installed playback, LSL/XDF, upgrade/uninstall and release remain open.
+
+Direct user decision: remove GStreamer from the active project and use Windows
+WebView video for standard Runner. Root reverted the restored Gst actor and JS
+bridge, removed its active CI/config/runtime staging, and preserved the separate
+Planner installer and strict VLC recipe intake on `codex/integration-four-installers`
+at `31fd46f`. The previous Gst restoration allocation below is revoked.
+Whether historical Git refs are to be rewritten remains an unanswered separate
+decision; current implementation does not depend on it.
+
+Stage: Backend Verification. Current pass goal is a truthful WebView authority
+handoff, Planner WebView catalogue compatibility, and executable VLC recipe
+inspection, with source and focused checks now. Installed playback/timing/XDF,
+four installer qualification and release claims remain open. Standard Runner R1
+RR-04 owns `runner/src/html-video-player.js`, `runner/src/app.js`,
+`runner/src/master-protocol.js`, and narrow native media status/worker seams;
+root coordinates shared Tauri registration. Its current HTML identity routes
+desktop to browser CSV, while native MasterWorker still sees an unavailable
+actor. The owner must fence WebView events to exact run, attempt, step, file,
+hash, and generation; Rust remains the sampling/LSL/XDF authority. Do not set
+qualified Start true from source tests.
+
+Planner P1 owns WebView catalogue attestation and geometry in
+`src-tauri/src/research_workspace.rs`, `site/src/research/native-bridge.js`,
+and narrow Planner projection/tests. Current validator accepts Gst-only video
+geometry while its WebView attestation clears display geometry. P1 may add the
+WebView path without changing master JSON or Runner policy. Root owns shared
+contract changes and integration. R1 VLC owns `PreparedMaster::read_file` and
+the read-only player `--inspect-master` intake, using the existing strict
+master1–5 reader and refusing Start. Neither VLC sidequest JSON nor playback
+claims may bypass this gate. All three owners use separate branches/worktrees,
+share contract mismatches via Root, and hand off focused checks. UI, function,
+recording, and packaging review follows integrated patches.
+
+## 20261006 Four separate Windows programs — first parallel pass
+
+Root integration owner: `codex/integration-four-installers`, worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-chatdev`, base
+`b4a22ba2272d6f5a6b4050ceab65e4ea8488c5d7`. The researcher requests
+four independently available installers: Experiment Planner, standard
+Experiment Runner, VLC-based Experiment Runner, and remote FlubberRecorder.
+FlubberRecorder additionally obtains the VLC player; the VLC player is also
+available on its own. FlubberRecorder controls the custom player on the same
+PC only; LAN and internet control are out of scope. The VLC Runner shares the
+standard Runner's saved recipe,
+session recording gates, outbound LSL and XDF contract. The exact downloadable
+VLC component and remote authority are being audited before their source
+allocation. This is a direct product amendment; prior two-program and
+GStreamer-only text is historical where it conflicts.
+
+Stage: Backend Verification. Current pass goal: restore one bounded standard
+Runner playback seam and package Planner as its own program while VLC and
+FlubberRecorder source/contract audit proceeds. Root owns shared contract,
+integration, installed evidence and release decisions. Focused source, native
+and packaging checks are due now; installed media, independent XDF, timing,
+accessibility and release claims remain open. The old `codex/p7-windows-suite`
+combines two applications into one FFmpeg-based installer and must not be
+merged wholesale. Current `main` has no native GstPlay actor and the D: drive
+named in historical installed receipts is unavailable here.
+
+Planner allocation: P7 primary, P7-04/05/09 with CLI-P7/CLI-SHARED handoff.
+Owner uses a new `codex/segment-p7-planner-installer` branch in the clean
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-installer` worktree
+from the merged main base, preserving its former suite branch ref. Intended
+function: a standalone unsigned
+Planner NSIS containing the Planner and embedded Planner CLI, retaining strict
+master5 Save/Open and questionnaire asset readback. Allowed source:
+`scripts/build-unqualified-desktop-package.js`,
+`scripts/build-planner-cli.js`, the Planner Tauri bundle configuration, and
+focused packaging tests/docs; coordinate any shared manifest or build-script
+touch with Root. The Planner still authors the same canonical JSON and owns no
+Runner session or recording policy. Evidence now: locked SurveyJS check,
+focused Planner/packaging tests, build closure and exact installed-file/CLI
+receipt when a build host has capacity. Media and research qualification stay
+open. Do not mark unrelated CLI/E2E catalogue rows complete.
+
+Standard Runner allocation: R1 primary, RR-04 native playback with RR-07
+playback-to-sampling lifecycle dependency. Owner uses a new
+`codex/segment-r1-gst-restore` branch in the clean
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-plan`
+worktree from the merged main base, preserving the merged plan branch ref.
+Intended function: restore only the pinned optional GstPlay actor
+and runtime verifier from `codex/r1-native-gst-restore` as a source donor,
+preserving the two approved FFI adapters byte-for-byte. Allowed source:
+`src-tauri/Cargo.toml`/lock/build script,
+`src-tauri/native-media/` runtime manifests/staging,
+`src-tauri/src/research_native_media.rs` and its owned media modules,
+`src-tauri/src/research_workspace.rs`, and focused native tests. Root owns
+shared JS bridge, Runner app/adapter, packaging and CI integration. The
+consumer remains the same strict Planner recipe and Runner-owned LSL/XDF
+session contract. Evidence now: actor/runtime verifier tests, feature compile,
+focused lifecycle bridge tests and Windows CI. Keep qualified Start false until
+installed playback and research gates pass; no new unsafe boundary.
+
+Flubber VLC intake allocation: R1 primary, RR-02 strict saved-recipe intake
+and RR-03 selected-plan correspondence. Owner uses a new
+`codex/segment-r1-vlc-master-intake` branch in the clean
+`C:/Users/gfeje/.codex/worktrees/vlc-flubber-sidequest/affect-tracker-research`
+worktree from merged main, preserving the old sidequest branch ref. The dirty
+`flubbercorder` worktree and its uncommitted Python/native experiments are
+untouched. Selectively bring in only the needed VLC player/recorder source
+under `experiments/vlc-flubber/`; do not merge the sidequest branch wholesale.
+Intended function: use the existing strict Runner master1–5 contract and shared
+fixtures to bind exact JSON bytes/hash, selected variant/language, videos,
+ISIs and forms. Reject unsupported execution until the actual player and XDF
+pipeline match that plan. Existing `flubbercorder-experiment/v1` and
+`vlc-flubber-sidequest/v1` remain historical sidequest inputs, never a silent
+alias for the Planner master. Evidence now: focused intake/parity/rejection
+tests and a source-backed list of still unsupported actions. Local process
+control and the FlubberRecorder installer dependency are separately allocated
+passes; plaintext bearer-link prototype tests cannot qualify the requested
+same-PC companion.
+
+Cross-owner handoff: Planner exports exact saved JSON plus declared assets;
+both Runner variants consume the same immutable source and selected plan.
+The two owners must send contract mismatches to Root and each other. Review
+wave after patches: UI, function, recording and packaging reports, each
+separating source inspection from installed/physical observations.
+
+## 20261006 P7 standalone Planner installer handoff
+
+Owner: Planner agent, `codex/segment-p7-planner-installer` from `b4a22ba` in
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-installer`.
+Backend Verification; P7-04/05/09, CLI-P7 and CLI-SHARED packaging seam.
+The Windows NSIS path now names Experiment Planner as the main binary and
+bundles the existing embedded Planner CLI as a target-suffixed external binary.
+The package provenance records its exact staged SHA-256 and byte length.
+No Planner JSON, CLI protocol, Runner authority, Cargo feature, shell permission
+or other platform bundle changes are included.
+
+`pnpm surveyjs:check`, 20 focused packaging/Planner file tests, and
+`pnpm desktop:build` passed. The native NSIS build, fresh installation,
+installed CLI Open/edit/Save, video inspection and research qualification
+remain open; this machine's C: drive has less than 1 GiB available. Root owns
+integration, installed validation and release decisions. The other three
+Windows installers need distinct application identifiers and install paths;
+Planner retains its existing identifier.
+
+## 20261006 R1 GstPlay integration handoff and next owner slice
+
+Root collected the R1 native actor commit `e7e64ca` as `e75fde2` on
+`codex/integration-four-installers`, preserving the two approved FFI adapter
+blobs. The source is restored but its native feature has not compiled on this
+machine or CI. Root retains `src-tauri/src/research_desktop.rs`, Tauri bundle
+configuration, Windows CI and installer/resource closure. To parallelize the
+remaining R1/RR-04/RR-07 bridge, the same Runner owner is assigned a second
+bounded branch `codex/segment-r1-gst-bridge` from integrated commit `c7953d2`
+in the existing clean Runner owner worktree. Allowed files:
+`site/src/research/native-bridge.js`,
+`site/src/research/native-media-readiness.js`,
+`runner/src/app.js`, `runner/src/browser-adapter.js`, and their focused tests.
+Replace retired HTML-only capability assumptions with the exact restored
+GstPlay contract, keep explicit unqualified WebView opt-in and fail-closed
+normal Start, and restore native Runner routing without importing unrelated
+Face or suite changes from the donor branch. Evidence now: bridge/readiness,
+Runner flow and build checks. Root will reconcile its native identity/CI work
+against this patch before combined verification.
+
+## 20261006-vlc-master-intake — R1/RR-02/03 owner handoff
+
+Owner branch `codex/segment-r1-vlc-master-intake` in the isolated VLC worktree,
+based on `b4a22ba`. Backend Verification pass: strict read-only Planner master1–5
+intake and explicit participant/language/variant selection for the proposed VLC
+Runner. `experiments/vlc-flubber/master-intake.js` delegates to the standard
+Runner's P7 reader and selected-plan resolver; no VLC schema copy, inferred
+allocation, playback, recorder, or remote authority was added. A supported
+master's exact source text/hash and immutable selected video/ISI/form plan are
+returned with `canStart: false`; a Start call rejects until RR-04/07/08/10
+correspondence exists. Historical sidequest input and `ExperimentPackageV1` do
+not alias a Planner master. The old VLC sidequest branch remains intact, and
+the dirty FlubberRecorder worktree was not edited.
+
+Focused `node --test test/research-vlc-master-intake.test.js`: 2 passed, 0
+failed, covering master1–5 parity, source hash, sidequest/package and corrupted
+source rejection, invalid participant/route/variant, missing master5 assets and
+the Start block. Baseline standard Runner master/recipe checks: 11 passed, 0
+failed. These are software contract checks only. Next binary owner should use
+the existing Rust `research_runner_master::PreparedMaster::read` with an
+explicit selected-plan receipt, not implement another master parser. Media
+binding, native playback, configured LSL, XDF reconstruction, installed
+ qualification and same-PC recorder control remain open.
+
 ## 20261005 Runner master plan immutability
 
 Owner: root; branch `codex/segment-r1-plan-immutability`; isolated worktree
@@ -6179,3 +7244,67 @@ The focused headless Chrome check passed 13 synthetic master5 renderer assertion
 and a screenshot was inspected. Reproduction command, screenshot, and claim limit
 are in `docs/runner-master5-display-modes-qualification.md`. There was no
 participant execution or native recording in this pass.
+
+## Standard Runner installed WebView evidence — 2026-10-06
+
+R1 RR-04/RR-07/RR-08/RR-10 Backend Verification on isolated
+`codex/segment-r1-webview-validation`, base `f19b12d`, worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-webview-validation`.
+Runner owns playback observations and the attempt log; the saved Planner JSON
+and its video files are inputs, not an edited contribution. The current master3–5
+local-validation path already keeps normal research Start closed and writes
+unqualified attempt/XDF evidence. The installed WebView verifier requires bound
+decoded Playing/Ended diagnostics, but the native worker did not record them.
+This pass adds that accepted-event diagnostic and its focused check only.
+Integration and a fresh installer belong to root. Physical video, input, timing,
+LSL/XDF, questionnaire completion, and research qualification remain open.
+
+## 20261006 VLC selected-sequence same-PC control handoff
+
+R1 RR-04/RR-09 Backend Verification on isolated
+`codex/segment-vlc-sequence-control`, based on `e304c41`. The player now
+accepts an exclusive typed `masterSequence` Arm (saved master path,
+participant ID, exact selector), then generation-fenced Start, Stop, and
+correlated Status over the existing `flubber-vlc-control/v1` stdio channel.
+Legacy one-video messages retain their shape. Stop while armed returns idle
+without a run receipt. Stop after Start reports `stop-requested` until the
+sequence worker and its owned VLC child have ended; Status then returns idle
+and a bounded `{status,path,sha256}` reference to the full durable receipt.
+Terminal statuses are `ended`, `failed`, and `stopped`; there are no unsolicited
+terminal frames. Sequence Pause/Resume fail closed.
+
+The selected chronology remains the one strict `PreparedMaster` plan. Its video
+wait checks cancellation and kills/reaps the VLC child; ISI waits check every
+20 ms. Shutdown also signals and joins the worker. No new unsafe boundary,
+recipe schema, or LSL/XDF writer was added. The selected sequence is still
+unqualified for shared Runner recording, and research Start stays closed.
+FFmpeg preparation and verified asset copying remain synchronous, so a Stop
+received there is honored immediately afterward. Recorder's old two-second
+force-kill fallback remains a separate process-tree risk if applied to a
+sequence; the active Stop path must use cooperative Status polling.
+
+`cargo check --locked --jobs 2` passed for the launcher. Its locked native test
+binary passed 20/20 tests, including generation fencing, strict Arm fields,
+pre-start Stop, receipt persistence/hash, interruptible ISI, and reaping an
+owned process on cancellation. This is source-level evidence; installed VLC
+playback, timing, LSL/XDF, and package qualification are still open.
+
+## 20261006 VLC launcher cancellation through preparation
+
+R1 RR-04/RR-09 Backend Verification on isolated
+`codex/segment-vlc-lifecycle`, based on integrated `0619b88`. The launcher
+now observes sequence Stop during verified asset copying and hashing. It
+supervises FFprobe and FFmpeg as owned child processes during selected-video
+preparation, polls cancellation, and kills/reaps either child before returning.
+It removes incomplete prepared output on cancellation or validation failure.
+The control protocol, existing VLC child wait, selected chronology, and
+terminal receipt schema are unchanged. The legacy single-video route still
+uses its original blocking behavior.
+
+Launcher `cargo check --locked --jobs 2` passed; all 21 locked native tests
+passed, including a new preparation-child reap test and a canceled verified
+copy check. No installed candidate was exercised. A supervisor hard kill of
+the launcher alone can still orphan an active VLC child because cleanup code
+cannot run after that kill; the Recorder owner is removing the two-second
+force-kill fallback from selected-sequence teardown in its own pass. Research
+Start and LSL/XDF qualification remain closed.

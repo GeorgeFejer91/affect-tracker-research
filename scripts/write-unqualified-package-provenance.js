@@ -13,7 +13,16 @@ const TARGETS = Object.freeze({
     nodePlatform: "win32",
     nodeArch: "x64",
     artifacts: Object.freeze([
-      Object.freeze({ kind: "nsis", directory: "src-tauri/target/release/bundle/nsis", suffix: ".exe" }),
+      Object.freeze({ kind: "nsis", directory: "src-tauri/target/release/bundle/nsis", prefix: "Experiment Planner_", suffix: ".exe" }),
+    ]),
+  }),
+  "runner-windows-x64": Object.freeze({
+    platform: "windows",
+    architecture: "x64",
+    nodePlatform: "win32",
+    nodeArch: "x64",
+    artifacts: Object.freeze([
+      Object.freeze({ kind: "nsis", directory: "src-tauri/target/release/bundle/nsis", prefix: "Experiment Runner_", suffix: ".exe" }),
     ]),
   }),
   "macos-arm64": Object.freeze({
@@ -85,7 +94,7 @@ async function identifyArtifacts(target) {
   for (const expectation of target.artifacts) {
     const directory = resolve(expectation.directory);
     const names = (await readdir(directory))
-      .filter((name) => name.endsWith(expectation.suffix))
+      .filter((name) => (!expectation.prefix || name.startsWith(expectation.prefix)) && name.endsWith(expectation.suffix))
       .sort((left, right) => left.localeCompare(right, "en"));
     if (names.length !== 1) {
       fail(`expected exactly one ${expectation.kind} artifact, found ${names.length}.`);
@@ -102,6 +111,17 @@ async function identifyArtifacts(target) {
     });
   }
   return identities;
+}
+
+async function identifyPlannerCli() {
+  const path = resolve("src-tauri/target/planner-sidecars/affect-planner-cli-x86_64-pc-windows-msvc.exe");
+  const details = await stat(path);
+  if (!details.isFile() || details.size <= 0) fail("staged Planner CLI is missing or empty.");
+  return {
+    installedFileName: "affect-planner-cli.exe",
+    byteLength: details.size,
+    sha256: await sha256(path),
+  };
 }
 
 const { targetName, target, outputPath } = parseArguments();
@@ -125,7 +145,7 @@ const serverUrl = requiredEnvironment("GITHUB_SERVER_URL");
 const artifacts = await identifyArtifacts(target);
 
 const receipt = {
-  schema: "AffectResearchUnqualifiedInternalPackageProvenanceV1",
+  schema: "AffectResearchUnqualifiedInternalPackageProvenanceV2",
   status: "unqualified-internal-alpha",
   product: "Affect Research",
   version: "0.4.0-alpha.1",
@@ -151,11 +171,13 @@ const receipt = {
     unsigned: true,
     notarized: false,
     published: false,
-    cargoFeatures: "no-default-features",
-    bundledWindowsGStreamerRuntime: false,
+    cargoFeatures: targetName === "runner-windows-x64"
+      ? "no-default-features,runner-desktop,lsl-streaming,native-acquisition-windows"
+      : "no-default-features,planner-desktop",
+    webviewPlaybackQualified: false,
   },
   qualification: {
-    nativeGstPlay: false,
+    standardRunnerWebView: false,
     lsl: false,
     nativeInput: false,
     installedWorkflow: false,
@@ -163,6 +185,7 @@ const receipt = {
     researchReady: false,
   },
   artifacts,
+  ...(targetName === "windows-x64" ? { plannerCli: await identifyPlannerCli() } : {}),
   notice:
     "Workflow artifact only. This unsigned package is for internal interface evaluation and is not a supported download, qualified experiment build, or research-ready release.",
 };

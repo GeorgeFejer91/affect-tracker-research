@@ -129,7 +129,7 @@ impl NativeMediaService {
         let started = thread::Builder::new()
             .name("affect-native-media-startup".to_owned())
             .spawn(move || {
-                let mut capability = capability::inspect_capability_cancellable(
+                let capability = capability::inspect_capability_cancellable(
                     &resource_dir,
                     NATIVE_ACQUISITION_SUPPORTED,
                     &|| lifecycle.requested.load(Ordering::Acquire),
@@ -201,13 +201,9 @@ impl NativeMediaService {
         if !self.native_acquisition_supported {
             return Err(CommandError::native_acquisition_platform_unsupported());
         }
-        let capability = self.capability();
         match playback_mode {
-            PlaybackMode::NativeGstPlay if capability.qualified_start_available => {
-                Ok(PlaybackQualification::QualifiedNative)
-            }
             PlaybackMode::NativeGstPlay => Err(CommandError::native_media_unavailable(
-                &capability.reason_code,
+                "native-gstplay-backend-retired",
             )),
             PlaybackMode::NativeLibvlc => Err(CommandError::native_media_unavailable(
                 "native-libvlc-backend-retired",
@@ -465,6 +461,18 @@ mod tests {
             .authorize_playback(PlaybackMode::NativeGstPlay)
             .unwrap_err();
         assert_eq!(error.code, "native_media_unavailable");
+        assert!(error.message.contains("native-gstplay-backend-retired"));
+        media
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .capability
+            .qualified_start_available = true;
+        assert!(media
+            .authorize_playback(PlaybackMode::NativeGstPlay)
+            .unwrap_err()
+            .message
+            .contains("native-gstplay-backend-retired"));
         assert_eq!(
             media
                 .authorize_playback(PlaybackMode::UnqualifiedWebview)

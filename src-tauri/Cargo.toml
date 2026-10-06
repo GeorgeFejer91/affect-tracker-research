@@ -4,17 +4,23 @@ version = "0.4.0-alpha.1"
 description = "Local-first video affect research instrument"
 authors = ["George Fejer"]
 edition = "2021"
-default-run = "affect-research"
 license = "BSD-3-Clause"
 repository = "https://github.com/GeorgeFejer91/affect-tracker-research"
 
 [[bin]]
+name = "affect-research"
+path = "src/main.rs"
+required-features = ["planner-desktop"]
+
+[[bin]]
 name = "affect-runner"
 path = "src/bin/runner.rs"
+required-features = ["runner-desktop"]
 
 [[bin]]
 name = "affect-planner-cli"
 path = "src/bin/planner-cli.rs"
+required-features = ["planner-cli"]
 
 [[bin]]
 name = "affect-lsl-loopback"
@@ -32,7 +38,7 @@ crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]
 sha2 = "0.10"
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "=2.6.3", features = [] }
 
 [dependencies]
 base64 = "=0.22.1"
@@ -59,7 +65,10 @@ zmij = "1"
 gilrs = { version = "0.11.2", default-features = false, features = ["xinput"] }
 
 [features]
-default = ["lsl-streaming", "native-acquisition-windows"]
+default = ["lsl-streaming", "native-acquisition-windows", "planner-desktop"]
+planner-desktop = []
+runner-desktop = ["lsl-streaming", "native-acquisition-windows"]
+planner-cli = []
 lsl-streaming = ["dep:labstream"]
 native-acquisition-windows = []
 

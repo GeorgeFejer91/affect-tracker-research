@@ -4,6 +4,8 @@ import { masterParticipantId } from "./master-recipe.js";
 
 const profileKeys = ["schema", "version", "recipeSourceByteSha256", "planIdentitySha256", "participantId", "selector", "runId", "attemptId", "plannedProfile", "executionProfile", "profileSha256"];
 const sha = /^[a-f0-9]{64}$/u, code = /^[A-Za-z][A-Za-z0-9-]{0,95}$/u;
+const runnerKeys = ["schema", "version", "recipeSha256", "runId", "attemptId", "variantId", "variantVersionSha256", "sequence", "eventType", "entryId", "executionId", "sourceCode", "monotonicMs", "observedMonotonicMs"];
+const inputKeys = ["direction", "applyStep", "inputActive", "impulse"];
 function parse(text, maximum) {
   if (typeof text !== "string" || new TextEncoder().encode(text).length > maximum) throw new Error("Master stream payload exceeds its byte bound.");
   const value = JSON.parse(text);
@@ -40,7 +42,49 @@ export async function inspectMasterStream(samples, { planVersion = 1 } = {}) {
     last = sample.timestamp;
   }
   const observations = samples.slice(1).map(sample => parse(sample.value, 2048));
-  for (const observation of observations) if (observation.runId !== profile.runId || observation.attemptId !== profile.attemptId) throw new Error("Recorded master markers belong to another run or attempt.");
-  const result = inspectPlannedMarkerTrace(profile.executionProfile, observations);
+  if (!observations.some(observation => observation.version === 2)) {
+    for (const observation of observations) if (observation.runId !== profile.runId || observation.attemptId !== profile.attemptId) throw new Error("Recorded master markers belong to another run or attempt.");
+    const result = inspectPlannedMarkerTrace(profile.executionProfile, observations);
+    return { ...result, profile, observations, lslTimestamps: samples.map(sample => sample.timestamp) };
+  }
+  const lifecycle = [];
+  let prior = null, activeVideo = null, paused = false, lastTime = -1;
+  for (const observation of observations) {
+    if (observation.runId !== profile.runId || observation.attemptId !== profile.attemptId) throw new Error("Recorded master markers belong to another run or attempt.");
+    if (!Number.isSafeInteger(observation.sequence) || observation.sequence !== (prior?.sequence ?? 0) + 1
+      || !Number.isFinite(observation.monotonicMs) || observation.monotonicMs < lastTime) throw new Error("Recorded master marker sequence or clock is invalid.");
+    lastTime = observation.monotonicMs;
+    if (observation.version === 2) {
+      const keys = observation.eventType === "inputEdge" ? [...runnerKeys, "input"] : runnerKeys;
+      if (Object.keys(observation).length !== keys.length || keys.some(key => !Object.hasOwn(observation, key))
+        || observation.schema !== "affect-research-marker" || !["inputEdge", "neutralReset"].includes(observation.eventType)
+        || observation.recipeSha256 !== profile.executionProfile.recipeSha256
+        || observation.variantId !== profile.executionProfile.variantId
+        || observation.variantVersionSha256 !== profile.executionProfile.variantVersionSha256
+        || !Number.isFinite(observation.observedMonotonicMs) || observation.observedMonotonicMs < 0
+        || observation.observedMonotonicMs > observation.monotonicMs
+        || !code.test(observation.entryId) || !code.test(observation.executionId)
+        || !code.test(observation.sourceCode)) throw new Error("Invalid Runner v2 marker.");
+      const sameOccurrence = candidate => candidate && ["entryId", "executionId", "sourceCode"].every(key => candidate[key] === observation[key]);
+      if (observation.eventType === "inputEdge") {
+        const input = observation.input;
+        if (!activeVideo || paused || !sameOccurrence(activeVideo)
+          || !input || Object.keys(input).length !== inputKeys.length || inputKeys.some(key => !Object.hasOwn(input, key))
+          || !["up", "down", "left", "right"].includes(input.direction)
+          || ["applyStep", "inputActive", "impulse"].some(key => typeof input[key] !== "boolean")) throw new Error("Input edge is not bound to active video and physical input state.");
+      } else if (prior?.eventType !== "videoEnd" || !sameOccurrence(prior)
+        || observation.observedMonotonicMs !== observation.monotonicMs) {
+        throw new Error("Neutral reset must follow its video end.");
+      }
+    } else {
+      lifecycle.push({ ...observation, sequence: lifecycle.length + 1 });
+      if (observation.eventType === "videoStart") { activeVideo = observation; paused = false; }
+      else if (observation.eventType === "pause") paused = true;
+      else if (observation.eventType === "resume") paused = false;
+      else if (["videoEnd", "interruption", "complete", "partial"].includes(observation.eventType)) { activeVideo = null; paused = false; }
+    }
+    prior = observation;
+  }
+  const result = inspectPlannedMarkerTrace(profile.executionProfile, lifecycle);
   return { ...result, profile, observations, lslTimestamps: samples.map(sample => sample.timestamp) };
 }

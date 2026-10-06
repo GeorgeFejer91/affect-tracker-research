@@ -59,7 +59,7 @@ test("Windows CI validates the HTML-video desktop boundary without native media 
   assert.match(buildHook, /CARGO_FEATURE_NATIVE_ACQUISITION_WINDOWS/u);
 });
 
-test("the local Windows package is interface-only and excludes the unreviewed GStreamer closure", async () => {
+test("the Planner package excludes native media while Runner enables recording and input", async () => {
   const [packageJson, helper, bundleConfigText, cargoToml, platform, gitignore] = await Promise.all([
     read("package.json"),
     read("scripts/build-unqualified-desktop-package.js"),
@@ -72,11 +72,14 @@ test("the local Windows package is interface-only and excludes the unreviewed GS
   assert.match(packageJson, /"desktop:bundle": "node scripts\/build-unqualified-desktop-package\.js windows-x64"/u);
   assert.match(helper, /"windows-x64"[\s\S]*nodePlatform: "win32"[\s\S]*bundles: "nsis"[\s\S]*tauri\.bundle-windows-unqualified\.conf\.json/u);
   assert.match(helper, /--no-default-features/u);
-  assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "0"|--features[\s\S]*native-gstreamer|lsl-streaming/iu);
-  assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows"\]/u);
+  assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME|native-gstreamer/iu);
+  assert.match(helper, /"windows-x64"[\s\S]*feature: "planner-desktop"/u);
+  assert.match(helper, /"runner-windows-x64"[\s\S]*feature: "runner-desktop"/u);
+  assert.match(cargoToml, /runner-desktop = \["lsl-streaming", "native-acquisition-windows"\]/u);
+  assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows", "planner-desktop"\]/u);
   assert.match(platform, /feature = "native-acquisition-windows"/u);
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
   assert.deepEqual(bundleConfig.bundle.resources, []);
   assert.match(bundleConfig.bundle.longDescription, /HTML-compatible video path/iu);
-  assert.match(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
+  assert.doesNotMatch(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
 });

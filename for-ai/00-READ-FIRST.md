@@ -1,5 +1,12 @@
 # Current project entrypoint
 
+The 2026-10-06 user amendment in [15](15-RESEARCH-V1-CHARTER.md) and
+[16](16-COMPANION-APP-BOUNDARY.md) expands Windows delivery to four separate
+installers: Planner, standard Runner, Flubber VLC Runner, and FlubberRecorder.
+Both Runners share one Planner recipe and Runner evidence contract. Earlier
+two-program wording in this entrypoint describes the original boundary and
+does not narrow the new delivery target.
+
 Updated 2026-09-13; audit base `32c7c2d`. This is the current instruction
 router. Historical receipts retain their original source and date.
 
@@ -73,10 +80,10 @@ validation availability and controller override execution.
 | Questionnaires / SurveyJS | [SurveyJS](../docs/surveyjs-questionnaires.md), [P2](../docs/planner-p2-questionnaire-recipe.md); [70](70-RESEARCH-PROVENANCE.md) for source/content changes |
 | CLI | [68](68-PLANNER-CLI.md), [71](71-CLI-LIBRARY.md), registered descriptors and linked command contracts |
 | Runner / recording | [65](65-RUNNER-SEGMENTS.md), [72](72-RUNNER-FINAL-VALIDATION.md), session/stream contracts |
-| Planner or Runner text-bearing UI | [Project Uncodixfy Pretext skill](skills/uncodixfy-pretext/SKILL.md), its [Pretext reference](skills/uncodixfy-pretext/references/pretext.md), and the [accordion stretch reference](skills/uncodixfy-pretext/references/accordion-stretch.md) for requested bounded panels; [source pin](skills/uncodixfy-pretext/SOURCE.md) |
+| Text-bearing UI in any of the four programs | [Project Uncodixfy Pretext skill](skills/uncodixfy-pretext/SKILL.md), its [Pretext reference](skills/uncodixfy-pretext/references/pretext.md), and the [accordion stretch reference](skills/uncodixfy-pretext/references/accordion-stretch.md) for requested bounded panels; [source pin](skills/uncodixfy-pretext/SOURCE.md) |
 | Optional XR authoring | [63](63-P6-XR-LAYOUT.md); desktop Runner cannot execute XR |
 | Build / qualification | Relevant [40](40-ROADMAP.md) receipts, [72](72-RUNNER-FINAL-VALIDATION.md), [73](73-CURRENT-APP-BUILD.md) |
-| Parallel Planner/Runner development in Codex | [Codex development team skill](skills/affect-chatdev-codex/SKILL.md), using existing owner contracts and gates |
+| Parallel Planner, Runner, VLC Runner or FlubberRecorder development in Codex | [Codex development team skill](skills/affect-chatdev-codex/SKILL.md), using existing owner contracts and gates |
 | Optional external ChatDev 2.0 runner | [74](74-CHATDEV-DEVELOPMENT.md), using the same role boundaries |
 | Historical context | [05](05-PROJECT-METADATA.md), [10](10-PRODUCT-REQUIREMENTS.md), [45](45-FUTURE-AGENT-CHECKLIST.md), [61](61-IMPLEMENTATION-AUDIT.md), [62](62-PLANNER-CLOSURE-PLAN.md), [64](64-SEGMENT-VISUAL-AUDIT.md), [67](67-PLANNER-COMPLETION-GOAL.md) |
 

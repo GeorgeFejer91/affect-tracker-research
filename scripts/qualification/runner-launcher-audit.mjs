@@ -118,6 +118,12 @@ try{
    check(fullscreen&&!q('runner-preparation').hidden,'fullscreen precedes demographics');
    check(getComputedStyle(q('runner-participant-view')).backgroundColor==='rgb(0, 0, 0)','participant background black');
    check(q('runner-stage').hidden&&q('runner-questionnaire').hidden,'no stimulus in preparation');
+   if(mode==='demographics'){
+    const settings=q('runner-preparation-settings');
+    check(getComputedStyle(settings).display!=='none'&&settings.getBoundingClientRect().right<=innerWidth,'Session settings visible within preparation viewport');
+    settings.focus();check(document.activeElement===settings,'Session settings keyboard focusable');
+    await click('runner-preparation-settings');check(q('runner-settings-dialog').open,'preparation Session settings opens existing dialog');
+   }
    if(mode==='escape'){
     dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',cancelable:true}));await tick();check(!fullscreen&&!q('runner-launcher').hidden,'Escape returns to launcher before run');
    } else if(mode==='questionnaire'||mode==='stop'||mode==='video'){

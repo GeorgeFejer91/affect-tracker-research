@@ -1,5 +1,31 @@
 # Testing and release gates
 
+## Standard Runner WebView qualification amendment — 2026-10-06
+
+The user removed GStreamer and selected Windows WebView video for standard
+Runner. The historical native-media gate below is superseded. Qualification
+requires an exact asset hash and decoded-frame/start receipt, run/step/generation
+fenced playback status, observed end, bounded stall/error handling, and Rust
+ownership of schedule, samples, outbound LSL, and XDF. The installed candidate
+must pass video/ISI/input timing and independent XDF readback with its exact
+artifact identity. Existing browser CSV or unqualified WebView preview receipts
+cannot satisfy these gates. The VLC Runner requires separate installed evidence
+against the same Runner data contract.
+
+## Four-installer qualification amendment — 2026-10-06
+
+The four Windows installers named in [16](16-COMPANION-APP-BOUNDARY.md) require
+separate exact-artifact build, install, launch, upgrade/uninstall and provenance
+checks. Standard Runner follows the WebView gate above. Flubber
+VLC Runner must separately prove the same strict saved-recipe interpretation,
+observed video/ISI/feedback/input behavior, Runner-owned LSL/XDF recording,
+failure/recovery and installed playback with its declared VLC closure.
+FlubberRecorder must prove bounded same-PC process/control authority,
+dependency download integrity, disconnect/reconnect and shutdown behavior on
+installed artifacts. No LAN or internet controller is in this scope.
+No passing standard-Runner receipt transfers to VLC or FlubberRecorder, and no
+historic VLC sidequest build is current qualification evidence.
+
 ## SurveyJS validation — 2026-09-13
 
 Run `pnpm surveyjs:check` before tests/builds. Generated full browser assets,
@@ -699,10 +725,9 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
 ## Release boundary
 
-CI may validate the static artifact and optional Windows GStreamer integration
-tree without uploading that tree. Manual workflows may produce explicitly
-unqualified, no-optional-feature Windows/macOS/Linux interface-evaluation
-packages. The internal
+CI may validate the static artifact and Windows WebView/VLC source without
+publishing an installer. Manual workflows may produce explicitly unqualified
+Windows/macOS/Linux interface-evaluation packages. The internal
 `0.4.0-alpha.1` label remains non-stable and non-research-ready until every
 applicable automated, installed-artifact, timing, media, recovery, input, LSL,
 accessibility, and physical workflow gate above passes for one exact candidate.

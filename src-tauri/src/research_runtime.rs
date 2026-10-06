@@ -5586,6 +5586,7 @@ mod tests {
             input_active,
             impulse: false,
             observed_at,
+            captured_at: observed_at,
         })
     }
 
@@ -6556,6 +6557,7 @@ mod tests {
                 input_active: false,
                 impulse: false,
                 observed_at: release_at,
+                captured_at: release_at,
             })
             .unwrap();
         assert_eq!(worker.state.anchor, release_at);
@@ -7136,6 +7138,7 @@ mod tests {
                 input_active: true,
                 impulse: false,
                 observed_at: Instant::now(),
+                captured_at: Instant::now(),
             })
             .unwrap();
         assert!(lock(&status).input_active);

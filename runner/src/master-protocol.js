@@ -55,6 +55,32 @@ export class NativeMasterProtocolAdapter {
     const status = await this.invoke(({1:"research_runner_master_action",2:"research_runner_master_action_v2",3:"research_runner_master_action_v3",4:"research_runner_master_action_v4",5:"research_runner_master_action_v5"}[this.plan.version]), this.plan.version >= 3 ? {request:{version:this.plan.version,...args}} : args);
     this.assertStatus(status); this.status = status; return status;
   }
+  async webviewMediaUrl(status) {
+    this.assertStatus(status);
+    const offer = status.webviewMedia;
+    if (!offer || status.phase !== "preparing") throw new Error("No current WebView video is awaiting playback.");
+    const request = { runId: status.runId, attemptId: status.attemptId, position: status.position, generation: offer.generation };
+    const receipt = await this.invoke("research_runner_master_webview_media_url", { request });
+    if (receipt?.runId !== request.runId || receipt.attemptId !== request.attemptId
+      || receipt.position !== request.position || receipt.generation !== request.generation
+      || receipt.workspaceFileId !== offer.workspaceFileId || receipt.sha256 !== offer.sha256
+      || receipt.byteLength !== offer.byteLength || receipt.mimeType !== offer.mimeType
+      || typeof receipt.mediaUrl !== "string" || !receipt.mediaUrl || !receipt.mediaGrantId) {
+      throw new Error("WebView media URL lost its exact native run and file binding.");
+    }
+    return receipt;
+  }
+  async webviewMediaObserved(status, observation) {
+    this.assertStatus(status);
+    const offer = status.webviewMedia;
+    if (!offer) throw new Error("No native WebView video is active.");
+    return this.command({ type: "webviewMedia", event: {
+      attemptId: status.attemptId, position: status.position, generation: offer.generation,
+      workspaceFileId: offer.workspaceFileId, sha256: offer.sha256,
+      sequence: observation.sequence, state: observation.state,
+      positionMs: observation.positionMs, decodedFrames: observation.decodedFrames,
+    } });
+  }
   async togglePause() { await this.command({ type: this.status?.phase === "paused" ? "resume" : "pause" }); }
   async finish() { await this.command({ type: "stop" }); await this.poll(); }
   questionnaireAnswers(detail) {

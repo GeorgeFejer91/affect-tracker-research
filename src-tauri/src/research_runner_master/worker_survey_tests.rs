@@ -53,6 +53,7 @@ fn surveyjs_worker_requires_native_validation_and_persists_before_advancing() {
                 authority,
                 mailbox,
                 workspace,
+                Arc::new(WebviewGrants::default()),
                 media,
                 recorder,
                 lease,

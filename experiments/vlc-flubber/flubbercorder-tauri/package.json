@@ -1,0 +1,16 @@
+{
+  "name": "flubbercorder-tauri",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build": "tauri build --bundles nsis"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "0.0.9"
+  }
+}

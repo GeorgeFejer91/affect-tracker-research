@@ -1396,10 +1396,10 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   assert.match(source, /research_open_workspace_location", \{\s*workspaceId: this\.workspace\.workspaceId,\s*location,/u);
   assert.doesNotMatch(source, /#stimulus-add-repository|#stimulus-add-youtube|#stimulus-source/u);
   assert.match(source, /playbackMode/u);
-  assert.match(source, /let decodeQualification = "attestedUnqualified"/u);
-  assert.match(source, /decodeQualification = "attestedQualified"/u);
+  assert.match(source, /const decodeQualification = "attestedUnqualified"/u);
+  assert.doesNotMatch(source, /decodeQualification = "attestedQualified"/u);
   assert.match(source, /NativeMediaController/u);
-  assert.match(source, /attestNativeGstCatalogue/u);
+  assert.doesNotMatch(source, /attestNativeGstCatalogue/u);
   assert.match(source, /this\.nativeTimingReady = \(nativeRunStatusHandshake\(status\)[\s\S]+nativePackageProtocolCapability\.nativeStartReady/u);
   assert.match(source, /NativePackageProtocolAdapter/u);
   assert.doesNotMatch(source, /timingWorkerReady:\s*true/u);
@@ -1443,6 +1443,11 @@ async function preparedBridgeFixture() {
     decodeBackend: "webviewVideoFrameCallback",
     decodeAttestation: "representativeFramesV1",
     decodedPositionsMs: [20, 500, 980],
+    webviewDisplayGeometry: {
+      status: "verified", source: "browser-decoder", displayWidthPx: 1_920, displayHeightPx: 1_080,
+      displayAspect: { numerator: 16, denominator: 9 }, rotationDegrees: null,
+      pixelAspectRatio: null, metadataInterpretation: "decoder-oriented-display",
+    },
     source: {
       kind: "workspaceFile",
       relativePath: `stimuli/${summary.displayName}`,
@@ -1522,12 +1527,30 @@ test("prepared catalogue uses existing sequential authority without early state/
   assert.equal(f.events.length, 0); assert.equal(f.progress.textContent, "unchanged");
   assert.deepEqual(f.calls.slice(-2).map(({ command }) => command), ["research_workspace_media_url", "research_attest_workspace_decode"]);
   const projection = prepared.projection;
+  assert.deepEqual(projection.items[0].displayGeometry, {
+    status: "verified", source: "browser-decoder", displayWidthPx: 1_920, displayHeightPx: 1_080,
+    displayAspect: { numerator: 16, denominator: 9 }, rotationDegrees: null,
+    pixelAspectRatio: null, metadataInterpretation: "decoder-oriented-display",
+  });
   projection.items[0].stimulus.title = "Mutated copy";
   assert.equal(prepared.projection.items[0].stimulus.title, "one.mp4");
   prepared.commit();
   assert.equal(f.bridge.catalog.get("one").stimulus.title, "one.mp4");
   assert.equal(f.events.length, 0); assert.equal(f.progress.textContent, "unchanged");
   assert.throws(() => prepared.commit(), /stale|already committed/u);
+  f.bridge.destroy();
+});
+
+test("retired native playback cannot prepare a new Planner catalogue", async () => {
+  const f = await preparedBridgeFixture();
+  f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  const priorCalls = f.calls.length;
+  f.mode.value = "nativeGstPlay";
+  await assert.rejects(f.connector.prepareCatalogue(f.scan), /Retired native playback/u);
+  await assert.rejects(f.bridge.ensureMediaReady(), /Retired native playback/u);
+  assert.equal(f.calls.length, priorCalls, "no media or scan IPC is issued");
+  assert.equal(f.bridge.catalog.size, 0);
+  assert.equal(f.events.length, 0);
   f.bridge.destroy();
 });
 

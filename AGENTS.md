@@ -1,5 +1,19 @@
 # Affect Research agent entrypoint
 
+The 2026-10-06 user amendment expands Windows delivery to four separate
+installers: Experiment Planner, standard Experiment Runner, VLC-based Experiment
+Runner (the Flubber VLC player), and same-PC FlubberRecorder. FlubberRecorder's
+installer also obtains the separately installable Flubber VLC player. Both
+Runner variants must consume the same Planner recipe and preserve the same
+Runner-owned recording gates, outbound LSL, and XDF evidence contract. See
+[`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
+The 2026-10-06 playback amendment removes GStreamer from active source, builds,
+packaging, and qualification. Standard Runner uses Windows WebView video;
+Flubber VLC Runner uses its separate VLC player. Both remain unqualified until
+their own installed playback, timing, LSL, and XDF gates pass. Older GStreamer
+instructions below are historical and do not authorize restoring it. No VLC or
+remote release qualification is inferred from historical sidequest builds.
+
 The 2026-09-12 user amendment requires two separate companion programs. Read
 [`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
 Planner authors JSON and retains Flubber previews. Runner alone executes, plays
@@ -52,8 +66,10 @@ requirements. Their complete Git history is preserved in
 and in this repository's immutable checkpoint/history refs. Do not restore or
 reactivate them without an explicit charter change.
 
-Windows qualified local/repository playback targets the repository-pinned,
-bundled GStreamer 1.28.6 MSVC x86_64 runtime through a Rust-owned GstPlay actor.
+Windows qualified local/repository playback now targets a fenced WebView video
+path for standard Runner, with Rust retaining experiment, sampling, LSL, and
+XDF authority. The separate Flubber VLC Runner must meet the same Runner
+contract with its VLC playback path.
 Consult [`for-ai/40-ROADMAP.md`](./for-ai/40-ROADMAP.md) before making any
 implementation claim: runtime verification and a fail-closed capability are not
 evidence that the native player actor or playback qualification exists.
@@ -64,9 +80,9 @@ invariants.
 
 Each implementation pass owns one allocated segment. Follow the separate-branch,
 isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.
-For requested parallel or cross-app development, use the project
+For requested parallel or cross-program development, use the project
 [`Codex development team` skill](./for-ai/skills/affect-chatdev-codex/SKILL.md)
-to delegate Planner, Runner, and verification roles with explicit message
+to delegate affected program owners and verification roles with explicit message
 barriers. The ChatDev YAML runner is optional; Codex can coordinate these roles
 directly without a separate model API key. This routing does not change segment
 ownership or qualification gates.

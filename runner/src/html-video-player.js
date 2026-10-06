@@ -31,7 +31,7 @@ const assertReceipt = (receipt, asset) => {
   if (!receipt || typeof receipt.mediaUrl !== "string" || !receipt.mediaUrl) {
     throw new Error("Runner did not receive a playable media URL.");
   }
-  if (receipt.sha256 && receipt.sha256 !== asset.sha256) {
+  if (receipt.sha256 !== asset.sha256) {
     throw new Error("Runner media URL belongs to a different video hash.");
   }
   if (receipt.byteLength !== asset.byteLength) {
@@ -49,6 +49,8 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
   let generation = 0;
   let video = null;
   let ended = null;
+  let clearObservation = () => {};
+  let requireNextFrame = () => {};
 
   const ensureVideo = () => {
     if (video) return video;
@@ -60,14 +62,19 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     video.controls = false;
     video.disablePictureInPicture = true;
     video.setAttribute("controlslist", "nodownload noplaybackrate noremoteplayback");
-    ended = () => onEnded();
+    ended = () => { if (observing) return; onEnded(); };
     video.addEventListener("ended", ended);
     host.replaceChildren(video);
     return video;
   };
 
+  let observing = false;
   const stop = () => {
     generation += 1;
+    clearObservation();
+    clearObservation = () => {};
+    requireNextFrame = () => {};
+    observing = false;
     if (video) {
       video.pause();
       video.removeAttribute("src");
@@ -78,7 +85,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     host.dataset.playbackState = "idle";
   };
 
-  const playStep = async ({ workspaceId, sourceText, participantId, selector, step }) => {
+  const playStep = async ({ workspaceId, sourceText, participantId, selector, step, receipt: suppliedReceipt, onObservation }) => {
     if (step?.kind !== "video") throw new Error("HTML playback requires a video step.");
     const asset = step.payload?.asset;
     if (!asset?.sha256 || !asset?.byteLength) {
@@ -90,7 +97,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     element.hidden = false;
     host.hidden = false;
     host.dataset.playbackState = "resolving";
-    const receipt = await invoke("research_runner_master_html_video_url", {
+    const receipt = suppliedReceipt ?? await invoke("research_runner_master_html_video_url", {
       request: {
         workspaceId,
         sourceText,
@@ -101,6 +108,50 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     });
     if (token !== generation) return null;
     assertReceipt(receipt, asset);
+    if (onObservation) {
+      observing = true;
+      let sequence = 0, decodedFrames = 0, lastReportedFrames = 0, awaitingFrame = true;
+      requireNextFrame = () => { awaitingFrame = true; };
+      const emit = (state) => {
+        if (token !== generation) return;
+        if ((state === "playing" || state === "ended") && decodedFrames === 0) return;
+        const positionMs = Math.max(0, Number(element.currentTime) * 1000 || 0);
+        void Promise.resolve(onObservation({ state, sequence: ++sequence, positionMs, decodedFrames })).catch(() => {});
+      };
+      const frame = (_now, metadata) => {
+        if (token !== generation) return;
+        decodedFrames = Math.max(decodedFrames + 1, Number(metadata?.presentedFrames) || 0);
+        if (awaitingFrame && !element.paused) {
+          awaitingFrame = false;
+          lastReportedFrames = decodedFrames;
+          emit("playing");
+        }
+        element.requestVideoFrameCallback(frame);
+      };
+      if (typeof element.requestVideoFrameCallback !== "function") {
+        throw new Error("This WebView cannot report decoded video frames.");
+      }
+      const handlers = [
+        ["waiting", () => { awaitingFrame = true; emit("buffering"); }],
+        ["stalled", () => { awaitingFrame = true; emit("buffering"); }],
+        ["pause", () => { awaitingFrame = true; emit("paused"); }], ["ended", () => emit("ended")],
+        ["error", () => emit("failed")],
+      ];
+      for (const [name, handler] of handlers) element.addEventListener(name, handler);
+      const heartbeat = windowObject.setInterval(() => {
+        if (element.error) emit("failed");
+        else if (!element.paused && !awaitingFrame && element.readyState >= 2
+          && decodedFrames > lastReportedFrames) {
+          lastReportedFrames = decodedFrames;
+          emit("playing");
+        }
+      }, 250);
+      element.requestVideoFrameCallback(frame);
+      clearObservation = () => {
+        windowObject.clearInterval(heartbeat);
+        for (const [name, handler] of handlers) element.removeEventListener(name, handler);
+      };
+    }
     host.dataset.playbackState = "loading";
     element.src = receipt.mediaUrl;
     element.currentTime = 0;
@@ -128,6 +179,8 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
 
   return Object.freeze({
     playStep,
+    pause: () => video?.pause(),
+    resume: async () => { if (video) { requireNextFrame(); await video.play(); } },
     stop,
     destroy,
     get video() { return video; },

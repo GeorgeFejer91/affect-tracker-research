@@ -4,9 +4,14 @@ use super::{
     forms::FormAnswers,
     information::{ContentKind, PreparedTransfer},
     lsl::MasterLslService,
-    markers::{MarkerEvent, MasterMarkers},
+    markers::{InputEdgeDetail, MarkerEvent, MasterMarkers, MasterObservation},
     response::ResponseState,
-    runtime::{lock, InputAuthority, MasterAction, MasterPhase, MasterStatus, Message},
+    runtime::{
+        lock,
+        playback::{PlaybackBackend, PlaybackBinding, PlaybackObservation, PlaybackState},
+        InputAuthority, MasterAction, MasterPhase, MasterStatus, Message, WebviewGrants,
+        WebviewMediaEvent, WebviewMediaOffer,
+    },
     storage::MasterStorage,
     MasterStep, MasterStepKind, PreparedMaster,
 };
@@ -41,6 +46,7 @@ pub(crate) struct MasterWorker {
     authority: InputAuthority,
     mailbox: Arc<ProtocolInputMailbox>,
     workspace: Arc<WorkspaceService>,
+    webview_grants: Arc<WebviewGrants>,
     media: Arc<NativeMediaService>,
     recorder: Arc<RecorderService>,
     _lease: CompanionLease,
@@ -55,8 +61,13 @@ pub(crate) struct MasterWorker {
     occurrence: String,
     opened: bool,
     fence: Option<NativeMediaCommandFenceV1>,
+    playback_binding: Option<PlaybackBinding>,
     bound_file: Option<String>,
     media_sequence: u64,
+    playback_generation: u64,
+    playback_last_observation: Option<Instant>,
+    playback_buffering: bool,
+    playback_decoded_frames: u64,
     clock: Option<DeadlineClock>,
     interval_deadline: Option<Instant>,
     answers: FormAnswers,
@@ -77,6 +88,7 @@ impl MasterWorker {
         authority: InputAuthority,
         mailbox: Arc<ProtocolInputMailbox>,
         workspace: Arc<WorkspaceService>,
+        webview_grants: Arc<WebviewGrants>,
         media: Arc<NativeMediaService>,
         recorder: Arc<RecorderService>,
         lease: CompanionLease,
@@ -144,6 +156,7 @@ impl MasterWorker {
             input_active: false,
             interval_remaining_ms: None,
             media_time_ms: None,
+            webview_media: None,
             failure_code: None,
             result: None,
         };
@@ -157,6 +170,7 @@ impl MasterWorker {
             authority,
             mailbox,
             workspace,
+            webview_grants,
             media,
             recorder,
             _lease: lease,
@@ -171,8 +185,13 @@ impl MasterWorker {
             occurrence: String::new(),
             opened: false,
             fence: None,
+            playback_binding: None,
             bound_file: None,
             media_sequence: 0,
+            playback_generation: 0,
+            playback_last_observation: None,
+            playback_buffering: false,
+            playback_decoded_frames: 0,
             clock: None,
             interval_deadline: None,
             answers: Default::default(),
@@ -293,6 +312,7 @@ impl MasterWorker {
                 data,
                 page_no,
             } => self.survey_answers_action(position, data, page_no, true),
+            MasterAction::WebviewMedia { event } => self.observe_webview_media(event),
             MasterAction::Pause => {
                 if self.state.phase != MasterPhase::Playing {
                     return Err(invalid("Pause requires native Playing."));
@@ -300,6 +320,9 @@ impl MasterWorker {
                 self.quiesce()?;
                 self.state.phase = MasterPhase::Pausing;
                 self.transition_started = Instant::now();
+                if self.state.webview_media.is_some() {
+                    return Ok(());
+                }
                 let status = self.media.pause(
                     self.fence
                         .clone()
@@ -313,6 +336,9 @@ impl MasterWorker {
                 }
                 self.state.phase = MasterPhase::Resuming;
                 self.transition_started = Instant::now();
+                if self.state.webview_media.is_some() {
+                    return Ok(());
+                }
                 let status = self.media.play(
                     self.fence
                         .clone()
@@ -500,27 +526,96 @@ impl MasterWorker {
             .ok_or_else(|| {
                 invalid("The video occurrence has no exact native asset/location binding.")
             })?;
-        let grant = binding.issue_grant(&self.workspace, &self.workspace_id)?;
-        self.bound_file = Some(binding.workspace_file_id().to_owned());
-        let receipt = self.media.prepare(grant, self.viewport)?;
+        let (file, hash, bytes, mime) = binding.webview_identity();
+        self.playback_generation = self.playback_generation.saturating_add(1);
+        let generation = self.playback_generation;
+        self.bound_file = Some(file.to_owned());
         self.fence = Some(NativeMediaCommandFenceV1 {
-            session_id: receipt.session_id,
-            generation: receipt.generation,
+            session_id: format!("webview-{}-{generation}", self.state.run_id),
+            generation,
         });
         self.media_sequence = 0;
+        self.playback_last_observation = Some(Instant::now());
+        self.playback_buffering = false;
+        self.playback_decoded_frames = 0;
+        let offer = WebviewMediaOffer {
+            workspace_id: self.workspace_id.clone(),
+            workspace_file_id: file.to_owned(),
+            sha256: hash.to_owned(),
+            byte_length: bytes,
+            mime_type: mime.to_owned(),
+            generation,
+        };
+        self.playback_binding = Some(PlaybackBinding::webview(
+            &offer,
+            &self.state.attempt_id,
+            self.state.position,
+        ));
+        self.webview_grants.open(&self.workspace, offer.clone());
+        self.state.webview_media = Some(offer);
         self.state.phase = MasterPhase::Preparing;
-        let status = self.media.play(
-            self.fence
-                .clone()
-                .ok_or_else(|| invalid("Missing media fence."))?,
-        )?;
+        self.transition_started = Instant::now();
+        Ok(())
+    }
+    fn observe_webview_media(&mut self, event: WebviewMediaEvent) -> ResearchResult<()> {
+        let observation = PlaybackObservation::webview(&event);
+        self.observe_playback(observation)
+    }
+    fn observe_playback(&mut self, observation: PlaybackObservation) -> ResearchResult<()> {
+        if observation.backend == PlaybackBackend::Webview && self.state.webview_media.is_none() {
+            return Err(invalid("No WebView video is active."));
+        }
+        if !self.playback_binding.as_ref().is_some_and(|binding| {
+            binding.accepts(
+                &observation,
+                self.media_sequence,
+                self.state.media_time_ms,
+                self.playback_decoded_frames,
+            )
+        }) {
+            return Err(invalid(
+                "WebView media event does not match the active video binding.",
+            ));
+        }
+        let fence = self
+            .fence
+            .as_ref()
+            .ok_or_else(|| invalid("Missing WebView media fence."))?;
+        let mut status = NativeMediaStatusV1::ready();
+        status.sequence = observation.sequence;
+        status.generation = observation.generation;
+        status.session_id = Some(fence.session_id.clone());
+        status.workspace_file_id = Some(observation.workspace_file_id.clone());
+        status.viewport = self.viewport;
+        status.position_ms = Some(observation.position_ms);
+        status.state = observation.state.native();
+        self.playback_last_observation = Some(Instant::now());
+        self.playback_decoded_frames = observation.decoded_frames;
+        self.playback_buffering = observation.state == PlaybackState::Buffering;
+        if self.playback_buffering {
+            self.transition_started = Instant::now();
+        }
+        self.diagnostic("webview-media-observation", observation.detail())?;
         self.reconcile(status)
     }
     fn tick(&mut self) -> ResearchResult<()> {
-        if self.fence.is_some() {
+        if self.fence.is_some() && self.state.webview_media.is_none() {
             self.reconcile(self.media.status_snapshot()?)?;
         }
         let now = Instant::now();
+        if self.state.webview_media.is_some()
+            && ((self.state.phase == MasterPhase::Playing
+                && self
+                    .playback_last_observation
+                    .is_some_and(|at| now.duration_since(at) > Duration::from_secs(2)))
+                || (self.playback_buffering
+                    && now.duration_since(self.transition_started) > Duration::from_secs(15)))
+        {
+            return Err(CommandError::new(
+                "master-webview-playback-stalled",
+                "WebView playback observations stopped.",
+            ));
+        }
         if matches!(
             self.state.phase,
             MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Pausing
@@ -532,19 +627,12 @@ impl MasterWorker {
             ));
         }
         if self.state.phase == MasterPhase::Playing {
-            let drained = self.mailbox.drain()?;
-            let mut missed = 0;
-            for input in drained.digital {
-                missed += self.response.digital(input);
-            }
-            if let Some(input) = drained.continuous {
-                missed += self.response.continuous(input);
-            }
+            let (mut missed, coalesced) = self.drain_input()?;
             missed += self.response.advance(now);
-            if missed > 0 || drained.coalesced_count > 0 {
+            if missed > 0 || coalesced > 0 {
                 self.diagnostic(
                     "native-input-observation-gap",
-                    json!({"missedRepeats":missed,"coalescedUpdates":drained.coalesced_count}),
+                    json!({"missedRepeats":missed,"coalescedUpdates":coalesced}),
                 )?;
             }
             self.sample(now)?;
@@ -634,6 +722,7 @@ impl MasterWorker {
                     ));
                 }
                 self.observe(MarkerEvent::VideoEnd, true)?;
+                self.neutralize_video_end()?;
                 self.stop_media()?;
                 self.next()?;
             }
@@ -712,6 +801,9 @@ impl MasterWorker {
         let observation = self
             .markers
             .observe(event, id.as_deref(), execution, self.elapsed())?;
+        self.record_observation(observation)
+    }
+    fn record_observation(&mut self, observation: MasterObservation) -> ResearchResult<()> {
         let lsl = self
             .lsl
             .as_mut()
@@ -721,6 +813,51 @@ impl MasterWorker {
         self.state.event_count += 1;
         Ok(())
     }
+    fn neutralize_video_end(&mut self) -> ResearchResult<()> {
+        self.reset_response();
+        let time = self.elapsed();
+        let entry_id = self.current()?.entry_id.clone();
+        let observation = self
+            .markers
+            .observe_neutral_reset(&entry_id, &self.occurrence, time)?;
+        self.record_observation(observation)
+    }
+    fn drain_input(&mut self) -> ResearchResult<(u64, u64)> {
+        let drained = self.mailbox.drain()?;
+        let mut missed = 0;
+        for input in drained.digital {
+            missed += self.response.digital(input.clone());
+            if input.detail.starts_with("native:") {
+                continue; // Authority-generated releases are not physical input edges.
+            }
+            let observed = input
+                .captured_at
+                .checked_duration_since(self.epoch)
+                .ok_or_else(|| invalid("Physical input preceded the run clock."))?
+                .as_secs_f64()
+                * 1000.;
+            let entry_id = self.current()?.entry_id.clone();
+            let occurrence = self.occurrence.clone();
+            let time = self.elapsed();
+            let observation = self.markers.observe_input_edge(
+                &entry_id,
+                &occurrence,
+                time,
+                observed,
+                InputEdgeDetail {
+                    direction: input.direction,
+                    apply_step: input.apply_step,
+                    input_active: input.input_active,
+                    impulse: input.impulse,
+                },
+            )?;
+            self.record_observation(observation)?;
+        }
+        if let Some(input) = drained.continuous {
+            missed += self.response.continuous(input);
+        }
+        Ok((missed, drained.coalesced_count))
+    }
     fn diagnostic(&mut self, code: &str, detail: Value) -> ResearchResult<()> {
         self.storage.diagnostic(&json!({"schema":"affect-runner-master-diagnostic","version":1,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"position":self.state.position,"monotonicMs":self.elapsed(),"code":code,"detail":detail}))
     }
@@ -729,19 +866,37 @@ impl MasterWorker {
     }
     fn quiesce(&mut self) -> ResearchResult<()> {
         self.clock = None;
-        let result = self
-            .authority
+        let was_playing = self.state.phase == MasterPhase::Playing;
+        self.authority
             .service
-            .set_run_accepting(&self.authority.id, false);
-        self.mailbox.clear();
+            .set_run_accepting(&self.authority.id, false)?;
+        if was_playing {
+            let (missed, coalesced) = self.drain_input()?;
+            if missed > 0 || coalesced > 0 {
+                self.diagnostic(
+                    "native-input-observation-gap",
+                    json!({"missedRepeats":missed,"coalescedUpdates":coalesced}),
+                )?;
+            }
+        } else {
+            self.mailbox.clear();
+        }
         self.response.clear_holds(Instant::now());
         self.state.input_active = false;
-        result
+        Ok(())
     }
     fn stop_media(&mut self) -> ResearchResult<()> {
+        self.webview_grants.close(&self.workspace);
         if let Some(fence) = self.fence.take() {
-            self.media.stop(fence)?;
+            if self.state.webview_media.is_none() {
+                self.media.stop(fence)?;
+            }
         }
+        self.state.webview_media = None;
+        self.playback_binding = None;
+        self.playback_last_observation = None;
+        self.playback_buffering = false;
+        self.playback_decoded_frames = 0;
         self.bound_file = None;
         Ok(())
     }
@@ -842,11 +997,35 @@ impl MasterWorker {
 }
 impl Drop for MasterWorker {
     fn drop(&mut self) {
+        self.webview_grants.close(&self.workspace);
         self.authority.service.end_run(&self.authority.id);
     }
 }
 fn invalid(message: &str) -> CommandError {
     CommandError::invalid_contract(message)
+}
+#[cfg(test)]
+fn webview_observation_detail(event: &WebviewMediaEvent) -> Value {
+    PlaybackObservation::webview(event).detail()
+}
+#[allow(clippy::too_many_arguments)]
+#[cfg(test)]
+fn webview_event_matches(
+    offer: &WebviewMediaOffer,
+    attempt_id: &str,
+    position: u32,
+    _phase: MasterPhase,
+    last_sequence: u64,
+    last_position_ms: Option<f64>,
+    last_decoded_frames: u64,
+    event: &WebviewMediaEvent,
+) -> bool {
+    PlaybackBinding::webview(offer, attempt_id, position).accepts(
+        &PlaybackObservation::webview(event),
+        last_sequence,
+        last_position_ms,
+        last_decoded_frames,
+    )
 }
 #[cfg(test)]
 #[path = "worker_survey_tests.rs"]
@@ -858,9 +1037,284 @@ mod tests {
     use crate::{
         research_input::ResearchInputService,
         research_native_protocol::runtime::PackageProtocolRuntime,
-        research_runner_master::{runtime::MasterChoice, MasterSelector},
+        research_runner_master::{
+            runtime::{MasterChoice, WebviewMediaState},
+            MasterSelector,
+        },
     };
+    #[test]
+    fn stopping_webview_occurrence_revokes_its_exact_url() {
+        with_neutral_worker(|worker| {
+            let root =
+                std::env::temp_dir().join(format!("runner-webview-grant-{}", uuid::Uuid::new_v4()));
+            std::fs::create_dir(&root).unwrap();
+            let selected = worker.workspace.select(root.clone()).unwrap();
+            std::fs::write(root.join("stimuli").join("clip.mp4"), b"video").unwrap();
+            let workspace_id = selected.workspace_id.unwrap();
+            let item = worker
+                .workspace
+                .rescan(&workspace_id)
+                .unwrap()
+                .stimuli
+                .remove(0);
+            let issued = worker
+                .workspace
+                .issue_media_url(
+                    &workspace_id,
+                    &item.workspace_file_id,
+                    &item.sha256,
+                    item.byte_length,
+                    &item.mime_type,
+                )
+                .unwrap();
+            let offer = WebviewMediaOffer {
+                workspace_id,
+                workspace_file_id: item.workspace_file_id,
+                sha256: item.sha256,
+                byte_length: item.byte_length,
+                mime_type: item.mime_type,
+                generation: 1,
+            };
+            worker.webview_grants.open(&worker.workspace, offer.clone());
+            let mut stale = offer.clone();
+            stale.generation += 1;
+            assert!(!worker.webview_grants.register(&stale, "stale-token"));
+            assert!(worker
+                .webview_grants
+                .register(&offer, &issued.media_grant_id));
+            worker.state.webview_media = Some(offer.clone());
+            worker.stop_media().unwrap();
+            assert!(!worker.webview_grants.register(&offer, "late-token"));
+            let request = tauri::http::Request::builder()
+                .method(tauri::http::Method::GET)
+                .uri(issued.media_url)
+                .body(Vec::new())
+                .unwrap();
+            assert_eq!(
+                worker
+                    .workspace
+                    .protocol_response("research", request)
+                    .status(),
+                tauri::http::StatusCode::NOT_FOUND
+            );
+            std::fs::remove_dir_all(root).unwrap();
+        });
+    }
+    #[test]
+    fn webview_observation_requires_current_binding_and_new_decoded_frame() {
+        let offer = WebviewMediaOffer {
+            workspace_id: "workspace".into(),
+            workspace_file_id: "file".into(),
+            sha256: "a".repeat(64),
+            byte_length: 4,
+            mime_type: "video/mp4".into(),
+            generation: 2,
+        };
+        let event = WebviewMediaEvent {
+            attempt_id: "attempt".into(),
+            position: 3,
+            generation: 2,
+            workspace_file_id: "file".into(),
+            sha256: offer.sha256.clone(),
+            sequence: 7,
+            state: WebviewMediaState::Playing,
+            position_ms: 100.,
+            decoded_frames: 1,
+        };
+        let accepts = |candidate: &WebviewMediaEvent| {
+            webview_event_matches(
+                &offer,
+                "attempt",
+                3,
+                MasterPhase::Preparing,
+                6,
+                Some(99.),
+                0,
+                candidate,
+            )
+        };
+        assert!(accepts(&event));
+        let detail = webview_observation_detail(&event);
+        assert_eq!(detail["state"], "playing");
+        assert_eq!(detail["sha256"], offer.sha256);
+        assert_eq!(detail["workspaceFileId"], offer.workspace_file_id);
+        assert_eq!(detail["generation"], offer.generation);
+        assert_eq!(detail["sequence"], event.sequence);
+        assert_eq!(detail["decodedFrames"], event.decoded_frames);
+        assert_eq!(
+            webview_observation_detail(&WebviewMediaEvent {
+                state: WebviewMediaState::Ended,
+                ..event.clone()
+            })["state"],
+            "ended"
+        );
+        assert!(!webview_event_matches(
+            &offer,
+            "attempt",
+            3,
+            MasterPhase::Playing,
+            7,
+            Some(100.),
+            1,
+            &WebviewMediaEvent {
+                sequence: 8,
+                ..event.clone()
+            },
+        ));
+        let mut stale = event.clone();
+        stale.generation = 1;
+        assert!(!accepts(&stale));
+        let mut wrong = event.clone();
+        wrong.attempt_id = "other".into();
+        assert!(!accepts(&wrong));
+        let mut wrong = event.clone();
+        wrong.workspace_file_id = "other".into();
+        assert!(!accepts(&wrong));
+        let mut wrong = event.clone();
+        wrong.sha256 = "b".repeat(64);
+        assert!(!accepts(&wrong));
+        let mut duplicate = event.clone();
+        duplicate.sequence = 6;
+        assert!(!accepts(&duplicate));
+        let mut undecoded = event.clone();
+        undecoded.decoded_frames = 0;
+        assert!(!accepts(&undecoded));
+        let mut rewind = event;
+        rewind.position_ms = 60.;
+        assert!(!accepts(&rewind));
+    }
+    #[test]
+    fn live_playback_fence_alone_controls_input_clock_and_video_boundary() {
+        with_neutral_worker(|worker| {
+            let video_position = worker
+                .prepared
+                .plan
+                .steps
+                .windows(2)
+                .find(|pair| {
+                    pair[0].kind == MasterStepKind::Video
+                        && pair[1].kind == MasterStepKind::Interval
+                })
+                .unwrap()[0]
+                .position;
+            worker.state.position = video_position;
+            worker.state.phase = MasterPhase::Preparing;
+            worker.occurrence = "execution-live-test".into();
+            let offer = WebviewMediaOffer {
+                workspace_id: "unused".into(),
+                workspace_file_id: "bound-file".into(),
+                sha256: "a".repeat(64),
+                byte_length: 4,
+                mime_type: "video/mp4".into(),
+                generation: 1,
+            };
+            worker.playback_binding = Some(PlaybackBinding::webview(
+                &offer,
+                &worker.state.attempt_id,
+                video_position,
+            ));
+            worker.fence = Some(NativeMediaCommandFenceV1 {
+                session_id: "webview-live-test".into(),
+                generation: offer.generation,
+            });
+            worker.bound_file = Some(offer.workspace_file_id.clone());
+            worker.state.webview_media = Some(offer.clone());
+            let event = WebviewMediaEvent {
+                attempt_id: worker.state.attempt_id.clone(),
+                position: video_position,
+                generation: offer.generation,
+                workspace_file_id: offer.workspace_file_id.clone(),
+                sha256: offer.sha256.clone(),
+                sequence: 1,
+                state: WebviewMediaState::Playing,
+                position_ms: 0.,
+                decoded_frames: 1,
+            };
+            let mut undecoded = event.clone();
+            undecoded.decoded_frames = 0;
+            assert!(worker.observe_webview_media(undecoded).is_err());
+            for changed in ["attempt", "position", "generation", "file", "hash"] {
+                let mut wrong = event.clone();
+                match changed {
+                    "attempt" => wrong.attempt_id = "another-attempt".into(),
+                    "position" => wrong.position += 1,
+                    "generation" => wrong.generation += 1,
+                    "file" => wrong.workspace_file_id = "another-file".into(),
+                    "hash" => wrong.sha256 = "b".repeat(64),
+                    _ => unreachable!(),
+                }
+                assert!(worker.observe_webview_media(wrong).is_err(), "{changed}");
+            }
+            assert!(worker.clock.is_none());
+            assert_eq!(worker.state.sample_count, 0);
+            assert_eq!(
+                worker.authority.service.status().phase,
+                crate::research_input::NativeInputPhase::RunPrepared
+            );
+            worker.observe_webview_media(event.clone()).unwrap();
+            assert_eq!(worker.state.phase, MasterPhase::Playing);
+            assert!(worker.clock.is_some());
+            assert_eq!(
+                worker.authority.service.status().phase,
+                crate::research_input::NativeInputPhase::Running
+            );
+            assert!(worker.observe_webview_media(event.clone()).is_err());
+            std::thread::sleep(Duration::from_millis(30));
+            worker.tick().unwrap();
+            assert!(worker.state.sample_count > 0);
+            let samples = worker.state.sample_count;
+            worker
+                .observe_webview_media(WebviewMediaEvent {
+                    sequence: 2,
+                    state: WebviewMediaState::Paused,
+                    ..event.clone()
+                })
+                .unwrap();
+            assert_eq!(worker.state.phase, MasterPhase::Paused);
+            assert!(worker.clock.is_none());
+            assert_eq!(worker.state.sample_count, samples);
+            assert_eq!(
+                worker.authority.service.status().phase,
+                crate::research_input::NativeInputPhase::RunPrepared
+            );
+            worker
+                .observe_webview_media(WebviewMediaEvent {
+                    sequence: 3,
+                    state: WebviewMediaState::Playing,
+                    decoded_frames: 2,
+                    ..event.clone()
+                })
+                .unwrap();
+            assert!(worker.clock.is_some());
+            worker
+                .observe_webview_media(WebviewMediaEvent {
+                    sequence: 4,
+                    state: WebviewMediaState::Ended,
+                    decoded_frames: 2,
+                    ..event.clone()
+                })
+                .unwrap();
+            assert_eq!(worker.state.phase, MasterPhase::AwaitingPresentation);
+            assert!(worker.clock.is_none());
+            assert!(worker.playback_binding.is_none());
+            assert_eq!(worker.state.sample_count, samples);
+            assert_eq!(
+                worker.authority.service.status().phase,
+                crate::research_input::NativeInputPhase::RunPrepared
+            );
+            assert!(worker
+                .observe_webview_media(WebviewMediaEvent {
+                    sequence: 5,
+                    decoded_frames: 3,
+                    ..event
+                })
+                .is_err());
+        });
+    }
     fn with_neutral_worker(check: impl FnOnce(&mut MasterWorker)) {
+        with_neutral_worker_at(|worker, _| check(worker));
+    }
+    fn with_neutral_worker_at(check: impl FnOnce(&mut MasterWorker, &std::path::Path)) {
         // Exact saved fixture, synthetic worker boundary/input state only; no
         // decoded video, physical input, renderer paint or XDF attestation.
         let root =
@@ -911,6 +1365,7 @@ mod tests {
                     authority,
                     mailbox,
                     workspace,
+                    Arc::new(WebviewGrants::default()),
                     media,
                     Arc::new(RecorderService::default()),
                     lease,
@@ -942,7 +1397,7 @@ mod tests {
                 assert_eq!(pending.coalesced_count, 0);
             }
         });
-        check(&mut worker);
+        check(&mut worker, &root);
         drop(worker);
         drop(legacy);
         drop(input);
@@ -956,6 +1411,7 @@ mod tests {
             input_active: true,
             impulse: false,
             observed_at: Instant::now(),
+            captured_at: Instant::now(),
         };
         worker.response.digital(edge.clone());
         worker.response.x = 0.8;
@@ -1028,6 +1484,104 @@ mod tests {
             worker.publish();
             assert_eq!(lock(&worker.public).current_valence, 0.);
             present_interval(worker, video_position + 1);
+        });
+    }
+    #[test]
+    fn video_end_records_neutral_only_after_reset() {
+        with_neutral_worker_at(|worker, root| {
+            let video = worker
+                .prepared
+                .plan
+                .steps
+                .iter()
+                .find(|step| step.kind == MasterStepKind::Video)
+                .unwrap();
+            worker.state.position = video.position;
+            worker.occurrence = "execution-test".into();
+            worker.response.x = 0.8;
+            worker.response.y = -0.4;
+            worker.state.current_valence = 0.8;
+            worker.state.current_arousal = -0.4;
+            let prior = worker.state.event_count;
+            worker.observe(MarkerEvent::VideoEnd, true).unwrap();
+            worker.neutralize_video_end().unwrap();
+            assert_eq!(worker.state.event_count, prior + 2);
+            assert_eq!((worker.response.x, worker.response.y), (0., 0.));
+            assert_eq!(
+                (worker.state.current_valence, worker.state.current_arousal),
+                (0., 0.)
+            );
+            let output = root.join(worker.storage.receipt["outputDirectory"].as_str().unwrap());
+            let text = std::fs::read_to_string(output.join("master-events.v1.jsonl")).unwrap();
+            let events: Vec<Value> = text
+                .lines()
+                .map(|line| serde_json::from_str(line).unwrap())
+                .collect();
+            let end = &events[events.len() - 2]["observation"];
+            let reset = &events[events.len() - 1]["observation"];
+            assert_eq!(end["eventType"], "videoEnd");
+            assert_eq!(reset["eventType"], "neutralReset");
+            assert_eq!(
+                reset["sequence"].as_u64().unwrap(),
+                end["sequence"].as_u64().unwrap() + 1
+            );
+            assert!(reset["monotonicMs"].as_f64().unwrap() >= end["monotonicMs"].as_f64().unwrap());
+        });
+    }
+    #[test]
+    fn physical_input_edge_keeps_its_capture_time_in_recorded_marker() {
+        with_neutral_worker_at(|worker, root| {
+            let video = worker
+                .prepared
+                .plan
+                .steps
+                .iter()
+                .find(|step| step.kind == MasterStepKind::Video)
+                .unwrap();
+            worker.state.position = video.position;
+            worker.occurrence = "execution-test".into();
+            let observed_at = Instant::now();
+            let ordered_at = observed_at + Duration::from_millis(1);
+            worker
+                .mailbox
+                .push(crate::research_input::NativeInputUpdate::Digital(
+                    crate::research_input::NativeDigitalInput {
+                        direction: crate::research_contracts::DirectionV1::Right,
+                        detail: "keyboard:test".into(),
+                        apply_step: true,
+                        input_active: true,
+                        impulse: false,
+                        observed_at: ordered_at,
+                        captured_at: observed_at,
+                    },
+                ));
+            std::thread::sleep(Duration::from_millis(2));
+            worker.drain_input().unwrap();
+            worker.storage.checkpoint().unwrap();
+            let output = root.join(worker.storage.receipt["outputDirectory"].as_str().unwrap());
+            let text = std::fs::read_to_string(output.join("master-events.v1.jsonl")).unwrap();
+            let record: Value = serde_json::from_str(text.lines().last().unwrap()).unwrap();
+            let marker = &record["observation"];
+            let original_ms = observed_at.duration_since(worker.epoch).as_secs_f64() * 1000.;
+            assert_eq!(marker["version"], 2);
+            assert_eq!(marker["eventType"], "inputEdge");
+            assert!((marker["observedMonotonicMs"].as_f64().unwrap() - original_ms).abs() < 0.001);
+            assert!(marker["monotonicMs"].as_f64().unwrap() > original_ms);
+            worker
+                .mailbox
+                .push(crate::research_input::NativeInputUpdate::Digital(
+                    crate::research_input::NativeDigitalInput {
+                        direction: crate::research_contracts::DirectionV1::Right,
+                        detail: "native:lifecycle-release".into(),
+                        apply_step: false,
+                        input_active: false,
+                        impulse: false,
+                        observed_at: Instant::now(),
+                        captured_at: Instant::now(),
+                    },
+                ));
+            worker.drain_input().unwrap();
+            assert_eq!(worker.state.event_count, 1);
         });
     }
     #[test]
@@ -1129,6 +1683,7 @@ mod tests {
                         authority,
                         mailbox,
                         workspace,
+                        Arc::new(WebviewGrants::default()),
                         media,
                         recorder,
                         lease,
@@ -1305,6 +1860,7 @@ mod tests {
                     authority,
                     mailbox,
                     workspace,
+                    Arc::new(WebviewGrants::default()),
                     media,
                     recorder,
                     lease,

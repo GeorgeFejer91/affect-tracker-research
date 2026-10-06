@@ -8,12 +8,14 @@ GitHub checkpoint is tag `pre-chatdev-2026-10-05` at
 ## Default in Codex
 
 Use the project [Codex development team skill](skills/affect-chatdev-codex/SKILL.md)
-for requested parallel Planner/Runner work. Codex directly delegates independent
-owner and verification roles, exchanges labeled messages at barriers, and keeps
-root integration authority. It uses the current Codex session and needs no
-separate ChatDev installation or model API key. A small single-segment pass can
-still follow [50](50-AGENT-WORKFLOW.md) directly. The YAML graphs below are an
-optional way to run the same role pattern in ChatDev 2.0 outside Codex.
+for requested parallel work across the Planner, standard Runner, Flubber VLC
+Runner and FlubberRecorder. Codex delegates only the affected program owners
+and specialist reviews, exchanges labeled messages at shared-contract barriers,
+and keeps root integration authority. It uses the current Codex session and
+needs no separate ChatDev installation or model API key. A small single-segment
+pass can still follow [50](50-AGENT-WORKFLOW.md) directly. The YAML graphs below
+are an optional way to run bounded one-segment or Planner/standard-Runner
+proposals in ChatDev 2.0 outside Codex; they do not cover the four-program goal.
 
 This is an optional development tool. The first companion app change is a
 separate Runner R1/RR-03 and RR-10 pass on
@@ -45,7 +47,7 @@ Each join must find both expected labels or report `BLOCKED`. ChatDev 2.0's
 edges deliver completed messages at barriers; agents do not have a live peer
 chat while running concurrently. Parallel agents never write the same file.
 
-For a task that explicitly allocates one Planner segment and one Runner seam,
+For a task that explicitly allocates one Planner segment and one standard Runner seam,
 the [cross-app workflow](../chatdev/affect-research-cross-app.yaml) runs the
 Planner and Runner owners in parallel. Their separate `planner.patch` and
 `runner.patch` meet at **CompatibilitySync**. Four independent agents then
@@ -56,7 +58,7 @@ review the proposals in parallel:
 | **UIVerifier** | Visible controls, state, accessibility and required rendered/installed observations |
 | **FunctionVerifier** | Inputs, validation, strict readers, deterministic behavior, tests and producer/consumer parity |
 | **RecordingGate** | Runner-owned LSL/XDF, timestamp, privacy, recovery and physical recording gates |
-| **PackagingGate** | Separate apps, Windows installer, Chrome/Edge delivery, native runtime provenance and release claims |
+| **PackagingGate** | Separate Planner and standard Runner apps, Windows installer, Chrome/Edge delivery, native runtime provenance and release claims |
 
 These agents inspect proposals and existing receipts. Root alone owns the
 current installed validation, packaging acceptance and release claim.
@@ -66,6 +68,8 @@ revise only their own proposal. IntegrationReview checks both resulting patches
 and the shared contract; Handoff reports what the root owner can apply and
 verify. A missing role output or an unsupported contract is a blocked handoff.
 This graph coordinates two separately allocated segment passes. It does not
+orchestrate the VLC Runner or FlubberRecorder; use Codex's skill above for those
+parallel program owners and their shared contract barriers. It does not
 grant a Planner owner access to Runner files or combine their branches before
 root integration.
 

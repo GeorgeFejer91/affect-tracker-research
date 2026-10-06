@@ -307,6 +307,7 @@ fn launch(
             research_commands::research_export_video_catalogue,
         ]),
         DesktopRole::Runner => builder.invoke_handler(tauri::generate_handler![
+            research_runner_master::commands::research_runner_master_webview_media_url,
             research_runner_master::commands::research_runner_master_plan,
             research_runner_master::commands::research_runner_master_rescan,
             research_runner_master::commands::research_runner_master_preflight,

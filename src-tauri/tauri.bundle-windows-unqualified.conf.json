@@ -1,11 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
+  "mainBinaryName": "Experiment Planner",
   "bundle": {
     "active": true,
     "targets": [
       "nsis"
     ],
     "resources": [],
+    "externalBin": ["target/planner-sidecars/affect-planner-cli"],
     "longDescription": "Unsigned internal Windows alpha for workflow evaluation only. Playback uses the HTML-compatible video path; LSL, native input, installed workflow, timing, and research readiness require separate qualification."
   }
 }

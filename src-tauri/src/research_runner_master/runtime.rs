@@ -1,4 +1,6 @@
 //! Native master session authority, separate from the frozen package worker.
+#[path = "playback.rs"]
+pub(crate) mod playback;
 use super::{
     markers::MasterMarkers, storage::MasterStorage, worker::MasterWorker, MasterSelector,
     PreparedMaster,
@@ -6,8 +8,7 @@ use super::{
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_input::ResearchInputService;
 use crate::research_native_media::{
-    NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1, PlaybackMode,
-    PlaybackQualification,
+    NativeMediaCapability, NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
 };
 use crate::research_native_protocol::{
     input_mailbox::ProtocolInputMailbox, runtime::PackageProtocolRuntime,
@@ -114,6 +115,9 @@ pub enum MasterActionV4 {
     Pause,
     Resume,
     Stop,
+    WebviewMedia {
+        event: WebviewMediaEvent,
+    },
 }
 impl From<MasterActionV4> for MasterAction {
     fn from(value: MasterActionV4) -> Self {
@@ -142,6 +146,7 @@ impl From<MasterActionV4> for MasterAction {
             MasterActionV4::Pause => Self::Pause,
             MasterActionV4::Resume => Self::Resume,
             MasterActionV4::Stop => Self::Stop,
+            MasterActionV4::WebviewMedia { event } => Self::WebviewMedia { event },
         }
     }
 }
@@ -233,8 +238,101 @@ pub struct MasterStatus {
     pub input_active: bool,
     pub interval_remaining_ms: Option<f64>,
     pub media_time_ms: Option<f64>,
+    pub webview_media: Option<WebviewMediaOffer>,
     pub failure_code: Option<String>,
     pub result: Option<Value>,
+}
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WebviewMediaOffer {
+    pub workspace_id: String,
+    pub workspace_file_id: String,
+    pub sha256: String,
+    pub byte_length: u64,
+    pub mime_type: String,
+    pub generation: u64,
+}
+#[derive(Default)]
+pub(crate) struct WebviewGrants {
+    state: Mutex<WebviewGrantState>,
+}
+#[derive(Default)]
+struct WebviewGrantState {
+    offer: Option<WebviewMediaOffer>,
+    ids: Vec<String>,
+}
+impl WebviewGrants {
+    pub(crate) fn open(&self, workspace: &WorkspaceService, offer: WebviewMediaOffer) {
+        self.close(workspace);
+        lock(&self.state).offer = Some(offer);
+    }
+    pub(crate) fn register(&self, offer: &WebviewMediaOffer, id: &str) -> bool {
+        let mut state = lock(&self.state);
+        if state.offer.as_ref() != Some(offer) {
+            return false;
+        }
+        state.ids.push(id.to_owned());
+        true
+    }
+    pub(crate) fn revoke(&self, workspace: &WorkspaceService, workspace_id: &str, id: &str) {
+        lock(&self.state).ids.retain(|current| current != id);
+        workspace.revoke_media_url_grant(workspace_id, id);
+    }
+    pub(crate) fn close(&self, workspace: &WorkspaceService) {
+        let (offer, ids) = {
+            let mut state = lock(&self.state);
+            (state.offer.take(), std::mem::take(&mut state.ids))
+        };
+        if let Some(offer) = offer {
+            for id in ids {
+                workspace.revoke_media_url_grant(&offer.workspace_id, &id);
+            }
+        }
+    }
+}
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct WebviewMediaUrlRequest {
+    pub run_id: String,
+    pub attempt_id: String,
+    pub position: u32,
+    pub generation: u64,
+}
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebviewMediaUrlReceipt {
+    pub run_id: String,
+    pub attempt_id: String,
+    pub position: u32,
+    pub generation: u64,
+    pub workspace_file_id: String,
+    pub sha256: String,
+    pub byte_length: u64,
+    pub mime_type: String,
+    pub media_grant_id: String,
+    pub media_url: String,
+}
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WebviewMediaState {
+    Playing,
+    Buffering,
+    Paused,
+    Ended,
+    Failed,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct WebviewMediaEvent {
+    pub attempt_id: String,
+    pub position: u32,
+    pub generation: u64,
+    pub workspace_file_id: String,
+    pub sha256: String,
+    pub sequence: u64,
+    pub state: WebviewMediaState,
+    pub position_ms: f64,
+    pub decoded_frames: u64,
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -259,6 +357,9 @@ pub enum MasterAction {
     Pause,
     Resume,
     Stop,
+    WebviewMedia {
+        event: WebviewMediaEvent,
+    },
     #[serde(skip)]
     DraftV2 {
         position: u32,
@@ -299,6 +400,9 @@ pub enum MasterActionV2 {
     Pause,
     Resume,
     Stop,
+    WebviewMedia {
+        event: WebviewMediaEvent,
+    },
 }
 impl From<MasterActionV2> for MasterAction {
     fn from(value: MasterActionV2) -> Self {
@@ -309,6 +413,7 @@ impl From<MasterActionV2> for MasterAction {
             MasterActionV2::Pause => Self::Pause,
             MasterActionV2::Resume => Self::Resume,
             MasterActionV2::Stop => Self::Stop,
+            MasterActionV2::WebviewMedia { event } => Self::WebviewMedia { event },
         }
     }
 }
@@ -317,6 +422,7 @@ struct Active {
     run_id: String,
     sender: SyncSender<Message>,
     status: Arc<Mutex<MasterStatus>>,
+    webview_grants: Arc<WebviewGrants>,
     worker: JoinHandle<()>,
     authority: InputAuthority,
     cancellation: Arc<AtomicBool>,
@@ -490,15 +596,7 @@ impl MasterRuntime {
             crate::research_platform::require_native_acquisition(
                 crate::research_platform::NATIVE_ACQUISITION_SUPPORTED,
             )?;
-            if request.validation {
-                require_validation_media(&self.media.capability())?;
-            } else if self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
-                != PlaybackQualification::QualifiedNative
-            {
-                return Err(CommandError::native_media_unavailable(
-                    "native-gstplay-qualification-required",
-                ));
-            }
+            require_start_media(&self.media.capability(), request.validation)?;
             let prepared = PreparedMaster::read(
                 &request.source_text,
                 &request.participant_id,
@@ -565,6 +663,7 @@ impl MasterRuntime {
                 })?;
             let receipt = storage.receipt.clone();
             let (sender, receiver) = mpsc::sync_channel(32);
+            let webview_grants = Arc::new(WebviewGrants::default());
             let mut worker = MasterWorker::new(
                 prepared,
                 request.workspace_id,
@@ -574,6 +673,7 @@ impl MasterRuntime {
                 authority.clone(),
                 mailbox,
                 Arc::clone(&self.workspace),
+                Arc::clone(&webview_grants),
                 Arc::clone(&self.media),
                 Arc::clone(&self.recorder),
                 lease,
@@ -595,6 +695,7 @@ impl MasterRuntime {
                 run_id,
                 sender,
                 status,
+                webview_grants,
                 worker: handle,
                 authority,
                 cancellation,
@@ -605,6 +706,84 @@ impl MasterRuntime {
     }
     pub fn status(&self) -> Option<MasterStatus> {
         lock(&self.active).as_ref().map(|a| lock(&a.status).clone())
+    }
+    pub fn webview_media_url(
+        &self,
+        request: WebviewMediaUrlRequest,
+    ) -> ResearchResult<WebviewMediaUrlReceipt> {
+        let live_status = || {
+            let active = lock(&self.active);
+            let current = active
+                .as_ref()
+                .filter(|item| !item.worker.is_finished())
+                .ok_or_else(CommandError::no_active_run)?;
+            let status = lock(&current.status).clone();
+            Ok::<_, CommandError>((status, Arc::clone(&current.webview_grants)))
+        };
+        let (before, grants) = live_status()?;
+        if !before.active
+            || before.run_id != request.run_id
+            || before.attempt_id != request.attempt_id
+            || before.position != request.position
+            || before.phase != MasterPhase::Preparing
+        {
+            return Err(CommandError::invalid_contract(
+                "WebView media URL targets a stale master occurrence.",
+            ));
+        }
+        let offer = before.webview_media.clone().ok_or_else(|| {
+            CommandError::invalid_contract("The current master step has no WebView media binding.")
+        })?;
+        if offer.generation != request.generation {
+            return Err(CommandError::invalid_contract(
+                "WebView media URL generation does not match the current occurrence.",
+            ));
+        }
+        let issued = self.workspace.issue_media_url(
+            &offer.workspace_id,
+            &offer.workspace_file_id,
+            &offer.sha256,
+            offer.byte_length,
+            &offer.mime_type,
+        )?;
+        if !grants.register(&offer, &issued.media_grant_id) {
+            self.workspace
+                .revoke_media_url_grant(&offer.workspace_id, &issued.media_grant_id);
+            return Err(CommandError::invalid_contract(
+                "WebView media URL lost its active occurrence before registration.",
+            ));
+        }
+        let after = live_status();
+        let valid = after.as_ref().is_ok_and(|(after, current_grants)| {
+            Arc::ptr_eq(&grants, current_grants)
+                && after.active
+                && after.run_id == before.run_id
+                && after.attempt_id == before.attempt_id
+                && after.position == before.position
+                && after.phase == before.phase
+                && after.webview_media.as_ref() == Some(&offer)
+                && issued.workspace_file_id == offer.workspace_file_id
+                && issued.byte_length == offer.byte_length
+                && issued.mime_type == offer.mime_type
+        });
+        if !valid {
+            grants.revoke(&self.workspace, &offer.workspace_id, &issued.media_grant_id);
+            return Err(CommandError::invalid_contract(
+                "WebView media URL lost its active master binding.",
+            ));
+        }
+        Ok(WebviewMediaUrlReceipt {
+            run_id: request.run_id,
+            attempt_id: request.attempt_id,
+            position: request.position,
+            generation: request.generation,
+            workspace_file_id: offer.workspace_file_id,
+            sha256: offer.sha256,
+            byte_length: offer.byte_length,
+            mime_type: offer.mime_type,
+            media_grant_id: issued.media_grant_id,
+            media_url: issued.media_url,
+        })
     }
     pub(crate) fn require_version(&self, run_id: &str, version: u32) -> ResearchResult<()> {
         let active = lock(&self.active);
@@ -773,10 +952,36 @@ mod v3_ingress_tests {
     }
 }
 
-/// Validation admits a functioning verified player, never a qualified claim.
-pub(crate) fn require_validation_media(
-    capability: &crate::research_native_media::NativeMediaCapability,
+pub(crate) const WEBVIEW_RESEARCH_QUALIFICATION_REQUIRED: &str =
+    "webview-research-qualification-required";
+
+pub(crate) fn require_start_media(
+    capability: &NativeMediaCapability,
+    validation: bool,
 ) -> ResearchResult<()> {
+    if validation {
+        return require_validation_media(capability);
+    }
+    Err(CommandError::new(
+        "native_media_unavailable",
+        format!(
+            "WebView video is not yet qualified for research Start ({WEBVIEW_RESEARCH_QUALIFICATION_REQUIRED}). Complete installed playback, physical input, and LSL/XDF qualification first."
+        ),
+    ))
+}
+
+/// Validation admits a functioning verified player, never a qualified claim.
+pub(crate) fn require_validation_media(capability: &NativeMediaCapability) -> ResearchResult<()> {
+    if capability.backend == "html-video"
+        && capability.api == "webview-video"
+        && !capability.runtime_integrity_verified
+        && !capability.qualified_start_available
+        && !capability.player_actor_ready
+    {
+        // Validation remains permanently unqualified. The worker still requires
+        // a bound decoded WebView observation before opening sampling.
+        return Ok(());
+    }
     if !capability.runtime_integrity_verified || !capability.player_actor_ready {
         return Err(CommandError::native_media_unavailable(
             &capability.reason_code,
@@ -789,10 +994,13 @@ pub(crate) fn require_validation_media(
 mod validation_tests {
     use super::*;
     #[test]
-    fn validation_requires_verified_runtime_and_live_actor_without_qualifying_it() {
+    fn validation_accepts_unqualified_webview_without_opening_research_start() {
         let media = NativeMediaService::unavailable_for_tests();
         let mut capability = media.capability();
+        assert!(require_validation_media(&capability).is_ok());
+        capability.backend = "unexpected-backend";
         assert!(require_validation_media(&capability).is_err());
+        capability.backend = "html-video";
         capability.runtime_integrity_verified = true;
         assert!(require_validation_media(&capability).is_err());
         capability.player_actor_ready = true;
@@ -800,5 +1008,17 @@ mod validation_tests {
         assert!(!capability.qualified_start_available);
         capability.runtime_integrity_verified = false;
         assert!(require_validation_media(&capability).is_err());
+    }
+
+    #[test]
+    fn research_start_stays_closed_even_if_media_capability_claims_ready() {
+        let mut capability = NativeMediaService::unavailable_for_tests().capability();
+        assert!(require_start_media(&capability, true).is_ok());
+        capability.qualified_start_available = true;
+        let error = require_start_media(&capability, false).unwrap_err();
+        assert_eq!(error.code, "native_media_unavailable");
+        assert!(error
+            .message
+            .contains(WEBVIEW_RESEARCH_QUALIFICATION_REQUIRED));
     }
 }

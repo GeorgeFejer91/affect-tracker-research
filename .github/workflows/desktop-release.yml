@@ -4,37 +4,53 @@ run-name: Unqualified internal Windows, macOS, and Linux package candidates
 
 on:
   workflow_dispatch:
+    inputs:
+      package_target:
+        description: Package target to build
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-x64
+          - runner-windows-x64
 
 permissions:
   contents: read
 
-# The packages use the HTML-compatible video path and build without optional
-# Cargo features. This workflow has no publishing, release, updater, signing,
+# The Runner uses WebView video and includes its native input and LSL/XDF
+# features. This workflow has no publishing, release, updater, signing,
 # notarization, or research-readiness authority.
 jobs:
+  select-targets:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - id: targets
+        shell: pwsh
+        env:
+          PACKAGE_TARGET: ${{ inputs.package_target }}
+        run: |
+          $catalog = @{
+            'windows-x64' = @{ target = 'windows-x64'; runner = 'windows-2022'; platform = 'windows'; architecture = 'x64' }
+            'runner-windows-x64' = @{ target = 'runner-windows-x64'; runner = 'windows-2022'; platform = 'windows'; architecture = 'x64' }
+            'macos-arm64' = @{ target = 'macos-arm64'; runner = 'macos-15'; platform = 'macos'; architecture = 'arm64' }
+            'macos-x64' = @{ target = 'macos-x64'; runner = 'macos-15-intel'; platform = 'macos'; architecture = 'x64' }
+            'linux-x64' = @{ target = 'linux-x64'; runner = 'ubuntu-22.04'; platform = 'linux'; architecture = 'x64' }
+          }
+          $names = if ($env:PACKAGE_TARGET -eq 'all') { @($catalog.Keys | Sort-Object) } else { @($env:PACKAGE_TARGET) }
+          $include = @($names | ForEach-Object { $catalog[$_] })
+          if ($include.Count -eq 0 -or $include -contains $null) { throw 'Invalid package target.' }
+          $matrix = ConvertTo-Json -InputObject @{ include = $include } -Compress -Depth 5
+          "matrix=$matrix" >> $env:GITHUB_OUTPUT
   package-unqualified-internal-alpha:
     name: ${{ matrix.target }} (unqualified internal alpha)
+    needs: select-targets
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - target: windows-x64
-            runner: windows-latest
-            platform: windows
-            architecture: x64
-          - target: macos-arm64
-            runner: macos-15
-            platform: macos
-            architecture: arm64
-          - target: macos-x64
-            runner: macos-15-intel
-            platform: macos
-            architecture: x64
-          - target: linux-x64
-            runner: ubuntu-22.04
-            platform: linux
-            architecture: x64
+      matrix: ${{ fromJSON(needs.select-targets.outputs.matrix) }}
     steps:
       - name: Check out exact repository state
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -97,7 +113,7 @@ jobs:
       - name: Run frontend tests
         run: pnpm surveyjs:check && pnpm test
       - name: Build focused desktop frontend
-        run: pnpm desktop:build
+        run: ${{ matrix.target == 'runner-windows-x64' && 'pnpm runner:build' || 'pnpm desktop:build' }}
       - name: Check Rust without Windows-only or LSL features
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       - name: Compile Rust tests without Windows-only or LSL features
@@ -110,6 +126,37 @@ jobs:
           ${{ matrix.target }}
           --output
           src-tauri/target/release/bundle/unqualified-${{ matrix.target }}-provenance.json
+      - name: Install unsigned Windows package candidate
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        env:
+          PACKAGE_TARGET: ${{ matrix.target }}
+        run: |
+          $installers = @(Get-ChildItem -LiteralPath 'src-tauri/target/release/bundle/nsis' -Filter '*-setup.exe' -File)
+          if ($installers.Count -ne 1) { throw "Expected one Windows installer; found $($installers.Count)." }
+          $product = if ($env:PACKAGE_TARGET -eq 'runner-windows-x64') { 'Experiment Runner' } else { 'Experiment Planner' }
+          $process = Start-Process -FilePath $installers[0].FullName -ArgumentList '/S' -PassThru -Wait -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw "Windows installer exited with $($process.ExitCode)." }
+          $install = Join-Path $env:LOCALAPPDATA $product
+          $registered = @(Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' |
+            Get-ItemProperty | Where-Object {
+              $_.InstallLocation -and $_.InstallLocation.Trim('"') -ieq $install
+            })
+          if ($registered.Count -ne 1) { throw 'Installed application has no matching current-user uninstall entry.' }
+          $uninstallCommand = $registered[0].UninstallString
+          if ($uninstallCommand -match '^\s*"([^"]+\.exe)"') { $uninstaller = $Matches[1] }
+          elseif ($uninstallCommand -match '^\s*(.+?\.exe)(?:\s|$)') { $uninstaller = $Matches[1] }
+          else { throw 'Registered uninstall command has no executable path.' }
+          $verify = @{
+            Target = $env:PACKAGE_TARGET
+            InstallDirectory = $install
+            UninstallerPath = $uninstaller
+            ProvenancePath = "src-tauri/target/release/bundle/unqualified-$($env:PACKAGE_TARGET)-provenance.json"
+          }
+          if ($env:PACKAGE_TARGET -eq 'windows-x64') {
+            $verify.StagedPlannerCli = 'src-tauri/target/planner-sidecars/affect-planner-cli-x86_64-pc-windows-msvc.exe'
+          }
+          ./scripts/verify-installed-desktop-package.ps1 @verify
       - name: Upload macOS workflow artifact only
         if: matrix.platform == 'macos'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

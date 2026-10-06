@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
 
 const HEX_COMMIT = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
 const SIGNING_ENVIRONMENT_KEYS = [
@@ -22,24 +23,40 @@ const TARGETS = Object.freeze({
     nodeArch: "x64",
     bundles: "nsis",
     config: "src-tauri/tauri.bundle-windows-unqualified.conf.json",
+    binary: "affect-research",
+    feature: "planner-desktop",
+  }),
+  "runner-windows-x64": Object.freeze({
+    nodePlatform: "win32",
+    nodeArch: "x64",
+    bundles: "nsis",
+    config: "src-tauri/tauri.runner.conf.json",
+    binary: "affect-runner",
+    feature: "runner-desktop",
   }),
   "macos-arm64": Object.freeze({
     nodePlatform: "darwin",
     nodeArch: "arm64",
     bundles: "dmg",
     config: "src-tauri/tauri.bundle-macos-unqualified.conf.json",
+    binary: "affect-research",
+    feature: "planner-desktop",
   }),
   "macos-x64": Object.freeze({
     nodePlatform: "darwin",
     nodeArch: "x64",
     bundles: "dmg",
     config: "src-tauri/tauri.bundle-macos-unqualified.conf.json",
+    binary: "affect-research",
+    feature: "planner-desktop",
   }),
   "linux-x64": Object.freeze({
     nodePlatform: "linux",
     nodeArch: "x64",
     bundles: "deb,appimage",
     config: "src-tauri/tauri.bundle-linux-unqualified.conf.json",
+    binary: "affect-research",
+    feature: "planner-desktop",
   }),
 });
 
@@ -60,7 +77,7 @@ function runGit(arguments_) {
 
 function parseTarget() {
   if (process.argv.length !== 3) {
-    fail("pass exactly one target: windows-x64, macos-arm64, macos-x64, or linux-x64.");
+    fail("pass exactly one target: windows-x64, runner-windows-x64, macos-arm64, macos-x64, or linux-x64.");
   }
   const name = process.argv[2];
   const target = TARGETS[name];
@@ -76,9 +93,6 @@ function verifyBoundary(target) {
     );
   }
   if (!existsSync(target.config)) fail(`missing Tauri override ${target.config}.`);
-  if (process.env.AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME === "1") {
-    fail("the retired native media runtime gate must not be active.");
-  }
   const suppliedSigningKey = SIGNING_ENVIRONMENT_KEYS.find((key) => process.env[key]);
   if (suppliedSigningKey) fail(`${suppliedSigningKey} must be absent from this unsigned job.`);
 
@@ -95,6 +109,26 @@ function verifyBoundary(target) {
 
 const target = parseTarget();
 const commit = verifyBoundary(target);
+if (target.nodePlatform === "win32") {
+  const host = spawnSync("rustc", ["--print", "host-tuple"], { encoding: "utf8" });
+  if (host.error || host.status !== 0 || host.stdout.trim() !== "x86_64-pc-windows-msvc") {
+    fail("the Windows installer requires the MSVC x64 Rust host.");
+  }
+}
+if (target.name === "windows-x64") {
+  const cliBuild = spawnSync(process.execPath, ["scripts/build-planner-cli.js", "--release", "--no-default-features"], {
+    cwd: process.cwd(),
+    stdio: "inherit",
+  });
+  if (cliBuild.error) throw cliBuild.error;
+  if (cliBuild.status !== 0) process.exit(cliBuild.status ?? 1);
+  const source = resolve(process.env.CARGO_TARGET_DIR ?? "src-tauri/target", "release/affect-planner-cli.exe");
+  const sidecar = resolve("src-tauri/target/planner-sidecars/affect-planner-cli-x86_64-pc-windows-msvc.exe");
+  if (!existsSync(source) || statSync(source).size === 0) fail("the embedded Planner CLI build is missing.");
+  mkdirSync(dirname(sidecar), { recursive: true });
+  copyFileSync(source, sidecar);
+  if (statSync(sidecar).size !== statSync(source).size) fail("the staged Planner CLI is incomplete.");
+}
 const require = createRequire(import.meta.url);
 const tauriCli = require.resolve("@tauri-apps/cli/tauri.js");
 const result = spawnSync(
@@ -108,9 +142,13 @@ const result = spawnSync(
     target.bundles,
     "--config",
     target.config,
+    "--features",
+    target.feature,
     "--",
     "--locked",
     "--no-default-features",
+    "--bin",
+    target.binary,
   ],
   {
     cwd: process.cwd(),
