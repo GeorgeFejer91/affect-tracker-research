@@ -9,6 +9,13 @@ It verifies the installed player through
 the same native trust check after Recorder files are copied. A failed download,
 digest, player install, or installed-payload check stops Recorder setup; the
 player retains its independent installation and uninstaller.
+If the final installed-payload check fails after Recorder files are copied,
+NSIS reports a failed setup but may leave Recorder files, shortcuts, or an
+uninstaller entry behind. Remove that partial Recorder installation before
+retrying or repairing it. The Recorder shell may still open, but player status,
+selection, connection, and master inspection require the embedded player hashes
+and reject an untrusted payload. The separately installed player is not rolled
+back by a Recorder setup failure.
 
 Recorder verifies the seven critical files in the independently installed
 FlubberVLC Player's `manifest.json` and every player payload file in
