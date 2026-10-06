@@ -58,6 +58,8 @@ jobs:
         run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-features
       - name: Check Flubber VLC launcher formatting
         run: cargo fmt --manifest-path experiments/vlc-flubber/player-launcher/Cargo.toml -- --check
+      - name: Check Flubber VLC payload manifests
+        run: node --test experiments/vlc-flubber/test-player-manifest.mjs
       - name: Test strict Flubber VLC recipe inspection
         shell: cmd
         run: |
