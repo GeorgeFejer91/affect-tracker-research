@@ -12,18 +12,23 @@ pnpm install --frozen-lockfile
 pnpm runner:desktop:build
 ```
 
+For a separate unsigned Windows NSIS source candidate, set
+`AFFECT_RESEARCH_PACKAGE_COMMIT` to the clean checkout's exact `HEAD`, then run
+`pnpm runner:bundle`. This target uses the Runner identity and binary and does
+not include the Planner CLI. The installer still needs exact installed checks.
+
 This builds `affect-runner.exe` under the Cargo target directory and embeds the
 Runner frontend, icon and product identity. `pnpm runner:desktop` explicitly
 launches it. `pnpm runner:dev` serves the frontend on port 1421 for development;
 the native application is required for file dialogs, execution and recording.
 Planner retains its own desktop build entry and application-data identity.
 
-The default build includes LSL and Windows acquisition. Qualified video Start
-remains disabled by the existing native GStreamer qualification gate. A successful
-build or synthetic test does not qualify native video playback or an installed
-experiment. The pinned GStreamer runtime/SDK, redistribution review, installed
-player/input/timing tests and complete Planner–Runner option correspondence have
-their own outstanding gates in `for-ai/30` and `for-ai/40`.
+The development executable can include LSL and Windows acquisition. Standard
+Runner targets Windows WebView video; native recorded playback is still under
+development. A successful build or synthetic test does not qualify playback or
+an installed experiment. The WebView lifecycle, installed input/timing, LSL/XDF,
+and complete Planner–Runner correspondence have outstanding gates in
+`for-ai/30` and `for-ai/40`.
 
 ## Launcher and participant flow
 

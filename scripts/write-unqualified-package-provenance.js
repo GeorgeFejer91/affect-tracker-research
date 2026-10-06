@@ -13,7 +13,16 @@ const TARGETS = Object.freeze({
     nodePlatform: "win32",
     nodeArch: "x64",
     artifacts: Object.freeze([
-      Object.freeze({ kind: "nsis", directory: "src-tauri/target/release/bundle/nsis", suffix: ".exe" }),
+      Object.freeze({ kind: "nsis", directory: "src-tauri/target/release/bundle/nsis", prefix: "Experiment Planner_", suffix: ".exe" }),
+    ]),
+  }),
+  "runner-windows-x64": Object.freeze({
+    platform: "windows",
+    architecture: "x64",
+    nodePlatform: "win32",
+    nodeArch: "x64",
+    artifacts: Object.freeze([
+      Object.freeze({ kind: "nsis", directory: "src-tauri/target/release/bundle/nsis", prefix: "Experiment Runner_", suffix: ".exe" }),
     ]),
   }),
   "macos-arm64": Object.freeze({
@@ -85,7 +94,7 @@ async function identifyArtifacts(target) {
   for (const expectation of target.artifacts) {
     const directory = resolve(expectation.directory);
     const names = (await readdir(directory))
-      .filter((name) => name.endsWith(expectation.suffix))
+      .filter((name) => (!expectation.prefix || name.startsWith(expectation.prefix)) && name.endsWith(expectation.suffix))
       .sort((left, right) => left.localeCompare(right, "en"));
     if (names.length !== 1) {
       fail(`expected exactly one ${expectation.kind} artifact, found ${names.length}.`);

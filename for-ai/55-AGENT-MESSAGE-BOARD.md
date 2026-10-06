@@ -49,6 +49,15 @@ source tests for local-only control, strict plan inspection, missing/tampered
 player rejection, and no duplicate player resources. Installed and research
 claims remain open.
 
+Root packaging allocation: R1/RR-11 standalone standard Runner NSIS source,
+separate from Planner's NSIS. The existing `affect-runner` Cargo binary and
+`tauri.runner.conf.json` already define Runner identity and frontend, but the
+current package helper only builds Planner. Root may add a Runner-only Windows
+target to that helper and a command to invoke it, preserving the exact-commit,
+clean-tree, unsigned, no-default-features guards. Evidence now: focused
+packaging boundary tests and remote Windows installer build when CI is wired;
+installed playback, LSL/XDF, upgrade/uninstall and release remain open.
+
 Direct user decision: remove GStreamer from the active project and use Windows
 WebView video for standard Runner. Root reverted the restored Gst actor and JS
 bridge, removed its active CI/config/runtime staging, and preserved the separate

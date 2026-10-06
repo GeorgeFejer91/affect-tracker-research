@@ -24,6 +24,13 @@ const TARGETS = Object.freeze({
     bundles: "nsis",
     config: "src-tauri/tauri.bundle-windows-unqualified.conf.json",
   }),
+  "runner-windows-x64": Object.freeze({
+    nodePlatform: "win32",
+    nodeArch: "x64",
+    bundles: "nsis",
+    config: "src-tauri/tauri.runner.conf.json",
+    binary: "affect-runner",
+  }),
   "macos-arm64": Object.freeze({
     nodePlatform: "darwin",
     nodeArch: "arm64",
@@ -61,7 +68,7 @@ function runGit(arguments_) {
 
 function parseTarget() {
   if (process.argv.length !== 3) {
-    fail("pass exactly one target: windows-x64, macos-arm64, macos-x64, or linux-x64.");
+    fail("pass exactly one target: windows-x64, runner-windows-x64, macos-arm64, macos-x64, or linux-x64.");
   }
   const name = process.argv[2];
   const target = TARGETS[name];
@@ -93,11 +100,13 @@ function verifyBoundary(target) {
 
 const target = parseTarget();
 const commit = verifyBoundary(target);
-if (target.name === "windows-x64") {
+if (target.nodePlatform === "win32") {
   const host = spawnSync("rustc", ["--print", "host-tuple"], { encoding: "utf8" });
   if (host.error || host.status !== 0 || host.stdout.trim() !== "x86_64-pc-windows-msvc") {
-    fail("the Planner CLI sidecar requires the Windows MSVC x64 Rust host.");
+    fail("the Windows installer requires the MSVC x64 Rust host.");
   }
+}
+if (target.name === "windows-x64") {
   const cliBuild = spawnSync(process.execPath, ["scripts/build-planner-cli.js", "--release", "--no-default-features"], {
     cwd: process.cwd(),
     stdio: "inherit",
@@ -127,6 +136,7 @@ const result = spawnSync(
     "--",
     "--locked",
     "--no-default-features",
+    ...(target.binary ? ["--bin", target.binary] : []),
   ],
   {
     cwd: process.cwd(),

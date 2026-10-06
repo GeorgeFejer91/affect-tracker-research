@@ -23,6 +23,10 @@ jobs:
             runner: windows-latest
             platform: windows
             architecture: x64
+          - target: runner-windows-x64
+            runner: windows-latest
+            platform: windows
+            architecture: x64
           - target: macos-arm64
             runner: macos-15
             platform: macos
@@ -97,7 +101,7 @@ jobs:
       - name: Run frontend tests
         run: pnpm surveyjs:check && pnpm test
       - name: Build focused desktop frontend
-        run: pnpm desktop:build
+        run: ${{ matrix.target == 'runner-windows-x64' && 'pnpm runner:build' || 'pnpm desktop:build' }}
       - name: Check Rust without Windows-only or LSL features
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml --no-default-features
       - name: Compile Rust tests without Windows-only or LSL features

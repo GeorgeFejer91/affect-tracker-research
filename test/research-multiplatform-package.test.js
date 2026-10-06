@@ -123,6 +123,22 @@ test("Windows package stages the embedded Planner CLI without granting WebView p
   assert.doesNotMatch(app, /tauri_plugin_shell/u);
 });
 
+test("standard Runner has a separate unsigned NSIS target and no Planner CLI sidecar", async () => {
+  const helper = await source(BUILD_HELPER_PATH);
+  const provenance = await source(PROVENANCE_HELPER_PATH);
+  const packageJson = JSON.parse(await source("package.json"));
+  const runnerConfig = JSON.parse(await source("src-tauri/tauri.runner.conf.json"));
+
+  assert.match(helper, /"runner-windows-x64"[\s\S]*config: "src-tauri\/tauri\.runner\.conf\.json"[\s\S]*binary: "affect-runner"/u);
+  assert.match(helper, /target\.binary \? \["--bin", target\.binary\] : \[\]/u);
+  assert.match(helper, /if \(target\.name === "windows-x64"\) \{[\s\S]*build-planner-cli/u);
+  assert.equal(packageJson.scripts["runner:bundle"], "node scripts/build-unqualified-desktop-package.js runner-windows-x64");
+  assert.equal(runnerConfig.productName, "Experiment Runner");
+  assert.equal(runnerConfig.mainBinaryName, "affect-runner");
+  assert.match(provenance, /"runner-windows-x64"[\s\S]*prefix: "Experiment Runner_"/u);
+  assert.match(await source(".github/workflows/desktop-release.yml"), /target: runner-windows-x64[\s\S]*runner: windows-latest/u);
+});
+
 test("provenance binds artifact hashes and sets every requested qualification claim false", async () => {
   const helper = await source(PROVENANCE_HELPER_PATH);
 
