@@ -1,8 +1,7 @@
 # Native VLC Flubber side quest
 
-Status 2026-10-06: **experimental feasibility probe, historical Flubbercorder
-candidate, separate Rust player installer candidate, and Rust/Tauri runner
-installer candidate**, separate from the
+Status 2026-10-06: **public experimental Windows VLC player and Flubbercorder
+prerelease**, separate from the
 approved Experiment Planner and Experiment Runner. The user explicitly asked
 for this as an additional project. Passing its checks does not approve it as
 part of the main suite or change P1–P7/R1 requirements, saved recipe formats,
@@ -32,6 +31,12 @@ and Stop, showed 67 live affect samples and the exact
 `dictator-3-study.mp4_Start`/`_Stop` markers, and reached Complete with a
 closed XDF and 67 fallback CSV rows. The runner promotes XDF only after its
 sample count matches that CSV and the exact markers are present.
+Both assets are publicly available from the
+[VLC Flubber native v0.1.0 release](https://github.com/GeorgeFejer91/affect-tracker-research/releases/tag/vlc-flubber-native-v0.1.0).
+GitHub asset digests match the local hashes above, and unauthenticated HEAD
+requests to both direct download URLs returned HTTP 200. This does not promote
+the side project into the main Planner or Runner or establish research
+qualification.
 
 ## Frame-matched sampling follow-up, 2026-10-05
 
