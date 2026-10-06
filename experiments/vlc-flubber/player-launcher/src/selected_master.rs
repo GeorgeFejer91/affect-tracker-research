@@ -431,7 +431,7 @@ mod tests {
 
     #[test]
     fn sequence_preserves_repeated_video_occurrences_and_isi_order() {
-        let video = |position, entry_id| MasterStep {
+        let video = |position: u32, entry_id: &str| MasterStep {
             position,
             entry_id: entry_id.into(),
             kind: MasterStepKind::Video,
