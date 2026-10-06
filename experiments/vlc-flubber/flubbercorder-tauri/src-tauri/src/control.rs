@@ -744,7 +744,18 @@ mod tests {
             std::env::temp_dir().join(format!("recorder-armed-master-{}.json", std::process::id()));
         std::fs::write(&master, b"{}").unwrap();
         let mut command = Command::new("powershell");
-        command.args(["-NoProfile", "-Command", "[Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":null,\"ok\":true,\"state\":\"idle\",\"generation\":0,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-1\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-2\",\"ok\":true,\"state\":\"idle\",\"generation\":1,\"error\":null}')"]);
+        let script = r#"
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":null,"ok":true,"state":"idle","generation":0,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-1","ok":true,"state":"armed","generation":1,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-2","ok":true,"state":"idle","generation":1,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-3","ok":true,"state":"armed","generation":2,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-4","ok":true,"state":"shutdown","generation":2,"error":null}')
+"#;
+        command.args(["-NoProfile", "-Command", script]);
         let mut client = ControlClient::spawn_command(command).unwrap();
         client
             .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
@@ -752,6 +763,12 @@ mod tests {
         client.send(Action::Stop, None).unwrap();
         assert_eq!(client.phase, Phase::Idle);
         assert!(!client.sequence_armed);
+        assert!(client.alive());
+        client
+            .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
+            .unwrap();
+        assert_eq!(client.snapshot(), (Phase::Armed, 2));
+        client.shutdown();
         assert!(client.child.try_wait().unwrap().is_some());
         std::fs::remove_file(master).unwrap();
     }
