@@ -10,7 +10,8 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::windows::fs::MetadataExt;
 use std::path::{Component, Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 fn selected_asset<'a>(steps: &'a [MasterStep], entry_id: &str) -> Result<&'a Value> {
     let matches: Vec<_> = steps
@@ -184,6 +185,232 @@ pub(super) fn run(
     }))
 }
 
+#[derive(Debug)]
+struct SequenceOccurrence<'a> {
+    generation: u64,
+    step: &'a MasterStep,
+}
+
+fn sequence_occurrences(steps: &[MasterStep]) -> Result<Vec<SequenceOccurrence<'_>>> {
+    if steps.is_empty() {
+        return Err("Selected master has no executable steps".into());
+    }
+    steps
+        .iter()
+        .enumerate()
+        .map(|(index, step)| {
+            let generation = u64::try_from(index + 1)?;
+            if u64::from(step.position) != generation {
+                return Err("Selected master step order is not contiguous".into());
+            }
+            match step.kind {
+                MasterStepKind::Questionnaire => {
+                    return Err(format!(
+                        "Questionnaire step {} is unsupported by the VLC player",
+                        step.entry_id
+                    )
+                    .into());
+                }
+                MasterStepKind::Video if !step.payload["asset"].is_object() => {
+                    return Err(
+                        format!("Video step {} has no selected asset", step.entry_id).into(),
+                    );
+                }
+                MasterStepKind::Video | MasterStepKind::Interval => {}
+            }
+            if step.duration_ms.is_none() {
+                return Err(format!("Step {} has no declared duration", step.entry_id).into());
+            }
+            Ok(SequenceOccurrence { generation, step })
+        })
+        .collect()
+}
+
+fn unix_ms() -> Result<u64> {
+    Ok(u64::try_from(
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
+    )?)
+}
+
+fn video_csv_times(evidence_directory: &Path) -> Result<(PathBuf, i64, i64)> {
+    let mut csvs = Vec::new();
+    for entry in fs::read_dir(evidence_directory.join("recordings"))? {
+        let path = entry?.path();
+        if path.extension().is_some_and(|extension| extension == "csv")
+            && !path
+                .file_stem()
+                .is_some_and(|stem| stem.to_string_lossy().ends_with("-timeseries"))
+        {
+            csvs.push(path);
+        }
+    }
+    let [csv] = csvs.as_slice() else {
+        return Err("Selected occurrence must have exactly one event CSV".into());
+    };
+    let mut start = None;
+    let mut complete = None;
+    let mut end = None;
+    for (index, line) in fs::read_to_string(csv)?.lines().enumerate() {
+        let mut columns = line.split(',');
+        let event = columns.next().unwrap_or_default();
+        if !matches!(event, "video_start" | "video_complete" | "video_end") {
+            continue;
+        }
+        let media_ms: i64 = columns
+            .next()
+            .ok_or("VLC event has no media time")?
+            .parse()?;
+        if media_ms < 0 {
+            return Err("VLC event has a negative media time".into());
+        }
+        let slot = match event {
+            "video_start" => &mut start,
+            "video_complete" => &mut complete,
+            _ => &mut end,
+        };
+        if slot.replace((index, media_ms)).is_some() {
+            return Err("VLC event CSV repeats a terminal event".into());
+        }
+    }
+    let (Some((start_index, start_ms)), Some((complete_index, complete_ms)), Some((end_index, _))) =
+        (start, complete, end)
+    else {
+        return Err("VLC event CSV lacks decoded start or completion".into());
+    };
+    if !(start_index < complete_index && complete_index < end_index) {
+        return Err("VLC event CSV has an invalid playback order".into());
+    }
+    Ok((csv.clone(), start_ms, complete_ms))
+}
+
+fn sequence_receipt(
+    prepared: &PreparedMaster,
+    master_sha: &str,
+    run_dir: &Path,
+    events: &[Value],
+    status: &str,
+) -> Value {
+    json!({
+        "schema":"flubber-vlc-selected-sequence-status",
+        "version":1,
+        "status":status,
+        "recipeSourceByteSha256":prepared.plan.recipe_source_byte_sha256,
+        "masterFileByteSha256":master_sha,
+        "planIdentitySha256":prepared.plan.plan_identity_sha256,
+        "participantId":prepared.plan.participant_id,
+        "selector":prepared.plan.selector,
+        "evidenceDirectory":run_dir,
+        "events":events,
+        "sharedRunnerRecordingQualified":false
+    })
+}
+
+pub(super) fn run_sequence(
+    master: &Path,
+    participant: &str,
+    selector_json: &str,
+    data_dir: Option<PathBuf>,
+) -> Result<Value> {
+    let selector: MasterSelector = serde_json::from_str(selector_json)?;
+    let master_sha = file_sha256(master)?;
+    let prepared = PreparedMaster::read_file(master, participant, selector)?;
+    // Preflight the entire selected chronology before opening any media. A form
+    // requires its own participant UI; skipping it would change the experiment.
+    let occurrences = sequence_occurrences(&prepared.plan.steps)?;
+    let root = match data_dir {
+        Some(path) => path,
+        None => PathBuf::from(env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA is unavailable")?)
+            .join("VLC_Flubber_Player"),
+    };
+    let runs = root.join("selected-sequence");
+    fs::create_dir_all(&runs)?;
+    let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+    let run_dir = runs.join(format!("{}-{stamp}", std::process::id()));
+    fs::create_dir(&run_dir)?;
+    let run_dir = run_dir.canonicalize()?;
+    let mut events = Vec::new();
+    for occurrence in occurrences {
+        let step = occurrence.step;
+        let generation = occurrence.generation;
+        let executed = (|| -> Result<Vec<Value>> {
+            if file_sha256(master)? != master_sha {
+                return Err("Saved master changed after sequence selection".into());
+            }
+            let result = match step.kind {
+                MasterStepKind::Video => {
+                    let step_dir = run_dir.join(format!("step-{}-{generation}", step.position));
+                    let receipt = run(
+                        master,
+                        participant,
+                        selector_json,
+                        &step.entry_id,
+                        Some(step_dir),
+                    )?;
+                    if receipt["masterFileByteSha256"].as_str() != Some(master_sha.as_str())
+                        || receipt["planIdentitySha256"].as_str()
+                            != Some(prepared.plan.plan_identity_sha256.as_str())
+                    {
+                        return Err("Selected video no longer matches the sequence plan".into());
+                    }
+                    let evidence = receipt["evidenceDirectory"]
+                        .as_str()
+                        .ok_or("Selected video has no evidence directory")?;
+                    let (csv, start_ms, complete_ms) = video_csv_times(Path::new(evidence))?;
+                    let confirmed = unix_ms()?;
+                    vec![
+                        json!({"event":"videoStart","position":step.position,"entryId":step.entry_id,"generation":generation,"sourceCode":step.source_code,"assetSha256":receipt["assetSha256"],"mediaTimeMs":start_ms,"confirmedAtUnixMs":confirmed,"observationSource":"plugin-csv-post-run","eventCsvPath":csv}),
+                        json!({"event":"videoEnd","position":step.position,"entryId":step.entry_id,"generation":generation,"sourceCode":step.source_code,"assetSha256":receipt["assetSha256"],"mediaTimeMs":complete_ms,"confirmedAtUnixMs":confirmed,"observationSource":"plugin-csv-post-run","eventCsvPath":csv}),
+                    ]
+                }
+                MasterStepKind::Interval => {
+                    let started = unix_ms()?;
+                    let clock = Instant::now();
+                    thread::sleep(Duration::from_millis(
+                        step.duration_ms.ok_or("ISI has no duration")?,
+                    ));
+                    let ended = unix_ms()?;
+                    vec![
+                        json!({"event":"isiStart","position":step.position,"entryId":step.entry_id,"generation":generation,"sourceCode":step.source_code,"observedAtUnixMs":started,"observationSource":"launcher-clock"}),
+                        json!({"event":"isiEnd","position":step.position,"entryId":step.entry_id,"generation":generation,"sourceCode":step.source_code,"observedAtUnixMs":ended,"elapsedMs":clock.elapsed().as_secs_f64()*1000.,"observationSource":"launcher-clock"}),
+                    ]
+                }
+                MasterStepKind::Questionnaire => unreachable!("forms were rejected in preflight"),
+            };
+            Ok(result)
+        })();
+        match executed {
+            Ok(step_events) => events.extend(step_events),
+            Err(error) => {
+                events.push(json!({"event":"failure","position":step.position,"entryId":step.entry_id,"generation":generation,"kind":step.kind,"observedAtUnixMs":unix_ms()?,"reason":error.to_string()}));
+                return Ok(sequence_receipt(
+                    &prepared,
+                    &master_sha,
+                    &run_dir,
+                    &events,
+                    "failed",
+                ));
+            }
+        }
+        if !matches!(file_sha256(master), Ok(current) if current == master_sha) {
+            events.push(json!({"event":"failure","position":step.position,"entryId":step.entry_id,"generation":generation,"kind":step.kind,"observedAtUnixMs":unix_ms()?,"reason":"Saved master changed during sequence execution"}));
+            return Ok(sequence_receipt(
+                &prepared,
+                &master_sha,
+                &run_dir,
+                &events,
+                "failed",
+            ));
+        }
+    }
+    Ok(sequence_receipt(
+        &prepared,
+        &master_sha,
+        &run_dir,
+        &events,
+        "ended",
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -200,6 +427,90 @@ mod tests {
         }];
         assert_eq!(selected_asset(&steps, "video-1").unwrap()["sha256"], "abc");
         assert!(selected_asset(&steps, "video-2").is_err());
+    }
+
+    #[test]
+    fn sequence_preserves_repeated_video_occurrences_and_isi_order() {
+        let video = |position, entry_id| MasterStep {
+            position,
+            entry_id: entry_id.into(),
+            kind: MasterStepKind::Video,
+            source_code: Some("V".into()),
+            duration_ms: Some(1000),
+            payload: json!({"asset":{"assetId":"same-video"}}),
+        };
+        let steps = vec![
+            video(1, "video-a"),
+            MasterStep {
+                position: 2,
+                entry_id: "isi-a".into(),
+                kind: MasterStepKind::Interval,
+                source_code: Some("I".into()),
+                duration_ms: Some(25),
+                payload: json!({"definition":{"durationMs":25}}),
+            },
+            video(3, "video-b"),
+        ];
+        let selected = sequence_occurrences(&steps).unwrap();
+        assert_eq!(
+            selected
+                .iter()
+                .map(|row| (row.generation, row.step.entry_id.as_str()))
+                .collect::<Vec<_>>(),
+            vec![(1, "video-a"), (2, "isi-a"), (3, "video-b")]
+        );
+        assert_eq!(
+            selected[0].step.payload["asset"],
+            selected[2].step.payload["asset"]
+        );
+        let mut with_form = steps;
+        with_form.push(MasterStep {
+            position: 4,
+            entry_id: "form-a".into(),
+            kind: MasterStepKind::Questionnaire,
+            source_code: None,
+            duration_ms: None,
+            payload: json!({}),
+        });
+        assert!(sequence_occurrences(&with_form)
+            .unwrap_err()
+            .to_string()
+            .contains("form-a"));
+    }
+
+    #[test]
+    fn video_events_require_one_ordered_decoded_completion() {
+        let root = env::temp_dir().join(format!(
+            "flubber-events-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let recordings = root.join("recordings");
+        fs::create_dir_all(&recordings).unwrap();
+        let csv = recordings.join("video.csv");
+        fs::write(
+            recordings.join("video-timeseries.csv"),
+            "time_s,valence,arousal\n",
+        )
+        .unwrap();
+        fs::write(
+            &csv,
+            "video_start,0,0,0,0\nvideo_complete,990,0,0,0\nvideo_end,990,0,0,0\n",
+        )
+        .unwrap();
+        assert_eq!(video_csv_times(&root).unwrap(), (csv.clone(), 0, 990));
+        fs::write(
+            &csv,
+            "video_end,990,0,0,0\nvideo_start,0,0,0,0\nvideo_complete,990,0,0,0\n",
+        )
+        .unwrap();
+        assert!(video_csv_times(&root).is_err());
+        fs::write(&csv, "video_start,0,0,0,0\nvideo_end,990,0,0,0\n").unwrap();
+        assert!(video_csv_times(&root).is_err());
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

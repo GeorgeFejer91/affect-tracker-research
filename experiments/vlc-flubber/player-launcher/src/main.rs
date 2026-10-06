@@ -22,6 +22,7 @@ struct Args {
     control_stdio: bool,
     inspect_master: Option<PathBuf>,
     play_master_video: Option<PathBuf>,
+    play_master_sequence: Option<PathBuf>,
     participant: Option<String>,
     selector_json: Option<String>,
     entry_id: Option<String>,
@@ -87,6 +88,10 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                 parsed.play_master_video =
                     Some(PathBuf::from(value(&mut args, "--play-master-video")?))
             }
+            Some("--play-master-sequence") if parsed.play_master_sequence.is_none() => {
+                parsed.play_master_sequence =
+                    Some(PathBuf::from(value(&mut args, "--play-master-sequence")?))
+            }
             Some("--participant") if parsed.participant.is_none() => {
                 parsed.participant = Some(
                     value(&mut args, "--participant")?
@@ -135,6 +140,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                     "FlubberVLC --inspect-master PATH --participant P001 --selector-json JSON"
                 );
                 println!("FlubberVLC --play-master-video PATH --participant P001 --selector-json JSON --entry-id ENTRY_ID [--data-dir PATH]");
+                println!("FlubberVLC --play-master-sequence PATH --participant P001 --selector-json JSON [--data-dir PATH]");
                 println!("FlubberVLC --control-stdio [--data-dir PATH]");
                 println!("Inspection validates a saved Planner master and prints its selected plan without starting VLC.");
                 println!("Without a video, opens VLC with its Flubber LSL outlets already online.");
@@ -154,6 +160,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
     if parsed.control_stdio {
         if parsed.inspect_master.is_some()
             || parsed.play_master_video.is_some()
+            || parsed.play_master_sequence.is_some()
             || parsed.participant.is_some()
             || parsed.selector_json.is_some()
             || parsed.entry_id.is_some()
@@ -173,6 +180,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
             || parsed.selector_json.is_none()
             || parsed.entry_id.is_some()
             || parsed.play_master_video.is_some()
+            || parsed.play_master_sequence.is_some()
             || parsed.video.is_some()
             || parsed.data_dir.is_some()
             || parsed.panel_percent.is_some()
@@ -189,6 +197,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
         if parsed.participant.is_none()
             || parsed.selector_json.is_none()
             || parsed.entry_id.is_none()
+            || parsed.play_master_sequence.is_some()
             || parsed.video.is_some()
             || parsed.panel_percent.is_some()
             || parsed.step_percent.is_some()
@@ -200,8 +209,23 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
         }
         return Ok(parsed);
     }
+    if parsed.play_master_sequence.is_some() {
+        if parsed.participant.is_none()
+            || parsed.selector_json.is_none()
+            || parsed.entry_id.is_some()
+            || parsed.video.is_some()
+            || parsed.panel_percent.is_some()
+            || parsed.step_percent.is_some()
+            || parsed.headless
+            || parsed.wait
+            || parsed.arm
+        {
+            return Err("--play-master-sequence requires participant and selector, and cannot be combined with legacy playback options".into());
+        }
+        return Ok(parsed);
+    }
     if parsed.participant.is_some() || parsed.selector_json.is_some() || parsed.entry_id.is_some() {
-        return Err("Selection options require --inspect-master or --play-master-video".into());
+        return Err("Selection options require --inspect-master, --play-master-video, or --play-master-sequence".into());
     }
     if parsed.arm {
         return Err("--arm direct RC is retired; use --control-stdio".into());
@@ -451,6 +475,31 @@ fn wait_for_rc(port: u16) -> Result<()> {
 
 fn run() -> Result<()> {
     let args = parse_args()?;
+    if let Some(master) = &args.play_master_sequence {
+        let result = selected_master::run_sequence(
+            master,
+            args.participant.as_deref().ok_or("Missing participant")?,
+            args.selector_json.as_deref().ok_or("Missing selector")?,
+            args.data_dir.clone(),
+        );
+        match result {
+            Ok(receipt) => {
+                let failed = receipt["status"] == "failed";
+                println!("{receipt}");
+                if failed {
+                    return Err("Selected master sequence failed; see its event receipt".into());
+                }
+            }
+            Err(error) => {
+                println!(
+                    "{}",
+                    serde_json::json!({"schema":"flubber-vlc-selected-sequence-status","version":1,"status":"failed","error":error.to_string()})
+                );
+                return Err(error);
+            }
+        }
+        return Ok(());
+    }
     if let Some(master) = &args.play_master_video {
         let result = selected_master::run(
             master,
@@ -846,6 +895,31 @@ mod tests {
         assert!(parse_args_from(
             args.into_iter()
                 .chain(["--video", "clip.mp4"])
+                .map(OsString::from)
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn selected_master_sequence_requires_selection_without_entry_id() {
+        let selector = r#"{"variantId":"variant-3","languageId":"en","languageSelectionPath":["both","en"],"presentationTarget":"desktop-screen"}"#;
+        let args = [
+            "--play-master-sequence",
+            "experiment.json",
+            "--participant",
+            "P001",
+            "--selector-json",
+            selector,
+        ];
+        let parsed = parse_args_from(args.into_iter().map(OsString::from)).unwrap();
+        assert_eq!(
+            parsed.play_master_sequence,
+            Some(PathBuf::from("experiment.json"))
+        );
+        assert!(parse_args_from(args[..4].iter().copied().map(OsString::from)).is_err());
+        assert!(parse_args_from(
+            args.into_iter()
+                .chain(["--entry-id", "video-a"])
                 .map(OsString::from)
         )
         .is_err());

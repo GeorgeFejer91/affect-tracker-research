@@ -35,6 +35,29 @@ provenance names the former `windows-latest` image; the image pin requires a
 new package. The exact artifact remains under
 `C:/Users/gfeje/Documents/GitHub/.affect-checks/runner-package-37410302707`.
 
+## 20261006 VLC selected-plan chronology owner handoff
+
+R1 RR-03/RR-04 with RR-07/09 event seams, Backend Verification: the standalone
+launcher adds `--play-master-sequence PATH --participant ID --selector-json
+JSON [--data-dir PATH]`. It uses the existing strict `PreparedMaster` selection,
+rejects any questionnaire in the full plan before starting VLC, then executes
+each saved video and ISI occurrence in order. Repeated video assets retain
+distinct position, entry ID, and generation identities. Existing single-video
+and same-PC control routes are unchanged. The final
+`flubber-vlc-selected-sequence-status` v1 receipt includes exact master/plan
+identities and ordered start/end/failure events. Video start/completion media
+times come from the verified plugin CSV after each child exits; their wall
+`confirmedAtUnixMs` is post-run confirmation, not the physical onset time.
+ISI start/end use the launcher clock and measured elapsed time. The source
+does not produce shared Runner LSL/XDF or qualify research Start.
+
+The current synchronous selected-video actor waits for normal child exit and
+kills/reaps it on deadline or wait error. There is no sequence stop command or
+parent-death guard: a Recorder force-kill of the launcher can leave VLC alive.
+That needs a separately allocated supervisor seam before Recorder depends on
+this route. Focused plan/CSV checks and Windows package execution remain
+separate from the source compile receipt.
+
 ## 20261006 Windows desktop installer image pin
 
 Root owns the P7/R1 installer seam in Repository/Web Synchronization. Package
