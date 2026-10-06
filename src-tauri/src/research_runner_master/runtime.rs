@@ -311,7 +311,7 @@ pub struct WebviewMediaUrlReceipt {
     pub media_grant_id: String,
     pub media_url: String,
 }
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum WebviewMediaState {
     Playing,

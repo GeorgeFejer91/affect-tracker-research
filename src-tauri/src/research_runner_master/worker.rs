@@ -592,6 +592,10 @@ impl MasterWorker {
         if self.webview_buffering {
             self.transition_started = Instant::now();
         }
+        self.diagnostic(
+            "webview-media-observation",
+            webview_observation_detail(&event),
+        )?;
         self.reconcile(status)
     }
     fn tick(&mut self) -> ResearchResult<()> {
@@ -947,6 +951,12 @@ impl Drop for MasterWorker {
 fn invalid(message: &str) -> CommandError {
     CommandError::invalid_contract(message)
 }
+fn webview_observation_detail(event: &WebviewMediaEvent) -> Value {
+    json!({"state":event.state,"sha256":event.sha256,
+        "workspaceFileId":event.workspace_file_id,"generation":event.generation,
+        "sequence":event.sequence,"positionMs":event.position_ms,
+        "decodedFrames":event.decoded_frames})
+}
 #[allow(clippy::too_many_arguments)]
 fn webview_event_matches(
     offer: &WebviewMediaOffer,
@@ -1080,6 +1090,20 @@ mod tests {
             )
         };
         assert!(accepts(&event));
+        let detail = webview_observation_detail(&event);
+        assert_eq!(detail["state"], "playing");
+        assert_eq!(detail["sha256"], offer.sha256);
+        assert_eq!(detail["workspaceFileId"], offer.workspace_file_id);
+        assert_eq!(detail["generation"], offer.generation);
+        assert_eq!(detail["sequence"], event.sequence);
+        assert_eq!(detail["decodedFrames"], event.decoded_frames);
+        assert_eq!(
+            webview_observation_detail(&WebviewMediaEvent {
+                state: WebviewMediaState::Ended,
+                ..event.clone()
+            })["state"],
+            "ended"
+        );
         assert!(!webview_event_matches(
             &offer,
             "attempt",

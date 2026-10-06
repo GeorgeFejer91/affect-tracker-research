@@ -6605,3 +6605,17 @@ The focused headless Chrome check passed 13 synthetic master5 renderer assertion
 and a screenshot was inspected. Reproduction command, screenshot, and claim limit
 are in `docs/runner-master5-display-modes-qualification.md`. There was no
 participant execution or native recording in this pass.
+
+## Standard Runner installed WebView evidence — 2026-10-06
+
+R1 RR-04/RR-07/RR-08/RR-10 Backend Verification on isolated
+`codex/segment-r1-webview-validation`, base `f19b12d`, worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-webview-validation`.
+Runner owns playback observations and the attempt log; the saved Planner JSON
+and its video files are inputs, not an edited contribution. The current master3–5
+local-validation path already keeps normal research Start closed and writes
+unqualified attempt/XDF evidence. The installed WebView verifier requires bound
+decoded Playing/Ended diagnostics, but the native worker did not record them.
+This pass adds that accepted-event diagnostic and its focused check only.
+Integration and a fresh installer belong to root. Physical video, input, timing,
+LSL/XDF, questionnaire completion, and research qualification remain open.
