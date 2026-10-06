@@ -1,5 +1,17 @@
 # Agent message board
 
+## 20261006 Runner recording gate review allocation
+
+Root assigns an independent read-only `RECORDING_GATE` review at integration
+`9bc83cb` for R1 RR-07/RR-08/RR-09/RR-10 while the VLC host is developed.
+Trace the shared master worker's first decoded frame, video end, pause/stop,
+input sampling, outbound LSL, own and selected external XDF, failure receipts
+and recovery. Identify exact source-backed gaps and the minimum installed or
+physical evidence needed for standard WebView and future VLC host. Review the
+host's exact committed patch afterward in a separate verdict. Do not edit
+source, drive an installed experiment UI, or accept synthetic results as
+physical recording qualification.
+
 ## 20261006 Shared-worker VLC host allocation
 
 Root assigns R1 RR-04/RR-07/RR-08/RR-09/RR-10 Backend Verification to the
