@@ -549,7 +549,7 @@ export class NativePackageProtocolAdapter {
       await this.onRunTerminal();
       return receipt;
     }
-    if (this.capability?.nativeStartReady !== true) {
+    if (this.capability?.backend !== "rust-gstplay" || this.capability?.nativeStartReady !== true) {
       throw new Error(`Rust package protocol unavailable (${this.capability?.reasonCode ?? "capability-not-loaded"}).`);
     }
     const recovery = detail.attemptDisposition === "resume-compatible"

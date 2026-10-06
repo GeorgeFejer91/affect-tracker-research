@@ -1316,7 +1316,7 @@ function bindResearchInteractions(root, { surface }) {
       || selectedAttemptDisposition() !== "resume-compatible"
       || participantFinalizationPending.get(selectedParticipant) !== true) return null;
     const binding = participantFinalizationBindings.get(selectedParticipant);
-    const playbackMode = value("native-playback-mode", "nativeGstPlay");
+    const playbackMode = value("native-playback-mode", "unqualifiedWebview");
     const protocolContract = experimentPackageDocument?.package
       ? "manifestV4"
       : protocolSettingsSnapshot?.version === 3
@@ -2047,10 +2047,7 @@ function bindResearchInteractions(root, { surface }) {
       && selectedPackageRoute()
       && selectedLanguageContextKey === participantLanguageContextKey(),
     );
-    const playbackMode = value("native-playback-mode", "nativeGstPlay");
-    const playbackReady = surface !== "tauri"
-      || playbackMode === "unqualifiedWebview"
-      || capabilities.nativePlaybackReady;
+    const playbackMode = value("native-playback-mode", "unqualifiedWebview");
     const poolCapacity = analyzeLocalCapacity();
     let bindingValid = false;
     try {
@@ -2089,7 +2086,7 @@ function bindResearchInteractions(root, { surface }) {
         label: "Stimuli",
         message: stimuliReady && poolCapacity.valid
           ? hasQualifiedNativeDecode
-            ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered, byte-bound, and decoded by native GstPlay`
+            ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered and byte-bound; historical native decode proof recorded`
             : hasUnqualifiedDesktopDecode
               ? `${stimuli.length} complete video${stimuli.length === 1 ? "" : "s"} covered and byte-bound; representative WebView frames attested (unqualified playback)`
               : `${referencedStimuli.length} referenced complete video${referencedStimuli.length === 1 ? "" : "s"} resolved and byte-verified`
@@ -2174,13 +2171,11 @@ function bindResearchInteractions(root, { surface }) {
       { id: "timing", result: capabilities.timingWorkerReady ? "pass" : "block", label: "Timing", message: capabilities.timingWorkerReady ? `${surface === "tauri" ? "Native scheduler available; installed-hardware qualification pending" : "Worker scheduler available; browser timing qualification pending"}` : "Timing authority has not reported ready" },
       ...(surface === "tauri" ? [{
         id: "playback",
-        result: playbackReady ? (playbackMode === "unqualifiedWebview" ? "warning" : "pass") : "block",
+        result: "block",
         label: "Playback",
         message: playbackMode === "unqualifiedWebview"
-          ? "Explicit unqualified WebView fallback selected; this attempt cannot qualify the Windows media path"
-          : capabilities.nativePlaybackReady
-            ? `Pinned native player ${nativeMediaCapability?.pinnedRuntimeVersion ?? "runtime"} is ready`
-            : `Qualified native player unavailable (${nativeMediaCapability?.reasonCode ?? "capability not reported"})`,
+          ? "WebView video is selected; research Start remains closed until installed playback, physical input, LSL, and XDF qualification passes"
+          : "Retired native playback cannot start a research attempt; select WebView video",
       }] : []),
       { id: "lsl", result: lslValid ? "pass" : "block", label: "LSL", message: lslValid ? (checked("lsl-enabled") ? "Windows outbound streams ready" : "Disabled") : surface === "browser" ? "Browser builds cannot start with LSL enabled" : "Windows LSL outlet readiness has not passed" },
     ];
@@ -3004,7 +2999,7 @@ function bindResearchInteractions(root, { surface }) {
             : "Fresh visible-player preflight required · unverified / noncanonical"
         : stimulus.verification === "verified"
           ? stimulus.decodeQualification === "attestedQualified"
-            ? "Hash + native GstPlay snapshots attested · qualified decode"
+            ? "Hash + historical native decode proof recorded · current playback unqualified"
             : stimulus.decodeQualification === "attestedUnqualified"
             ? "Hash + representative WebView frames attested · unqualified playback"
             : "Hash, duration, decode verified"
@@ -5142,7 +5137,7 @@ function bindResearchInteractions(root, { surface }) {
             ? Object.freeze([...selectedLanguageSelectionPath])
             : null,
           packageAssignmentSha256: compiledPackageSelection?.assignmentSha256 ?? null,
-          playbackMode: value("native-playback-mode", "nativeGstPlay"),
+          playbackMode: value("native-playback-mode", "unqualifiedWebview"),
         }),
       });
       root.dispatchEvent(event);
@@ -5242,7 +5237,7 @@ function bindResearchInteractions(root, { surface }) {
       outputFormats: { csv: checked("output-csv"), tsv: checked("output-tsv") },
       preview: Object.freeze(previewState({ locked: true })),
       ...(surface === "tauri" ? {
-        playbackMode: value("native-playback-mode", "nativeGstPlay"),
+        playbackMode: value("native-playback-mode", "unqualifiedWebview"),
         inputTestReceiptId: nativeInputReceiptId,
       } : {}),
     };

@@ -600,7 +600,7 @@ export function renderResearchUiMarkup(surface = "browser") {
           </section>
           <div class="run-stage">
             <section class="stimulus-stage" aria-label="Current complete stimulus">
-              <div id="run-native-video-host" class="native-video-host" aria-label="Protocol-controlled native GstPlay stimulus surface" hidden></div>
+              <div id="run-native-video-host" class="native-video-host" hidden></div>
               <video id="run-video" preload="metadata" playsinline aria-label="Protocol-controlled current stimulus video"></video>
               <p id="run-stimulus-placeholder" class="stimulus-placeholder">The preflighted complete video appears here after the run authority starts the attempt.</p>
               <div id="run-youtube-player" class="youtube-player-host run-youtube-player" aria-label="Experimental YouTube stimulus player" hidden></div>

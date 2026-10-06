@@ -293,6 +293,29 @@ test("package adapter starts from exact package bytes and lets Rust own prepare 
   assert.doesNotMatch(JSON.stringify(calls), /[A-Z]:\\\\|(?:file|root|output)Path/u);
 });
 
+test("WebView package capability cannot be promoted to legacy native Start", async () => {
+  const calls = [];
+  const { root, host, video, placeholder } = rootAndHost();
+  const adapter = new NativePackageProtocolAdapter(root, {
+    invoke: async (command, payload) => {
+      calls.push([command, payload]);
+      if (command === "research_package_protocol_capability") return capability({ backend: "html-video" });
+      if (command === "research_package_recoveries") return recoveryListing();
+      throw new Error(`Unexpected native command: ${command}`);
+    },
+    dispatch: () => {},
+    resolveMediaHost: () => host,
+    resolveFallbackVideo: () => video,
+    resolvePlaceholder: () => placeholder,
+    prepareRunInput: async () => {},
+    setIntervalObject: () => 7,
+    clearIntervalObject: () => {},
+  });
+  await adapter.initialize();
+  await assert.rejects(adapter.start(detail(), WORKSPACE), /unavailable/u);
+  assert.equal(calls.some(([command]) => command === "research_start_package_run"), false);
+});
+
 test("package adapter submits questionnaire choices then finalizes complete exactly once", async () => {
   const calls = [];
   const events = [];

@@ -1396,10 +1396,10 @@ test("desktop entrypoint sequences the shared UI before the path-free Research n
   assert.match(source, /research_open_workspace_location", \{\s*workspaceId: this\.workspace\.workspaceId,\s*location,/u);
   assert.doesNotMatch(source, /#stimulus-add-repository|#stimulus-add-youtube|#stimulus-source/u);
   assert.match(source, /playbackMode/u);
-  assert.match(source, /let decodeQualification = "attestedUnqualified"/u);
-  assert.match(source, /decodeQualification = "attestedQualified"/u);
+  assert.match(source, /const decodeQualification = "attestedUnqualified"/u);
+  assert.doesNotMatch(source, /decodeQualification = "attestedQualified"/u);
   assert.match(source, /NativeMediaController/u);
-  assert.match(source, /attestNativeGstCatalogue/u);
+  assert.doesNotMatch(source, /attestNativeGstCatalogue/u);
   assert.match(source, /this\.nativeTimingReady = \(nativeRunStatusHandshake\(status\)[\s\S]+nativePackageProtocolCapability\.nativeStartReady/u);
   assert.match(source, /NativePackageProtocolAdapter/u);
   assert.doesNotMatch(source, /timingWorkerReady:\s*true/u);
@@ -1538,6 +1538,19 @@ test("prepared catalogue uses existing sequential authority without early state/
   assert.equal(f.bridge.catalog.get("one").stimulus.title, "one.mp4");
   assert.equal(f.events.length, 0); assert.equal(f.progress.textContent, "unchanged");
   assert.throws(() => prepared.commit(), /stale|already committed/u);
+  f.bridge.destroy();
+});
+
+test("retired native playback cannot prepare a new Planner catalogue", async () => {
+  const f = await preparedBridgeFixture();
+  f.connector.prepareWorkspace(preparedWorkspaceReceipt()).commit();
+  const priorCalls = f.calls.length;
+  f.mode.value = "nativeGstPlay";
+  await assert.rejects(f.connector.prepareCatalogue(f.scan), /Retired native playback/u);
+  await assert.rejects(f.bridge.ensureMediaReady(), /Retired native playback/u);
+  assert.equal(f.calls.length, priorCalls, "no media or scan IPC is issued");
+  assert.equal(f.bridge.catalog.size, 0);
+  assert.equal(f.events.length, 0);
   f.bridge.destroy();
 });
 
