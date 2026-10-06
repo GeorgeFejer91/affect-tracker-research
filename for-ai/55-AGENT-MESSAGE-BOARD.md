@@ -2,6 +2,11 @@
 
 ## 20261006 Recorder R1 full player payload trust — next owner allocation
 
+Root package seam for this pass: the player installer puts Inno's uninstaller
+files in the real top-level `{app}\uninst` directory, and the payload writer
+includes hidden staged files. Recorder may exempt only that directory from
+its exact installed-file inventory; all other additions remain a failure.
+
 VLC player installer source at `52644da` writes pinned seven-component
 `manifest.json` and deterministic all-file `payload-manifest.json`. Recorder
 owner may branch from this integration commit for a bounded R1 RR-04/RR-07

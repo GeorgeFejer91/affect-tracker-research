@@ -29,10 +29,15 @@ function run(stage) {
 test('player manifest has Recorder keys and a deterministic full inventory', () => {
   const stage = mkdtempSync(join(tmpdir(), 'flubber-player-manifest-'));
   try {
-    for (const name of [...components, 'vlc/plugins/video_output/example.dll']) {
+    for (const name of [...components, 'vlc/plugins/video_output/example.dll', 'vlc/.hidden-example.dll']) {
       const path = join(stage, ...name.split('/'));
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, name);
+    }
+    if (process.platform === 'win32') {
+      const hidden = join(stage, 'vlc', '.hidden-example.dll');
+      const marked = spawnSync('attrib', ['+H', hidden], { encoding: 'utf8' });
+      assert.equal(marked.status, 0, marked.stderr || marked.error?.message);
     }
     const first = run(stage);
     assert.equal(first.status, 0, first.stderr || first.error?.message);
@@ -44,7 +49,7 @@ test('player manifest has Recorder keys and a deterministic full inventory', () 
       assert.equal(manifest[name], createHash('sha256').update(name).digest('hex'));
     }
     const full = JSON.parse(readFileSync(join(stage, 'payload-manifest.json')));
-    assert.deepEqual(Object.keys(full).sort(), [...components, 'manifest.json', 'vlc/plugins/video_output/example.dll'].sort());
+    assert.deepEqual(Object.keys(full).sort(), [...components, 'manifest.json', 'vlc/plugins/video_output/example.dll', 'vlc/.hidden-example.dll'].sort());
     assert.equal(full['manifest.json'], createHash('sha256').update(bytes).digest('hex'));
     const second = run(stage);
     assert.equal(second.status, 0, second.stderr || second.error?.message);

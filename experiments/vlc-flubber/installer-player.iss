@@ -7,6 +7,7 @@ AppName={#ProductName}
 AppVersion={#ProductVersion}
 AppPublisher=George Fejer
 DefaultDirName={localappdata}\Programs\FlubberVLCPlayer
+UninstallFilesDir={app}\uninst
 DefaultGroupName=Flubber VLC Player
 OutputDir=build\player-package\out
 OutputBaseFilename=Flubber_VLC_Player_Setup_0.1.0_x64
