@@ -29,6 +29,19 @@ Workspace URL readers and tests. Return a focused source/test receipt to root.
 Root owns integrated native CI and installed qualification. This allocation
 does not open research Start or alter Planner, VLC, or Recorder ownership.
 
+Runner owner grant-lifetime handoff from integration `604e7cf`: a Runner-only
+registry tracks URL tokens against the exact WebView offer. Registration fails
+after an occurrence closes; normal end, stop, failure and worker drop revoke all
+registered tokens. A URL issued during a status change is revoked on mismatch.
+The shared Workspace service gains a scoped, idempotent single-token revoke;
+other URL readers and decode attestations retain their current behavior. Two
+focused Rust tests cover exact occurrence cleanup and isolation of another
+reader's URL. Native compile/CI and installed playback remain root's gate;
+research Start stays closed. Revocation denies subsequent URL requests; bytes
+already returned by an in-flight response cannot be recalled. Existing focused
+WebView Node checks passed (3/3), as did Rust formatting and diff checks; the
+new Rust tests await CI because the local C: drive has too little free space.
+
 ## 20261006 R1 WebView native handoff — owner source receipt
 
 R1 RR-04, with RR-07/RR-08 native sampling/recording seams, Backend

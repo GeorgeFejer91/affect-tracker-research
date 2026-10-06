@@ -251,6 +251,44 @@ pub struct WebviewMediaOffer {
     pub mime_type: String,
     pub generation: u64,
 }
+#[derive(Default)]
+pub(crate) struct WebviewGrants {
+    state: Mutex<WebviewGrantState>,
+}
+#[derive(Default)]
+struct WebviewGrantState {
+    offer: Option<WebviewMediaOffer>,
+    ids: Vec<String>,
+}
+impl WebviewGrants {
+    pub(crate) fn open(&self, workspace: &WorkspaceService, offer: WebviewMediaOffer) {
+        self.close(workspace);
+        lock(&self.state).offer = Some(offer);
+    }
+    pub(crate) fn register(&self, offer: &WebviewMediaOffer, id: &str) -> bool {
+        let mut state = lock(&self.state);
+        if state.offer.as_ref() != Some(offer) {
+            return false;
+        }
+        state.ids.push(id.to_owned());
+        true
+    }
+    pub(crate) fn revoke(&self, workspace: &WorkspaceService, workspace_id: &str, id: &str) {
+        lock(&self.state).ids.retain(|current| current != id);
+        workspace.revoke_media_url_grant(workspace_id, id);
+    }
+    pub(crate) fn close(&self, workspace: &WorkspaceService) {
+        let (offer, ids) = {
+            let mut state = lock(&self.state);
+            (state.offer.take(), std::mem::take(&mut state.ids))
+        };
+        if let Some(offer) = offer {
+            for id in ids {
+                workspace.revoke_media_url_grant(&offer.workspace_id, &id);
+            }
+        }
+    }
+}
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct WebviewMediaUrlRequest {
@@ -383,6 +421,7 @@ struct Active {
     run_id: String,
     sender: SyncSender<Message>,
     status: Arc<Mutex<MasterStatus>>,
+    webview_grants: Arc<WebviewGrants>,
     worker: JoinHandle<()>,
     authority: InputAuthority,
     cancellation: Arc<AtomicBool>,
@@ -631,6 +670,7 @@ impl MasterRuntime {
                 })?;
             let receipt = storage.receipt.clone();
             let (sender, receiver) = mpsc::sync_channel(32);
+            let webview_grants = Arc::new(WebviewGrants::default());
             let mut worker = MasterWorker::new(
                 prepared,
                 request.workspace_id,
@@ -640,6 +680,7 @@ impl MasterRuntime {
                 authority.clone(),
                 mailbox,
                 Arc::clone(&self.workspace),
+                Arc::clone(&webview_grants),
                 Arc::clone(&self.media),
                 Arc::clone(&self.recorder),
                 lease,
@@ -661,6 +702,7 @@ impl MasterRuntime {
                 run_id,
                 sender,
                 status,
+                webview_grants,
                 worker: handle,
                 authority,
                 cancellation,
@@ -683,9 +725,9 @@ impl MasterRuntime {
                 .filter(|item| !item.worker.is_finished())
                 .ok_or_else(CommandError::no_active_run)?;
             let status = lock(&current.status).clone();
-            Ok::<_, CommandError>(status)
+            Ok::<_, CommandError>((status, Arc::clone(&current.webview_grants)))
         };
-        let before = live_status()?;
+        let (before, grants) = live_status()?;
         if !before.active
             || before.run_id != request.run_id
             || before.attempt_id != request.attempt_id
@@ -711,17 +753,28 @@ impl MasterRuntime {
             offer.byte_length,
             &offer.mime_type,
         )?;
-        let after = live_status()?;
-        if !after.active
-            || after.run_id != before.run_id
-            || after.attempt_id != before.attempt_id
-            || after.position != before.position
-            || after.phase != before.phase
-            || after.webview_media.as_ref() != Some(&offer)
-            || issued.workspace_file_id != offer.workspace_file_id
-            || issued.byte_length != offer.byte_length
-            || issued.mime_type != offer.mime_type
-        {
+        if !grants.register(&offer, &issued.media_grant_id) {
+            self.workspace
+                .revoke_media_url_grant(&offer.workspace_id, &issued.media_grant_id);
+            return Err(CommandError::invalid_contract(
+                "WebView media URL lost its active occurrence before registration.",
+            ));
+        }
+        let after = live_status();
+        let valid = after.as_ref().is_ok_and(|(after, current_grants)| {
+            Arc::ptr_eq(&grants, current_grants)
+                && after.active
+                && after.run_id == before.run_id
+                && after.attempt_id == before.attempt_id
+                && after.position == before.position
+                && after.phase == before.phase
+                && after.webview_media.as_ref() == Some(&offer)
+                && issued.workspace_file_id == offer.workspace_file_id
+                && issued.byte_length == offer.byte_length
+                && issued.mime_type == offer.mime_type
+        });
+        if !valid {
+            grants.revoke(&self.workspace, &offer.workspace_id, &issued.media_grant_id);
             return Err(CommandError::invalid_contract(
                 "WebView media URL lost its active master binding.",
             ));

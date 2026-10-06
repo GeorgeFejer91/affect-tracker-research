@@ -7,8 +7,8 @@ use super::{
     markers::{MarkerEvent, MasterMarkers},
     response::ResponseState,
     runtime::{
-        lock, InputAuthority, MasterAction, MasterPhase, MasterStatus, Message, WebviewMediaEvent,
-        WebviewMediaOffer, WebviewMediaState,
+        lock, InputAuthority, MasterAction, MasterPhase, MasterStatus, Message, WebviewGrants,
+        WebviewMediaEvent, WebviewMediaOffer, WebviewMediaState,
     },
     storage::MasterStorage,
     MasterStep, MasterStepKind, PreparedMaster,
@@ -43,7 +43,8 @@ pub(crate) struct MasterWorker {
     storage: MasterStorage,
     authority: InputAuthority,
     mailbox: Arc<ProtocolInputMailbox>,
-    _workspace: Arc<WorkspaceService>,
+    workspace: Arc<WorkspaceService>,
+    webview_grants: Arc<WebviewGrants>,
     media: Arc<NativeMediaService>,
     recorder: Arc<RecorderService>,
     _lease: CompanionLease,
@@ -84,6 +85,7 @@ impl MasterWorker {
         authority: InputAuthority,
         mailbox: Arc<ProtocolInputMailbox>,
         workspace: Arc<WorkspaceService>,
+        webview_grants: Arc<WebviewGrants>,
         media: Arc<NativeMediaService>,
         recorder: Arc<RecorderService>,
         lease: CompanionLease,
@@ -164,7 +166,8 @@ impl MasterWorker {
             storage,
             authority,
             mailbox,
-            _workspace: workspace,
+            workspace,
+            webview_grants,
             media,
             recorder,
             _lease: lease,
@@ -531,14 +534,16 @@ impl MasterWorker {
         self.webview_last_observation = Some(Instant::now());
         self.webview_buffering = false;
         self.webview_decoded_frames = 0;
-        self.state.webview_media = Some(WebviewMediaOffer {
+        let offer = WebviewMediaOffer {
             workspace_id: self.workspace_id.clone(),
             workspace_file_id: file.to_owned(),
             sha256: hash.to_owned(),
             byte_length: bytes,
             mime_type: mime.to_owned(),
             generation,
-        });
+        };
+        self.webview_grants.open(&self.workspace, offer.clone());
+        self.state.webview_media = Some(offer);
         self.state.phase = MasterPhase::Preparing;
         self.transition_started = Instant::now();
         Ok(())
@@ -825,6 +830,7 @@ impl MasterWorker {
         result
     }
     fn stop_media(&mut self) -> ResearchResult<()> {
+        self.webview_grants.close(&self.workspace);
         if let Some(fence) = self.fence.take() {
             if self.state.webview_media.is_none() {
                 self.media.stop(fence)?;
@@ -934,6 +940,7 @@ impl MasterWorker {
 }
 impl Drop for MasterWorker {
     fn drop(&mut self) {
+        self.webview_grants.close(&self.workspace);
         self.authority.service.end_run(&self.authority.id);
     }
 }
@@ -981,6 +988,64 @@ mod tests {
         research_native_protocol::runtime::PackageProtocolRuntime,
         research_runner_master::{runtime::MasterChoice, MasterSelector},
     };
+    #[test]
+    fn stopping_webview_occurrence_revokes_its_exact_url() {
+        with_neutral_worker(|worker| {
+            let root =
+                std::env::temp_dir().join(format!("runner-webview-grant-{}", uuid::Uuid::new_v4()));
+            std::fs::create_dir(&root).unwrap();
+            let selected = worker.workspace.select(root.clone()).unwrap();
+            std::fs::write(root.join("stimuli").join("clip.mp4"), b"video").unwrap();
+            let workspace_id = selected.workspace_id.unwrap();
+            let item = worker
+                .workspace
+                .rescan(&workspace_id)
+                .unwrap()
+                .stimuli
+                .remove(0);
+            let issued = worker
+                .workspace
+                .issue_media_url(
+                    &workspace_id,
+                    &item.workspace_file_id,
+                    &item.sha256,
+                    item.byte_length,
+                    &item.mime_type,
+                )
+                .unwrap();
+            let offer = WebviewMediaOffer {
+                workspace_id,
+                workspace_file_id: item.workspace_file_id,
+                sha256: item.sha256,
+                byte_length: item.byte_length,
+                mime_type: item.mime_type,
+                generation: 1,
+            };
+            worker.webview_grants.open(&worker.workspace, offer.clone());
+            let mut stale = offer.clone();
+            stale.generation += 1;
+            assert!(!worker.webview_grants.register(&stale, "stale-token"));
+            assert!(worker
+                .webview_grants
+                .register(&offer, &issued.media_grant_id));
+            worker.state.webview_media = Some(offer.clone());
+            worker.stop_media().unwrap();
+            assert!(!worker.webview_grants.register(&offer, "late-token"));
+            let request = http::Request::builder()
+                .method(http::Method::GET)
+                .uri(issued.media_url)
+                .body(Vec::new())
+                .unwrap();
+            assert_eq!(
+                worker
+                    .workspace
+                    .protocol_response("research", request)
+                    .status(),
+                http::StatusCode::NOT_FOUND
+            );
+            std::fs::remove_dir_all(root).unwrap();
+        });
+    }
     #[test]
     fn webview_observation_requires_current_binding_and_new_decoded_frame() {
         let offer = WebviewMediaOffer {
@@ -1101,6 +1166,7 @@ mod tests {
                     authority,
                     mailbox,
                     workspace,
+                    Arc::new(WebviewGrants::default()),
                     media,
                     Arc::new(RecorderService::default()),
                     lease,
@@ -1319,6 +1385,7 @@ mod tests {
                         authority,
                         mailbox,
                         workspace,
+                        Arc::new(WebviewGrants::default()),
                         media,
                         recorder,
                         lease,
@@ -1495,6 +1562,7 @@ mod tests {
                     authority,
                     mailbox,
                     workspace,
+                    Arc::new(WebviewGrants::default()),
                     media,
                     recorder,
                     lease,

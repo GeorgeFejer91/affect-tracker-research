@@ -919,6 +919,17 @@ impl WorkspaceService {
         })
     }
 
+    /// Consume one opaque URL grant without altering the selected file or its
+    /// decode attestation. A workspace switch already clears its former grants.
+    pub(crate) fn revoke_media_url_grant(&self, workspace_id: &str, media_grant_id: &str) -> bool {
+        let mut guard = self.lock_selected();
+        guard
+            .as_mut()
+            .filter(|workspace| workspace.id == workspace_id)
+            .and_then(|workspace| workspace.media_grants.remove(media_grant_id))
+            .is_some()
+    }
+
     pub(crate) fn issue_native_media_grant(
         &self,
         workspace_id: &str,
@@ -3805,6 +3816,50 @@ mod tests {
             service.protocol_response("research", request).status(),
             StatusCode::NOT_FOUND
         );
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn revoking_one_media_url_grant_preserves_other_readers() {
+        let base = temporary_directory("media-grant-scoped-revoke");
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let workspace = base.join("chosen");
+        fs::create_dir(&workspace).unwrap();
+        let selected = service.select(workspace.clone()).unwrap();
+        fs::write(workspace.join("stimuli").join("clip.mp4"), b"video").unwrap();
+        let workspace_id = selected.workspace_id.unwrap();
+        let item = service.rescan(&workspace_id).unwrap().stimuli.remove(0);
+        let issue = || {
+            service
+                .issue_media_url(
+                    &workspace_id,
+                    &item.workspace_file_id,
+                    &item.sha256,
+                    item.byte_length,
+                    &item.mime_type,
+                )
+                .unwrap()
+        };
+        let runner = issue();
+        let other = issue();
+        let read = |url: &str| {
+            service.protocol_response(
+                "research",
+                Request::builder()
+                    .method(Method::GET)
+                    .uri(url)
+                    .body(Vec::new())
+                    .unwrap(),
+            )
+        };
+        assert_eq!(read(&runner.media_url).status(), StatusCode::OK);
+        assert!(!service.revoke_media_url_grant("other-workspace", &runner.media_grant_id));
+        assert!(service.revoke_media_url_grant(&workspace_id, &runner.media_grant_id));
+        assert!(!service.revoke_media_url_grant(&workspace_id, &runner.media_grant_id));
+        assert_eq!(read(&runner.media_url).status(), StatusCode::NOT_FOUND);
+        assert_eq!(read(&other.media_url).status(), StatusCode::OK);
+        assert!(service.revoke_media_url_grant(&workspace_id, &other.media_grant_id));
+        assert_eq!(read(&other.media_url).status(), StatusCode::NOT_FOUND);
         fs::remove_dir_all(base).unwrap();
     }
 
