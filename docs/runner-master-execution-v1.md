@@ -63,10 +63,13 @@ table groups, not pages; different visible answer labels immediately begin a new
 group. Required responses and explicit nullable recorded codes retain P2's
 meanings.
 
-The native worker requires actual qualified GstPlay, fresh exact P1 media
-bindings, an observed fullscreen viewport, a native input-test receipt and idle
-shared services. The renderer acknowledges a painted occurrence before its
-native form/ISI transition or video preparation. Only native observed Playing
+The native worker consumes exact-bound Windows WebView media observations,
+fresh exact P1 media bindings, an observed fullscreen viewport, a native
+input-test receipt and idle shared services. Normal research Start remains
+closed until installed decoded playback and recording qualification; a
+separately acknowledged local-validation path remains permanently unqualified.
+The renderer acknowledges a painted occurrence before its native form/ISI
+transition or video preparation. Only an accepted observed Playing event
 enables acquisition. One poll emits at most one sample; missed deadlines are
 recorded. Native input is withdrawn before pause, interruption and termination.
 A companion lease prevents simultaneous legacy/master use of native services.
