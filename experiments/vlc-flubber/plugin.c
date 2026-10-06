@@ -76,7 +76,7 @@ typedef struct {
     uint64_t frame_count;
     uint64_t blank_run;
     int64_t video_ms;
-    bool started, ended, sentinel;
+    bool started, ended, sentinel, terminal_receipt;
     bool replay_start_marker;
     double lsl_start_stamp;
     lsl_pending_t pending[LSL_BUFFER];
@@ -92,7 +92,7 @@ static picture_t *Render(filter_t *, picture_t *);
 static int KeyEvent(vlc_object_t *, const char *, vlc_value_t, vlc_value_t, void *);
 static int OutletOpen(vlc_object_t *);
 static void OutletClose(vlc_object_t *);
-static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "render-fps-num", "render-fps-den", "csv", "marker-base", "control-name", "lsl", "sentinel", NULL };
+static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "render-fps-num", "render-fps-den", "csv", "marker-base", "control-name", "lsl", "sentinel", "terminal-receipt", NULL };
 
 vlc_module_begin()
     set_shortname("Flubber")
@@ -117,6 +117,7 @@ vlc_module_begin()
     add_string(PREFIX "control-name", "", "Affect control channel", "Private Windows mapping name for Flubber commands", false)
     add_bool(PREFIX "lsl", false, "LSL output", "Send affect and start/end markers", false)
     add_bool(PREFIX "sentinel", false, "Prepared-media boundary signal", "Start data when the reserved panel indicates original video", false)
+    add_bool(PREFIX "terminal-receipt", false, "Decoded completion row", "Emit an extra CSV row only when the prepared video reaches its decoded sentinel", false)
     set_callbacks(Open, Close)
     add_submodule()
     set_shortname("Flubber outlets")
@@ -442,6 +443,7 @@ static int Open(vlc_object_t *object)
     s->rate_num = rate_num;
     s->rate_den = rate_den;
     s->sentinel = configured || var_CreateGetBool(f, PREFIX "sentinel");
+    s->terminal_receipt = var_CreateGetBool(f, PREFIX "terminal-receipt");
     s->width = width;
     s->video_height = height;
     s->total_height = total_height;
@@ -753,6 +755,7 @@ static picture_t *Render(filter_t *f, picture_t *source)
         s->blank_run = 0;
     }
     if (s->sentinel && s->blank_run >= 8 && s->started && !s->ended) {
+        if (s->terminal_receipt) row(s, "video_complete");
         row(s, "video_end");
         s->ended = true;
     }

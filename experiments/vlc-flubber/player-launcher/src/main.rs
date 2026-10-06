@@ -10,9 +10,10 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::Duration;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 mod control;
+mod selected_master;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -20,8 +21,10 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 struct Args {
     control_stdio: bool,
     inspect_master: Option<PathBuf>,
+    play_master_video: Option<PathBuf>,
     participant: Option<String>,
     selector_json: Option<String>,
+    entry_id: Option<String>,
     video: Option<PathBuf>,
     data_dir: Option<PathBuf>,
     panel_percent: Option<u32>,
@@ -29,6 +32,8 @@ struct Args {
     headless: bool,
     wait: bool,
     arm: bool,
+    selected_master_video: bool,
+    master_duration_ms: Option<u64>,
 }
 
 #[derive(Deserialize)]
@@ -78,6 +83,10 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
             Some("--inspect-master") if parsed.inspect_master.is_none() => {
                 parsed.inspect_master = Some(PathBuf::from(value(&mut args, "--inspect-master")?))
             }
+            Some("--play-master-video") if parsed.play_master_video.is_none() => {
+                parsed.play_master_video =
+                    Some(PathBuf::from(value(&mut args, "--play-master-video")?))
+            }
             Some("--participant") if parsed.participant.is_none() => {
                 parsed.participant = Some(
                     value(&mut args, "--participant")?
@@ -90,6 +99,13 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                     value(&mut args, "--selector-json")?
                         .into_string()
                         .map_err(|_| "--selector-json must be valid text")?,
+                )
+            }
+            Some("--entry-id") if parsed.entry_id.is_none() => {
+                parsed.entry_id = Some(
+                    value(&mut args, "--entry-id")?
+                        .into_string()
+                        .map_err(|_| "--entry-id must be valid text")?,
                 )
             }
             Some("--video") => parsed.video = Some(PathBuf::from(value(&mut args, "--video")?)),
@@ -118,6 +134,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                 println!(
                     "FlubberVLC --inspect-master PATH --participant P001 --selector-json JSON"
                 );
+                println!("FlubberVLC --play-master-video PATH --participant P001 --selector-json JSON --entry-id ENTRY_ID [--data-dir PATH]");
                 println!("FlubberVLC --control-stdio [--data-dir PATH]");
                 println!("Inspection validates a saved Planner master and prints its selected plan without starting VLC.");
                 println!("Without a video, opens VLC with its Flubber LSL outlets already online.");
@@ -136,8 +153,10 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
     }
     if parsed.control_stdio {
         if parsed.inspect_master.is_some()
+            || parsed.play_master_video.is_some()
             || parsed.participant.is_some()
             || parsed.selector_json.is_some()
+            || parsed.entry_id.is_some()
             || parsed.video.is_some()
             || parsed.panel_percent.is_some()
             || parsed.step_percent.is_some()
@@ -152,6 +171,8 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
     if parsed.inspect_master.is_some() {
         if parsed.participant.is_none()
             || parsed.selector_json.is_none()
+            || parsed.entry_id.is_some()
+            || parsed.play_master_video.is_some()
             || parsed.video.is_some()
             || parsed.data_dir.is_some()
             || parsed.panel_percent.is_some()
@@ -164,8 +185,23 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
         }
         return Ok(parsed);
     }
-    if parsed.participant.is_some() || parsed.selector_json.is_some() {
-        return Err("--participant and --selector-json require --inspect-master".into());
+    if parsed.play_master_video.is_some() {
+        if parsed.participant.is_none()
+            || parsed.selector_json.is_none()
+            || parsed.entry_id.is_none()
+            || parsed.video.is_some()
+            || parsed.panel_percent.is_some()
+            || parsed.step_percent.is_some()
+            || parsed.headless
+            || parsed.wait
+            || parsed.arm
+        {
+            return Err("--play-master-video requires participant, selector and entry ID, and cannot be combined with legacy playback options".into());
+        }
+        return Ok(parsed);
+    }
+    if parsed.participant.is_some() || parsed.selector_json.is_some() || parsed.entry_id.is_some() {
+        return Err("Selection options require --inspect-master or --play-master-video".into());
     }
     if parsed.arm {
         return Err("--arm direct RC is retired; use --control-stdio".into());
@@ -414,7 +450,28 @@ fn wait_for_rc(port: u16) -> Result<()> {
 }
 
 fn run() -> Result<()> {
-    run_with_args(parse_args()?)
+    let args = parse_args()?;
+    if let Some(master) = &args.play_master_video {
+        let result = selected_master::run(
+            master,
+            args.participant.as_deref().ok_or("Missing participant")?,
+            args.selector_json.as_deref().ok_or("Missing selector")?,
+            args.entry_id.as_deref().ok_or("Missing entry ID")?,
+            args.data_dir.clone(),
+        );
+        match result {
+            Ok(receipt) => println!("{}", receipt),
+            Err(error) => {
+                println!(
+                    "{}",
+                    serde_json::json!({"schema":"flubber-vlc-selected-video-status","version":1,"status":"failed","error":error.to_string()})
+                );
+                return Err(error);
+            }
+        }
+        return Ok(());
+    }
+    run_with_args(args)
 }
 
 fn run_with_args(args: Args) -> Result<()> {
@@ -514,7 +571,6 @@ fn run_with_args(args: Args) -> Result<()> {
         command
             .args([
                 "--video-filter=flubber",
-                "--flubber-lsl",
                 "--flubber-sentinel",
                 "--vout=wingdi",
                 "--key-nav-up=",
@@ -531,6 +587,11 @@ fn run_with_args(args: Args) -> Result<()> {
             .arg(format!("--flubber-step-percent={step}"))
             .arg(format!("--flubber-marker-base={filename}"))
             .arg(format!("--flubber-csv={}", csv.display()));
+        if !args.selected_master_video {
+            command.arg("--flubber-lsl");
+        } else {
+            command.arg("--flubber-terminal-receipt");
+        }
         if !args.arm {
             command.arg("--play-and-exit");
         }
@@ -544,7 +605,12 @@ fn run_with_args(args: Args) -> Result<()> {
             command.arg(&prepared);
         }
         let mut child = command.spawn()?;
-        if let Err(error) = wait_for_outlets(child.id()).and_then(|()| {
+        if let Err(error) = (if args.selected_master_video {
+            Ok(())
+        } else {
+            wait_for_outlets(child.id())
+        })
+        .and_then(|()| {
             if let Some(port) = rc_port {
                 wait_for_rc(port)
             } else {
@@ -555,24 +621,59 @@ fn run_with_args(args: Args) -> Result<()> {
             let _ = child.wait();
             return Err(error);
         }
-        println!("VLC PID: {}", child.id());
-        if rc_port.is_some() {
-            println!("Prepared video: {}", prepared.display());
-        }
-        println!("Affect CSV: {}", csv.display());
-        println!(
-            "Affect time-series CSV: {}",
-            csv.with_file_name(format!(
-                "{}-timeseries.csv",
-                csv.file_stem().unwrap_or_default().to_string_lossy()
-            ))
-            .display()
-        );
-        if args.arm {
-            println!("Flubber LSL outlets are online; playback is waiting for an RC add command.");
+        if !args.selected_master_video {
+            println!("VLC PID: {}", child.id());
+            if rc_port.is_some() {
+                println!("Prepared video: {}", prepared.display());
+            }
+            println!("Affect CSV: {}", csv.display());
+            println!(
+                "Affect time-series CSV: {}",
+                csv.with_file_name(format!(
+                    "{}-timeseries.csv",
+                    csv.file_stem().unwrap_or_default().to_string_lossy()
+                ))
+                .display()
+            );
+            if args.arm {
+                println!(
+                    "Flubber LSL outlets are online; playback is waiting for an RC add command."
+                );
+            }
         }
         if args.wait {
-            if !child.wait()?.success() {
+            let status = if let Some(duration_ms) = args.master_duration_ms {
+                let Some(deadline) = Instant::now().checked_add(
+                    Duration::from_millis(duration_ms).saturating_add(Duration::from_secs(120)),
+                ) else {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err("Selected video deadline is not representable".into());
+                };
+                loop {
+                    match child.try_wait() {
+                        Ok(Some(status)) => break status,
+                        Ok(None) => {}
+                        Err(error) => {
+                            let _ = child.kill();
+                            let _ = child.wait();
+                            return Err(error.into());
+                        }
+                    }
+                    if Instant::now() >= deadline {
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        return Err(
+                            "Selected video did not reach a terminal state before its deadline"
+                                .into(),
+                        );
+                    }
+                    thread::sleep(Duration::from_millis(100));
+                }
+            } else {
+                child.wait()?
+            };
+            if !status.success() {
                 return Err("VLC playback failed".into());
             }
             let series = csv.with_file_name(format!(
@@ -584,13 +685,7 @@ fn run_with_args(args: Args) -> Result<()> {
             }
             let events = fs::read_to_string(&csv)?;
             let values = fs::read_to_string(&series)?;
-            if !events
-                .lines()
-                .last()
-                .is_some_and(|line| line.starts_with("video_end,"))
-                || values.lines().next() != Some("time_s,valence,arousal")
-                || values.lines().count() < 2
-            {
+            if !terminal_csv_complete(&events, &values, args.selected_master_video) {
                 return Err("VLC affect CSV files are incomplete".into());
             }
         }
@@ -610,6 +705,19 @@ fn run_with_args(args: Args) -> Result<()> {
     Ok(())
 }
 
+fn terminal_csv_complete(events: &str, values: &str, require_decoded_end: bool) -> bool {
+    let mut last = events.lines().rev();
+    last.next()
+        .is_some_and(|line| line.starts_with("video_end,"))
+        && (!require_decoded_end
+            || last
+                .next()
+                .is_some_and(|line| line.starts_with("video_complete,")))
+        && events.lines().any(|line| line.starts_with("video_start,"))
+        && values.lines().next() == Some("time_s,valence,arousal")
+        && values.lines().count() >= 2
+}
+
 fn main() {
     if let Err(error) = run() {
         eprintln!("Flubber VLC: {error}");
@@ -620,7 +728,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        geometry, parse_args_from, parse_fps, run_with_args, Args, FrameRate, VideoStream,
+        geometry, parse_args_from, parse_fps, run_with_args, terminal_csv_complete, Args,
+        FrameRate, VideoStream,
     };
     use std::ffi::OsString;
     use std::fs;
@@ -712,6 +821,44 @@ mod tests {
                 .map(OsString::from)
         )
         .is_err());
+    }
+
+    #[test]
+    fn selected_master_video_requires_one_explicit_occurrence() {
+        let selector = r#"{"variantId":"variant-3","languageId":"en","languageSelectionPath":["both","en"],"presentationTarget":"desktop-screen"}"#;
+        let args = [
+            "--play-master-video",
+            "experiment.json",
+            "--participant",
+            "P001",
+            "--selector-json",
+            selector,
+            "--entry-id",
+            "variant-3-entry-15",
+        ];
+        let parsed = parse_args_from(args.into_iter().map(OsString::from)).unwrap();
+        assert_eq!(
+            parsed.play_master_video,
+            Some(PathBuf::from("experiment.json"))
+        );
+        assert_eq!(parsed.entry_id.as_deref(), Some("variant-3-entry-15"));
+        assert!(parse_args_from(args[..6].iter().copied().map(OsString::from)).is_err());
+        assert!(parse_args_from(
+            args.into_iter()
+                .chain(["--video", "clip.mp4"])
+                .map(OsString::from)
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn selected_master_terminal_requires_decoded_completion_not_shutdown_only() {
+        let values = "time_s,valence,arousal\n0,0,0\n";
+        let interrupted = "video_start,0,0,0,0\nvideo_end,100,0,0,0\n";
+        let ended = "video_start,0,0,0,0\nvideo_complete,100,0,0,0\nvideo_end,100,0,0,0\n";
+        assert!(!terminal_csv_complete(interrupted, values, true));
+        assert!(terminal_csv_complete(ended, values, true));
+        assert!(terminal_csv_complete(interrupted, values, false));
     }
 
     #[test]

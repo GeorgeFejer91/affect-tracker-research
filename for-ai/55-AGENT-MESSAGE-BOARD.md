@@ -27,7 +27,8 @@ and `uninstall.exe` as its only EXEs. This closes the distinct-binary package
 check for this unqualified candidate, not WebView execution, LSL/XDF, timing,
 input, research Start, or release qualification. The R1 owner found that this
 candidate lacks the accepted media-observation diagnostic needed by the
-installed evidence reader and is fixing that in an isolated pass.
+installed evidence reader; the R1 source fix is now integrated and needs a
+fresh package before actual evidence collection.
 
 ## 20261006 Source CI Windows toolchain pin
 
@@ -35,9 +36,9 @@ The `618eab3` source CI passed frontend, native, and player-manifest checks,
 then failed while linking the Flubber VLC launcher test under the moving
 `windows-latest` image: VS 2026 `link.exe` left 63 CRT symbols unresolved.
 GitHub's image catalogue now maps that label to Windows 2025/VS 2026. Root
-pins this source workflow to `windows-2022`/VS 2022, matching the separate
-player package runner, and will recheck the full job. This is a build-toolchain
-repair, not evidence that playback or installation passed.
+pinned this source workflow to `windows-2022`/VS 2022, matching the separate
+player package runner, but CI `37404888283` failed with the same symbols.
+The linker cause remains open; image selection alone did not repair it.
 
 ## 20261006 VLC Player package provenance seam
 
@@ -62,7 +63,31 @@ and existing source/installer receipts; no new application qualification claim.
 The external ChatDev YAML graphs remain bounded optional proposal tools. App
 owners continue their allocated R1/P passes in isolated worktrees, and root
 reconciles their commits and installed gates before any release claim.
+## 20261006 VLC R1 selected-master video owner handoff
 
+R1/RR-03/RR-04, Backend Verification, branch
+`codex/segment-r1-vlc-master-video` from integration `d3d8714`. The standalone
+player adds `--play-master-video MASTER --participant P001 --selector-json JSON
+--entry-id ENTRY` for one exact selected video occurrence. It uses the existing
+strict `PreparedMaster::read_file` and selected plan; no second recipe reader or
+schema is introduced. The selected `assets/stimuli/` file is resolved without
+linked path components, copied to a fresh run directory, and checked
+against the complete saved SHA-256 and byte length before FFmpeg/VLC preparation.
+The terminal JSON status binds the saved master file bytes, selected recipe
+projection, plan, participant, selector,
+occurrence, asset and evidence directory. It reports `ended` only when the
+native filter writes the opt-in decoded-sentinel `video_complete` row immediately
+before `video_end` and VLC exits successfully; interruption, timeout or missing
+CSV evidence reports failure. Existing `flubber-vlc-control/v1` and Recorder UI
+are unchanged; legacy CSV rows are unchanged. This playback-only path suppresses legacy two-channel Flubber
+LSL so it cannot masquerade as the shared Runner stream contract.
+
+Rust launcher `cargo check --locked` and `cargo check --locked --tests` passed;
+format and whitespace checks passed. Local `cargo test --locked` did not execute
+tests: `link.exe` reported 63 unresolved CRT symbols even after `vcvars64.bat`.
+Root owns Windows-2022 CI and installed package/decoded-frame qualification.
+Full selected chronology, forms, shared sampling/LSL/XDF, independent recording
+readback and installed timing remain open. Recorder Research Start stays closed.
 ## 20261006 Recorder R1 full player payload trust — next owner allocation
 
 Root package seam for this pass: the player installer puts Inno's uninstaller
