@@ -2,6 +2,35 @@
 
 ## 20261006 WebView pivot and next parallel allocations
 
+Planner P1 handoff: `dd03a37` was integrated as `17e77ad`. The WebView
+attestation retains exact file-bound duration and browser display geometry;
+Planner v2/v3 catalogue checks accept it while the Runner v3 native binding
+remains separate. Owner reports 66 focused JS tests, desktop build and
+format/diff checks passing. Rust compilation and installed Planner decode remain
+open on the low-space local host; integration Windows CI is pending. No P1
+research or installed qualification is claimed.
+
+VLC R1 intake handoff: `5802385` was integrated as `01fc9d2`. The standalone
+launcher can inspect saved master1–5 files through the existing strict native
+reader and print the selected immutable plan without starting VLC. Execution
+still rejects bare Planner JSON as a video and does not claim playback. Owner
+reports 2/2 JS intake tests, Rust formatting and locked no-deps metadata pass;
+native tests/build remain unrun locally because the Cargo dependency cache is
+incomplete and C: has about 450 MB free. Full selected-plan execution,
+standard LSL/XDF, supervised same-PC control, player package and installer
+qualification remain open.
+
+Next VLC R1 allocation: RR-04/RR-07 same-PC control seam for the separate
+FlubberRecorder program. Root first imports `01fc9d2`; owner branches from that
+integration point, edits only the VLC launcher/control tests and reports exact
+command contract to the Recorder owner. The player owns its VLC child for the
+whole session; a typed newline-delimited stdin command protocol with correlated
+stdout status handles arm, start, pause, resume, stop and shutdown. Parent exit,
+broken pipe, invalid/stale command and child loss terminate safely. No LAN
+listener, bearer link or player control port is exposed to another program.
+The old single-video sidequest runtime cannot claim Planner recipe execution,
+LSL/XDF correspondence or installed qualification from this control slice.
+
 Direct user decision: remove GStreamer from the active project and use Windows
 WebView video for standard Runner. Root reverted the restored Gst actor and JS
 bridge, removed its active CI/config/runtime staging, and preserved the separate
