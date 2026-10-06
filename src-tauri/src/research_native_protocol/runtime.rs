@@ -1,6 +1,6 @@
 //! Rust-owned experiment-package protocol runtime.
 //!
-//! One worker owns protocol transitions, GstPlay lifecycle observations,
+//! One worker owns historical package protocol transitions, media observations,
 //! native input, the no-catch-up scheduler, LSL, persistence, and recovery.
 //! The WebView can request user actions and render typed projections; it never
 //! authors a stimulus-complete edge or a sample timestamp.
@@ -320,6 +320,21 @@ enum WorkerMessage {
     Interrupt(mpsc::Sender<ResearchResult<()>>),
 }
 
+fn require_package_playback(mode: PlaybackMode) -> ResearchResult<PlaybackQualification> {
+    match mode {
+        PlaybackMode::UnqualifiedWebview => Err(CommandError::new(
+            "native_media_unavailable",
+            "WebView playback is not qualified for legacy package Start; the separate Planner-master local-validation path remains unqualified.",
+        )),
+        PlaybackMode::NativeGstPlay => Err(CommandError::native_media_unavailable(
+            "native-gstplay-backend-retired",
+        )),
+        PlaybackMode::NativeLibvlc => Err(CommandError::native_media_unavailable(
+            "native-libvlc-backend-retired",
+        )),
+    }
+}
+
 impl PackageProtocolRuntime {
     pub fn with_services(
         workspace: Arc<WorkspaceService>,
@@ -376,19 +391,7 @@ impl PackageProtocolRuntime {
         if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
-        if request.playback_mode != PlaybackMode::NativeGstPlay {
-            return Err(CommandError::invalid_contract(
-                "The Rust-owned package protocol requires native GstPlay playback.",
-            ));
-        }
-        let playback_qualification = self
-            .native_media
-            .authorize_playback(request.playback_mode)?;
-        if playback_qualification != PlaybackQualification::QualifiedNative {
-            return Err(CommandError::native_media_unavailable(
-                "native-gstplay-qualification-required",
-            ));
-        }
+        let playback_qualification = require_package_playback(request.playback_mode)?;
         let loaded =
             parse_canonical_experiment_package_text(&request.experiment_package_source_text)?;
         let selection = compile_package_selection(
@@ -631,7 +634,6 @@ impl PackageProtocolRuntime {
             .iter()
             .filter(|step| matches!(step, ProtocolStepV2::Questionnaire { .. }))
             .count() as u32;
-        let media = self.native_media.capability();
         Ok(PackagePreflightReceiptV1 {
             schema: "affect-research-native-package-preflight",
             version: 1,
@@ -647,9 +649,7 @@ impl PackageProtocolRuntime {
             protocol_step_count: selection.protocol_plan.steps.len() as u32,
             stimulus_step_count,
             questionnaire_step_count,
-            native_start_ready: self.native_acquisition_supported
-                && media.qualified_start_available
-                && media.player_actor_ready,
+            native_start_ready: false,
         })
     }
 
@@ -687,19 +687,7 @@ impl PackageProtocolRuntime {
         if active.is_some() || self.companion_reserved.load(Ordering::Acquire) {
             return Err(CommandError::run_active());
         }
-        if request.playback_mode != PlaybackMode::NativeGstPlay {
-            return Err(CommandError::invalid_contract(
-                "The Rust-owned package protocol requires native GstPlay playback.",
-            ));
-        }
-        let playback_qualification = self
-            .native_media
-            .authorize_playback(request.playback_mode)?;
-        if playback_qualification != PlaybackQualification::QualifiedNative {
-            return Err(CommandError::native_media_unavailable(
-                "native-gstplay-qualification-required",
-            ));
-        }
+        let playback_qualification = require_package_playback(request.playback_mode)?;
         let loaded =
             parse_canonical_experiment_package_text(&request.experiment_package_source_text)?;
         let bound = self
@@ -2746,6 +2734,22 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn package_start_modes_remain_closed_without_a_player() {
+        for mode in [
+            PlaybackMode::UnqualifiedWebview,
+            PlaybackMode::NativeGstPlay,
+            PlaybackMode::NativeLibvlc,
+        ] {
+            let error = require_package_playback(mode).unwrap_err();
+            assert_eq!(error.code, "native_media_unavailable");
+        }
+        assert!(require_package_playback(PlaybackMode::UnqualifiedWebview)
+            .unwrap_err()
+            .message
+            .contains("WebView playback is not qualified"));
+    }
 
     #[test]
     fn public_phase_is_a_total_projection() {

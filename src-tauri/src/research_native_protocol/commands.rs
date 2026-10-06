@@ -70,29 +70,24 @@ pub struct PackageRecoveryQueryV1 {
 #[tauri::command]
 pub fn research_package_protocol_capability(
     window: WebviewWindow,
-    native_media: State<'_, Arc<NativeMediaService>>,
+    _native_media: State<'_, Arc<NativeMediaService>>,
 ) -> ResearchResult<NativePackageProtocolCapabilityV1> {
     authorize(&window)?;
-    let media = native_media.capability();
-    let native_start_ready =
-        NATIVE_ACQUISITION_SUPPORTED && media.qualified_start_available && media.player_actor_ready;
     Ok(NativePackageProtocolCapabilityV1 {
         schema: "affect-research-native-package-protocol-capability",
         version: 1,
-        backend: "rust-gstplay",
+        backend: "html-video",
         rust_owned_protocol: true,
         package_v1_compilation_ready: true,
         protocol_plan_v2_ready: true,
         questionnaire_drafts_ready: true,
         recovery_journal_ready: true,
         manifest_v4_ready: true,
-        native_start_ready,
-        reason_code: if native_start_ready {
-            "ready".to_owned()
-        } else if !NATIVE_ACQUISITION_SUPPORTED {
+        native_start_ready: false,
+        reason_code: if !NATIVE_ACQUISITION_SUPPORTED {
             "tauri-windows-required".to_owned()
         } else {
-            media.reason_code
+            "webview-research-qualification-required".to_owned()
         },
     })
 }
