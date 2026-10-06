@@ -95,7 +95,7 @@ test("package helper rejects cross-host and signing boundaries", async () => {
   assert.match(helper, /require\.resolve\("@tauri-apps\/cli\/tauri\.js"\)/u);
   assert.match(helper, /spawnSync\(\s*process\.execPath,\s*\[\s*tauriCli,/u);
   assert.doesNotMatch(helper, /pnpm\.cmd|shell:\s*true/iu);
-  assert.doesNotMatch(helper, /native-gstreamer|lsl-streaming/u);
+  assert.doesNotMatch(helper, /native-gstreamer/u);
 });
 
 test("platform overrides exclude the Windows runtime and select only requested bundles", async () => {
@@ -166,11 +166,11 @@ test("Tauri package features expose only the requested application binary", asyn
     assert.match(manifest, new RegExp(`name = "${name}"\\s+path = "${path.replaceAll(".", "\\.")}"\\s+required-features = \\["${feature}"\\]`, "u"));
   }
   assert.match(helper, /"windows-x64"[\s\S]*binary: "affect-research",\s*feature: "planner-desktop"/u);
-  assert.match(helper, /"runner-windows-x64"[\s\S]*binary: "affect-runner",\s*feature: "runner-desktop"/u);
+  assert.match(helper, /"runner-windows-x64"[\s\S]*binary: "affect-runner",\s*feature: "runner-desktop,lsl-streaming,native-acquisition-windows"/u);
   assert.match(helper, /"--features",\s*target\.feature,\s*"--",\s*"--locked",\s*"--no-default-features",\s*"--bin",\s*target\.binary/u);
   assert.match(cliBuilder, /tauri\/custom-protocol,planner-cli/u);
   assert.match(runnerBuilder, /tauri\/custom-protocol,runner-desktop/u);
-  assert.match(await source(PROVENANCE_HELPER_PATH), /no-default-features,runner-desktop[\s\S]*no-default-features,planner-desktop/u);
+  assert.match(await source(PROVENANCE_HELPER_PATH), /no-default-features,runner-desktop,lsl-streaming,native-acquisition-windows[\s\S]*no-default-features,planner-desktop/u);
   assert.ok(workflow.indexOf("Write exact unqualified artifact provenance") < workflow.indexOf("Install unsigned Windows package candidate"));
   assert.match(workflow, /verify-installed-desktop-package\.ps1 @verify/u);
 });

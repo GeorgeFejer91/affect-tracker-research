@@ -18,8 +18,8 @@ on:
 permissions:
   contents: read
 
-# The packages use the HTML-compatible video path and build without optional
-# Cargo features. This workflow has no publishing, release, updater, signing,
+# The Runner uses WebView video and includes its native input and LSL/XDF
+# features. This workflow has no publishing, release, updater, signing,
 # notarization, or research-readiness authority.
 jobs:
   select-targets:

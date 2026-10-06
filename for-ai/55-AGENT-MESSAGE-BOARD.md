@@ -1,5 +1,17 @@
 # Agent message board
 
+## 20261006 Runner package recording/input feature correction
+
+Read-only audit of installed source `1c74f56` found the package builder passes
+`--no-default-features` but requests only `runner-desktop`. Its provenance
+confirms this feature set, so the installed candidate cannot perform the
+planned LSL/XDF or native input trial. Root told the researcher to hold the
+trial; no playback/XDF observation had been collected. The package helper now
+requests `runner-desktop,lsl-streaming,native-acquisition-windows` and
+provenance names the same set. The 11 focused package tests pass. The new
+installer must compile, install, and receive its exact hashes before trial
+admission. The still-open `1c74f56` app is for interface inspection only.
+
 ## 20261006 Installed Planner and real master5 handoff at `1c74f56`
 
 Planner package run `37413024731` passed on `windows-2022`. Downloaded setup

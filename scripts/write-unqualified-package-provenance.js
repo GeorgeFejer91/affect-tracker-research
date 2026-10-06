@@ -172,7 +172,7 @@ const receipt = {
     notarized: false,
     published: false,
     cargoFeatures: targetName === "runner-windows-x64"
-      ? "no-default-features,runner-desktop"
+      ? "no-default-features,runner-desktop,lsl-streaming,native-acquisition-windows"
       : "no-default-features,planner-desktop",
     webviewPlaybackQualified: false,
   },
