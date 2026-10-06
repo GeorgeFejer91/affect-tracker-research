@@ -30,6 +30,7 @@ const TRUSTED_PAYLOAD_MANIFEST_SHA256: Option<&str> =
 #[derive(Default)]
 struct Selection {
     master: Mutex<Option<PathBuf>>,
+    video: Mutex<Option<PathBuf>>,
     player_directory: Mutex<Option<PathBuf>>,
 }
 
@@ -41,6 +42,25 @@ struct ControlState(Mutex<Option<control::ControlClient>>);
 struct PlayerStatus {
     ready: bool,
     detail: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ControlView {
+    connected: bool,
+    phase: control::Phase,
+    generation: u64,
+}
+
+fn control_view(client: Option<&control::ControlClient>) -> ControlView {
+    let (phase, generation) = client
+        .map(control::ControlClient::snapshot)
+        .unwrap_or((control::Phase::Idle, 0));
+    ControlView {
+        connected: client.is_some(),
+        phase,
+        generation,
+    }
 }
 
 fn default_player_directory() -> Result<PathBuf, String> {
@@ -278,13 +298,13 @@ async fn choose_player(
 fn connect_player(
     selection: State<'_, Selection>,
     control: State<'_, ControlState>,
-) -> Result<String, String> {
+) -> Result<ControlView, String> {
     let mut client = control
         .0
         .lock()
         .map_err(|_| "Player control is unavailable".to_string())?;
     if client.as_mut().is_some_and(control::ControlClient::alive) {
-        return Ok("Player control is connected".into());
+        return Ok(control_view(client.as_ref()));
     }
     *client = None;
     let player = verify_player(
@@ -293,11 +313,11 @@ fn connect_player(
         TRUSTED_PAYLOAD_MANIFEST_SHA256,
     )?;
     *client = Some(control::ControlClient::spawn(&player)?);
-    Ok("Player control is connected".into())
+    Ok(control_view(client.as_ref()))
 }
 
 #[tauri::command]
-fn disconnect_player(control: State<'_, ControlState>) -> Result<String, String> {
+fn disconnect_player(control: State<'_, ControlState>) -> Result<ControlView, String> {
     let previous = control
         .0
         .lock()
@@ -306,11 +326,11 @@ fn disconnect_player(control: State<'_, ControlState>) -> Result<String, String>
     if let Some(mut previous) = previous {
         previous.shutdown();
     }
-    Ok("Player control is disconnected".into())
+    Ok(control_view(None))
 }
 
 #[tauri::command]
-fn control_status(control: State<'_, ControlState>) -> Result<bool, String> {
+fn control_status(control: State<'_, ControlState>) -> Result<ControlView, String> {
     let mut client = control
         .0
         .lock()
@@ -319,7 +339,87 @@ fn control_status(control: State<'_, ControlState>) -> Result<bool, String> {
     if !connected {
         *client = None;
     }
-    Ok(connected)
+    Ok(control_view(client.as_ref()))
+}
+
+#[tauri::command]
+async fn choose_video(
+    app: tauri::AppHandle,
+    selection: State<'_, Selection>,
+) -> Result<Option<String>, String> {
+    let Some(file) = app
+        .dialog()
+        .file()
+        .add_filter("Video", &["mp4", "mkv", "mov", "avi", "webm"])
+        .blocking_pick_file()
+    else {
+        return Ok(None);
+    };
+    let path = file
+        .into_path()
+        .map_err(|_| "Select a local video file".to_string())?;
+    if !path.is_file()
+        || !path.extension().is_some_and(|extension| {
+            ["mp4", "mkv", "mov", "avi", "webm"]
+                .iter()
+                .any(|allowed| extension.to_string_lossy().eq_ignore_ascii_case(allowed))
+        })
+    {
+        return Err("Select a supported local video file".into());
+    }
+    let label = path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .ok_or("Invalid video filename")?;
+    *selection
+        .video
+        .lock()
+        .map_err(|_| "Video selection is unavailable".to_string())? = Some(path);
+    Ok(Some(label))
+}
+
+#[tauri::command]
+fn control_video(
+    action: String,
+    selection: State<'_, Selection>,
+    control: State<'_, ControlState>,
+) -> Result<ControlView, String> {
+    let action = match action.as_str() {
+        "arm" => control::Action::Arm,
+        "play" => control::Action::Start,
+        "pause" => control::Action::Pause,
+        "resume" => control::Action::Resume,
+        "stop" => control::Action::Stop,
+        _ => return Err("Unsupported player action".into()),
+    };
+    let video = if action == control::Action::Arm {
+        Some(
+            selection
+                .video
+                .lock()
+                .map_err(|_| "Video selection is unavailable".to_string())?
+                .clone()
+                .ok_or("Select a local video before Arm")?,
+        )
+    } else {
+        None
+    };
+    let mut current = control
+        .0
+        .lock()
+        .map_err(|_| "Player control is unavailable".to_string())?;
+    let client = current.as_mut().ok_or("Connect the local player first")?;
+    if !client.alive() {
+        *current = None;
+        return Err("Player connection ended".into());
+    }
+    if let Err(error) = client.send(action, video.as_deref()) {
+        if !client.alive() {
+            *current = None;
+        }
+        return Err(error);
+    }
+    Ok(control_view(current.as_ref()))
 }
 
 #[tauri::command]
@@ -420,7 +520,9 @@ fn main() {
             inspect_master,
             connect_player,
             disconnect_player,
-            control_status
+            control_status,
+            choose_video,
+            control_video
         ])
         .run(tauri::generate_context!())
         .expect("FlubberRecorder could not start");

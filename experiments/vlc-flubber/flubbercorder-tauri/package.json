@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "0.0.9"
   }
 }

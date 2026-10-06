@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FlubberRecorder</title>
   <link rel="stylesheet" href="style.css">
-  <script defer src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </head>
 <body>
   <main>
     <header>
       <h1>FlubberRecorder</h1>
-      <p>Inspect a Planner master with the separately installed FlubberVLC Player.</p>
+      <p>Control one local video or inspect a Planner master with the separately installed FlubberVLC Player.</p>
     </header>
     <section aria-labelledby="player-heading">
       <h2 id="player-heading">Player</h2>
@@ -22,6 +22,22 @@
         <button type="button" id="disconnect-player">Disconnect</button>
         <span id="control-status" role="status">Not connected</span>
       </div>
+    </section>
+    <section id="video-section" aria-labelledby="video-heading">
+      <h2 id="video-heading">Single video</h2>
+      <p id="video-note">Local playback controls only. This does not start or record a research session.</p>
+      <div class="control-row">
+        <button type="button" id="choose-video">Select local video</button>
+        <p id="video-name">No video selected</p>
+      </div>
+      <div class="control-row" aria-describedby="video-note">
+        <button type="button" id="arm-video" disabled>Arm video</button>
+        <button type="button" id="play-video" disabled>Play</button>
+        <button type="button" id="pause-video" disabled>Pause</button>
+        <button type="button" id="resume-video" disabled>Resume</button>
+        <button type="button" id="stop-video" disabled>Stop</button>
+      </div>
+      <p id="video-status" role="status">Select a video and connect the player.</p>
     </section>
     <section aria-labelledby="master-heading">
       <h2 id="master-heading">Planner master</h2>

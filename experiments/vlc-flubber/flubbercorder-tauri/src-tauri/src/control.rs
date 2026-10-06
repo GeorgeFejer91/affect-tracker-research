@@ -25,7 +25,7 @@ pub(crate) enum Action {
     Shutdown,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum Phase {
     Idle,
@@ -260,7 +260,6 @@ impl ControlClient {
         Ok(next)
     }
 
-    #[allow(dead_code)] // The Recorder UI still does not expose research execution.
     pub(crate) fn send(&mut self, action: Action, video_path: Option<&Path>) -> Result<(), String> {
         if self.sequence_armed && matches!(action, Action::Pause | Action::Resume) {
             return Err("Sequence pause and resume are unsupported".into());
@@ -286,9 +285,15 @@ impl ControlClient {
         self.generation = expected_generation;
         if action == Action::Shutdown || (action == Action::Stop && expected_phase == Phase::Idle) {
             self.sequence_armed = false;
+        }
+        if action == Action::Shutdown {
             self.terminate();
         }
         Ok(())
+    }
+
+    pub(crate) fn snapshot(&self) -> (Phase, u64) {
+        (self.phase, self.generation)
     }
 
     #[allow(dead_code)] // Research Start remains closed in the Recorder UI.
@@ -583,6 +588,39 @@ mod tests {
         assert!(client
             .send(Action::Arm, Some(Path::new("master.json")))
             .is_err());
+        client.shutdown();
+        assert!(client.child.try_wait().unwrap().is_some());
+    }
+
+    #[test]
+    fn legacy_stop_keeps_verified_connection_ready_for_rearm() {
+        let script = r#"
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":null,"ok":true,"state":"idle","generation":0,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-1","ok":true,"state":"armed","generation":1,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-2","ok":true,"state":"start-requested","generation":1,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-3","ok":true,"state":"idle","generation":1,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-4","ok":true,"state":"armed","generation":2,"error":null}')
+[Console]::In.ReadLine() | Out-Null
+[Console]::WriteLine('{"protocol":"flubber-vlc-control/v1","requestId":"recorder-5","ok":true,"state":"shutdown","generation":2,"error":null}')
+"#;
+        let mut command = Command::new("powershell");
+        command.args(["-NoProfile", "-Command", script]);
+        let mut client = ControlClient::spawn_command(command).unwrap();
+        client
+            .send(Action::Arm, Some(Path::new("video.mp4")))
+            .unwrap();
+        client.send(Action::Start, None).unwrap();
+        client.send(Action::Stop, None).unwrap();
+        assert_eq!(client.snapshot(), (Phase::Idle, 1));
+        assert!(client.alive());
+        client
+            .send(Action::Arm, Some(Path::new("video.mp4")))
+            .unwrap();
+        assert_eq!(client.snapshot(), (Phase::Armed, 2));
         client.shutdown();
         assert!(client.child.try_wait().unwrap().is_some());
     }

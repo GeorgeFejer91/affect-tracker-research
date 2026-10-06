@@ -75,6 +75,25 @@ open research Start. The standard Runner's obsolete NativeGstPlay Start gate is
 a separate R1 follow-up. Installed VLC playback, forms, LSL/XDF, physical
 input, and timing remain release gates.
 
+## 20261006 FlubberRecorder legacy single-video control UI handoff
+
+R1 RR-04/RR-09 Backend Verification, isolated
+`codex/segment-recorder-legacy-controls` from integration `b8c3b0e`:
+FlubberRecorder now selects one local video and exposes Arm, Play, Pause,
+Resume, Stop and correlated phase/generation through the existing verified
+same-PC player connection. A successful legacy Stop retains that connection
+for a new Arm; failed commands and Drop retain fail-closed cleanup. Play and
+Pause are labelled as requests, not observed playback. Planner master
+inspection and disabled research Start remain separate. No launcher wire,
+recording, network or installer changes. Five Node tests pass, including a
+focused UI state/command cycle; Rust formatting and source checks pass. The
+locked Pretext 0.0.9 ESM import closure and MIT license are vendored into the
+static WebView; runtime measurement marks text fit and wrapping on resize.
+This host has no available browser/app surface for rendered measurement, and
+the cold Recorder Rust build was deferred while package Rust compilers were
+active. Root owns unified Windows compile, installed UI/keyboard inspection,
+and all research playback/LSL/XDF qualification gates.
+
 ## 20261006 Recorder selected-sequence teardown follow-up
 
 R1 RR-04/RR-09 Backend Verification, isolated

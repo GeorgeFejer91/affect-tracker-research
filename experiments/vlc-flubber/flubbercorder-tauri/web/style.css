@@ -1,22 +1,25 @@
-:root { font-family: system-ui, sans-serif; color: #202124; background: #f7f7f6; }
+:root { font-family: system-ui, sans-serif; font-size: 16px; line-height: 1.45; color: #202124; background: #f7f7f6; }
+*, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; }
-main { max-width: 850px; margin: 0 auto; padding: 28px; }
+main { max-width: 850px; min-width: 0; margin: 0 auto; padding: 28px; }
 header { border-bottom: 1px solid #d6d7d5; padding-bottom: 16px; }
 h1 { margin: 0 0 8px; font-size: 1.55rem; }
 h2 { margin: 0 0 12px; font-size: 1.1rem; }
-p { line-height: 1.5; }
+p { line-height: 1.5; min-width: 0; overflow-wrap: break-word; }
 section { padding: 22px 0; border-bottom: 1px solid #d6d7d5; }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
 label { display: grid; gap: 6px; font-size: .9rem; }
-input { font: inherit; padding: 8px; border: 1px solid #aeb0ad; border-radius: 4px; background: white; }
-button { font: inherit; padding: 8px 12px; border: 1px solid #666b69; border-radius: 4px; background: #fff; cursor: pointer; }
+input { min-width: 0; min-height: 44px; font: inherit; padding: 8px; border: 1px solid #aeb0ad; border-radius: 4px; background: white; }
+button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; font: inherit; line-height: 1.45; text-align: center; padding: 8px 12px; border: 1px solid #666b69; border-radius: 4px; background: #fff; cursor: pointer; }
 button:hover:not(:disabled) { background: #e9edeb; }
 button:focus-visible, input:focus-visible { outline: 2px solid #185c78; outline-offset: 2px; }
 button:disabled { color: #6e7370; border-color: #b8bab7; background: #e8e9e7; cursor: not-allowed; }
-.control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; min-width: 0; }
+.control-row p { margin: 0; }
+#control-status, #video-name { flex: 1 1 160px; min-width: 0; overflow-wrap: break-word; }
 dl { display: grid; gap: 8px; margin: 14px 0 24px; }
 dl div { display: grid; grid-template-columns: 130px minmax(0, 1fr); }
 dt { color: #5a5f5b; }
 dd { margin: 0; overflow-wrap: anywhere; }
 #start-note { color: #5a5f5b; font-size: .9rem; }
-@media (max-width: 620px) { .fields { grid-template-columns: 1fr; } main { padding: 20px; } }
+@media (max-width: 620px) { .fields { grid-template-columns: 1fr; } main { padding: 16px; } #video-section .control-row button { flex: 1 1 132px; } }
