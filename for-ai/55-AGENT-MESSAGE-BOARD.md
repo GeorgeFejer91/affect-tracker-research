@@ -9,6 +9,9 @@ those files, replaces the native-media README with the current playback
 boundary, and removes the obsolete ignore rule. It changes no recipe JSON,
 Runner timing, LSL or XDF authority. The existing Windows build-boundary test
 is the focused regression check; installed playback qualification remains open.
+GitHub Windows CI also exposed a pre-existing high-severity transitive
+source-map-js audit finding. The follow-up lockfile-only patch resolves it at
+1.2.2 with an exact release-age exception; no direct dependency changed.
 
 ## 20261005 Runner master plan immutability
 
