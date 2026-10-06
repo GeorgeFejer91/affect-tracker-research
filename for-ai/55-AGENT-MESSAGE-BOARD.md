@@ -20,6 +20,12 @@ incomplete and C: has about 450 MB free. Full selected-plan execution,
 standard LSL/XDF, supervised same-PC control, player package and installer
 qualification remain open.
 
+Windows CI at `263d97a` compiled the shared source but failed linking the
+standalone launcher test executable because the Visual C++ environment was not
+initialized for that step. Root added explicit MSVC environment setup before
+launcher tests; a passing rerun is required before this handoff gains native
+executable evidence.
+
 Next VLC R1 allocation: RR-04/RR-07 same-PC control seam for the separate
 FlubberRecorder program. Root first imports `01fc9d2`; owner branches from that
 integration point, edits only the VLC launcher/control tests and reports exact
