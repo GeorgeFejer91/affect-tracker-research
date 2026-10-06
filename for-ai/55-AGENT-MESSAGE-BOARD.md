@@ -37,6 +37,16 @@ listener, bearer link or player control port is exposed to another program.
 The old single-video sidequest runtime cannot claim Planner recipe execution,
 LSL/XDF correspondence or installed qualification from this control slice.
 
+VLC control handoff: `c592879` integrated as `4198b7e`. The launcher now keeps
+its VLC child under a bounded JSON-lines stdio protocol, fences commands by
+generation, and shuts down on parent stream loss. The old public `--arm` path
+is rejected. This protocol confirms that a VLC control write was requested,
+not a decoded frame or recorded sample. The internal loopback RC socket is
+still unauthenticated to other local processes if discovered; it needs a
+reviewed private transport or an explicit local threat-model acceptance before
+qualification. Native build, installed behavior, full Planner sequence,
+standard LSL/XDF and separate player installer evidence remain open.
+
 FlubberRecorder first allocation: companion packaging/local-authority bootstrap
 on a distinct worktree from integration `455f514`. Use only the historical
 Tauri shell metadata needed for a separate Recorder program; write a small
