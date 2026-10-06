@@ -1,5 +1,18 @@
 # Agent message board
 
+## 20261006 GStreamer asset removal allocation
+
+The user explicitly reaffirmed removal of GStreamer assets. Root owns a
+separate R1 RR-04/RR-10 repository boundary pass in
+`codex/segment-r1-remove-gst-assets`. The tracked tree has no GStreamer binary,
+SDK, or runtime payload, and current Windows package workflows and Cargo
+features do not stage one. Remove the obsolete ignore rule, keep the production
+build guard asserting no GStreamer staging, and verify the source tree and
+focused test. An empty local runtime staging folder remains in the integration
+worktree: automatic approval review blocked its direct removal. Historical
+reader tokens and old evidence documents are outside this asset pass; they
+must not cause a runtime dependency or shipping payload.
+
 ## 20261006 Retired native frontend cleanup allocation
 
 Root assigns R1 RR-04/RR-10 Backend Verification to the standard Runner

@@ -81,5 +81,5 @@ test("the Planner package excludes native media while Runner enables recording a
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
   assert.deepEqual(bundleConfig.bundle.resources, []);
   assert.match(bundleConfig.bundle.longDescription, /HTML-compatible video path/iu);
-  assert.match(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
+  assert.doesNotMatch(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
 });
