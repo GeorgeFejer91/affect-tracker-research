@@ -1,5 +1,16 @@
 # Agent message board
 
+## 20261006 Four-program UI source review allocation
+
+Root assigns a read-only `UI_VERIFY` at integration `08b4964` for the Planner,
+standard Runner, Flubber VLC Player/Runner boundary, and FlubberRecorder.
+Inspect current source and existing automated rendered receipts for clear
+program identity, minimal controls, text fit, keyboard/accessibility and the
+visible closed research gates. Use the project Uncodixfy Pretext guidance for
+text-bearing UI. Report only source or executed evidence actually seen and
+separate missing installed observations. Do not edit files or interact with
+installed experiment controls without the user's specific opt-in.
+
 ## 20261006 Runner recording gate review allocation
 
 Root assigns an independent read-only `RECORDING_GATE` review at integration
