@@ -11,17 +11,17 @@ hand-written.
 
 Run from the repository root in PowerShell, replacing the proof directory with
 a **new** path each time. Supply the actual fullscreen CSS viewport; the
-2560 × 1440 values below are the authored values for this local receipt, not
+1920 × 1080 values below are the authored values for this local receipt, not
 an installed Runner viewport measurement.
 
 ```powershell
-$proof = 'C:\Users\gfeje\Documents\GitHub\.affect-checks\real-master-2026-10-06-06'
+$proof = 'C:\Users\gfeje\Documents\GitHub\.affect-checks\real-master-2026-10-06-07'
 New-Item -ItemType Directory -Path (Join-Path $proof 'workspace') | Out-Null
 node scripts/qualification/planner-real-video-master.mjs `
   "$env:LOCALAPPDATA\Experiment Planner\affect-planner-cli.exe" `
   (Join-Path $proof 'workspace') (Join-Path $proof 'evidence') `
   (Resolve-Path site\assets\research-stimuli\caav\v1\media\caav__1-f-001__h264-1080p.mp4) `
-  2560 1440
+  1920 1080
 ```
 
 Observed 2026-10-06 production CLI candidate `f19b12d178130b43bf42cdbf9de942aaefdf614e`:
@@ -32,9 +32,9 @@ Observed 2026-10-06 production CLI candidate `f19b12d178130b43bf42cdbf9de942aaef
 | Checked-in CAAV MP4 | `site/assets/research-stimuli/caav/v1/media/caav__1-f-001__h264-1080p.mp4`, SHA-256 `1719bd67d2ff0691bfc2da126ca539300650c36b003f1633cff288f4cd94356c`, 3,980,535 bytes; `metadata/primary-source-manifest.json` and `catalog.json` pin this derivative |
 | Imported workspace MP4 | `assets/stimuli/caav__1-f-001__h264-1080p.mp4`, same SHA-256; CLI catalogue reports `browser-decoder` verified geometry 1920 × 1080 and duration 15,033 ms |
 | Saved SurveyJS asset | `assets/questionnaires/demographics-en/en/dd8560ca008de5f670eca72fda40fae42eb11a62ca0be6f11f7a04f11b5288ee.survey.json`, SHA-256 `dd8560ca008de5f670eca72fda40fae42eb11a62ca0be6f11f7a04f11b5288ee`, 2,381 bytes |
-| Master5 | `real-video-validation-recipe_2026-10-06_03-21-28-599Z.json`, SHA-256 `c38d2c0faf0f037c075d099f1b936707a0270d15537b68ff2f5816c7a274d782`, 8,853 bytes |
-| CLI transcript | 25/25 steps, SHA-256 `04019ce2e381c92bd127559215359cc2c38ea5a0e1554676c94687fb51bba86b` |
-| Strict JS Runner selection | Plan SHA-256 `78bbcf4330527b06f7443c8b312447814eb4739f4e5d1ee7e6490e6a23e96ec6`; position 1 demographics, position 2 video |
+| Master5 | `real-video-validation-recipe_2026-10-06_03-40-09-674Z.json`, SHA-256 `3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`, 8,853 bytes |
+| CLI transcript | 25/25 steps, SHA-256 `f8b7156e9e7202782b88297c8c8c325bf30482a76bfa4e0c4acf103002725663` |
+| Strict JS Runner selection | Plan SHA-256 `e952206f1054e5f75644e3a4a50970e3b760983cdc983707407a704d21306a54`; position 1 demographics, position 2 video |
 
 The exact workspace and evidence files are under the proof directory above.
 `evidence/transcript.jsonl` holds each production CLI request and response;
