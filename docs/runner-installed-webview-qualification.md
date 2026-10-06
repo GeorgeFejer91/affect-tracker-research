@@ -4,7 +4,7 @@ This is the R1 RR-04/RR-07/RR-08/RR-09 **Final Runtime Correspondence** source h
 
 ## Predeclared local candidate trial
 
-For package run `37410302707` at source commit `0a17aab90655cd460a1a05d836a287740ffa786c`, use the installed Planner CLI recipe documented in [planner-real-video-master.md](../scripts/qualification/planner-real-video-master.md): master5 SHA-256 `3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`, `P001` / `en` / `variant-1`, video position **2**, declared video duration **15,033 ms**, and the exact CAAV asset SHA-256 `1719bd67d2ff0691bfc2da126ca539300650c36b003f1633cff288f4cd94356c`. Before observing the run, require at least **30 decoded frames** and no more than **1,000 ms** absolute difference for both observed media span and marker span. A failed bound remains a failed trial; a later trial needs a separately declared threshold and a new receipt. The configured input test, synthetic questionnaire response, and own-stream recording are part of this trial. The candidate's installer and installed executable hashes will be filled from the completed package provenance before execution.
+The earlier `0a17aab` package trial was superseded before any playback or XDF observation. For package run `37413020933` at source commit `1c74f5669fe8237ab0072b6db109488c2441f8fa`, use the installed Planner CLI recipe documented in [planner-real-video-master.md](../scripts/qualification/planner-real-video-master.md): master5 SHA-256 `3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`, `P001` / `en` / `variant-1`, video position **2**, declared video duration **15,033 ms**, and the exact CAAV asset SHA-256 `1719bd67d2ff0691bfc2da126ca539300650c36b003f1633cff288f4cd94356c`. The setup SHA-256 is `1ed8f25cdc48c8b67287fcde4f6a19764b68f9413daa92388b8ee2e53c63e592`; the installed `%LOCALAPPDATA%/Experiment Runner/affect-runner.exe` SHA-256 is `65f5bf9268b90f7fca653af98fc99b2e66338a0f62668b34c9a92c0fb1eea99b`. Before observing the run, require at least **30 decoded frames** and no more than **1,000 ms** absolute difference for both observed media span and marker span. A failed bound remains a failed trial; a later trial needs a separately declared threshold and a new receipt. The configured input test, synthetic questionnaire response, and own-stream recording are part of this trial. Installation and launch alone do not count as an observed run.
 
 ## Collect one candidate
 
@@ -21,7 +21,7 @@ node scripts/qualification/runner-installed-webview.mjs `
   --installed-exe-sha256 '<64-hex hash from install provenance>' `
   --session 'C:\Study\outputs\...\attempt-directory' `
   --xdf 'C:\Study\recording.xdf' `
-  --video-position 3 `
+  --video-position 2 `
   --min-decoded-frames '<predeclared integer of at least 2>' `
   --max-video-span-error-ms '<predeclared nonnegative integer>' `
   --out 'C:\Evidence\runner-installed-webview.json'

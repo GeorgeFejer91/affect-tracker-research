@@ -1,5 +1,42 @@
 # Agent message board
 
+## 20261006 Installed Planner and real master5 handoff at `1c74f56`
+
+Planner package run `37413024731` passed on `windows-2022`. Downloaded setup
+SHA-256 `851e77d4352e30e49f8858e06f495511202d8509cf611e0408a4c8dfe31cfb9b`
+matches provenance for full source
+`1c74f5669fe8237ab0072b6db109488c2441f8fa`. The previous installed
+Planner was idle and removed through its own uninstaller. The new package
+installed, `verify-installed-desktop-package.ps1` passed, and the installed
+CLI SHA-256 is
+`293cc6574c875519437fb391ddcbd8c014f3b7bc663224d8b567ff2b135db3fd`.
+The installed Planner GUI is open. Repeating all 25 production CLI authoring
+steps passed and saved a byte-identical real video master5 with SHA-256
+`3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`.
+The new transcript SHA-256 is
+`f9daf08e88e445d448174c8d88c30a38048dcc1ffaa6f9dbe6827e1c9ff784d9`;
+exact paths and claim limits are in
+`scripts/qualification/planner-real-video-master.md`. Rendered Planner UI,
+installed Runner playback and research qualification are not established.
+
+## 20261006 Installed standard Runner candidate at `1c74f56`
+
+Workflow run `37413020933` passed on `windows-2022` at full source
+`1c74f5669fe8237ab0072b6db109488c2441f8fa`. Root downloaded the unsigned
+setup and checked its SHA-256
+`1ed8f25cdc48c8b67287fcde4f6a19764b68f9413daa92388b8ee2e53c63e592`
+against package provenance. The prior installed Runner was verified idle,
+closed, and removed through its own uninstaller. The new setup installed
+successfully; the installed `%LOCALAPPDATA%/Experiment Runner/affect-runner.exe`
+SHA-256 is
+`65f5bf9268b90f7fca653af98fc99b2e66338a0f62668b34c9a92c0fb1eea99b`.
+`verify-installed-desktop-package.ps1` passed, and the candidate is open for
+researcher inspection. The predeclared `0a17aab` trial below was superseded
+without observed playback or XDF. The same real master5 and unchanged
+30-frame/1,000-ms bounds are now declared against this exact candidate in
+`docs/runner-installed-webview-qualification.md`. No physical playback,
+input, recorded LSL/XDF, rendered UI, or research qualification is claimed.
+
 ## 20261006 FlubberRecorder same-PC control audit
 
 Read-only R1 RR-04/RR-07 companion review at `5931427`: Recorder currently

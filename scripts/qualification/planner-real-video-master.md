@@ -44,6 +44,22 @@ match current P1–P7 registration: `site/src/research/planner-authoring-p4.js`
 uses `P4.feedback.centreX/Y`; `runner/src/recipe.js` and
 `site/src/research/planner-recipe-assets.js` own strict master5 interpretation.
 
+The same 25-step procedure was repeated after installing Planner package run
+`37413024731` at source `1c74f5669fe8237ab0072b6db109488c2441f8fa`.
+The unsigned setup SHA-256 is
+`851e77d4352e30e49f8858e06f495511202d8509cf611e0408a4c8dfe31cfb9b`;
+the installed CLI SHA-256 is
+`293cc6574c875519437fb391ddcbd8c014f3b7bc663224d8b567ff2b135db3fd`.
+All 25 production CLI steps passed with transcript SHA-256
+`f9daf08e88e445d448174c8d88c30a38048dcc1ffaa6f9dbe6827e1c9ff784d9`.
+The new saved master at
+`C:/Users/gfeje/Documents/GitHub/.affect-checks/real-master-2026-10-06-08/workspace/real-video-validation-recipe_2026-10-06_04-36-23-301Z.json`
+has the identical SHA-256
+`3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`.
+The receipt, transcript, strict Runner read, and saved assets are under that
+new proof directory. The installed Planner is open for inspection; this CLI
+receipt does not establish its rendered UI behavior.
+
 This proves only Planner save and source-level Runner interpretation. Installed
 Runner playback, synthetic demographics answers, observed decoded frames,
 LSL/XDF, actual fullscreen viewport, and research qualification are separate
