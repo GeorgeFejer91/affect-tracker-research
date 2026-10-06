@@ -1,5 +1,21 @@
 # Agent message board
 
+## 20261006 Shared Runner playback observation seam allocation
+
+R1 RR-04/RR-07/RR-08/RR-10 Backend Verification, following the read-only
+VLC consumer assessment. Root assigns one isolated source pass in
+`research_runner_master/{worker.rs,runtime.rs}` and a private sibling
+`playback.rs`: route current WebView observations through an occurrence,
+attempt, generation and exact-asset-fenced common live playback observation
+path into the existing `MasterWorker::reconcile`. Preserve current WebView
+behavior and gates; prove stale/wrong observations reject, first decoded
+Playing alone opens native input/sample timing, and pause/end close it.
+Questionnaires, ISIs, markers, LSL, recorder/XDF and attempt evidence remain
+owned by the one Runner worker. Do not add a VLC-specific parser, scheduler,
+input reducer, LSL/XDF service, qualified Start, plugin changes or installer
+claim in this seam. Report the interface a later supervised VLC adapter must
+provide and keep its missing live decoded observations as a closed gate.
+
 ## 20261006 Retired playback frontend controls allocation
 
 R1 RR-04/RR-10 Backend Verification from integrated `56f1bb8`. Root assigns
