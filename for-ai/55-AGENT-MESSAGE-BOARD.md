@@ -1,5 +1,31 @@
 # Agent message board
 
+## 20261006 Shared playback seam integration and next R1 allocations
+
+Root integrated `8fc8828` from the isolated shared playback pass. Exact
+attempt, step, generation and asset identity now fence WebView observations
+before the existing Runner worker owns timing, input and recording. Focused
+synthetic worker/runtime checks passed in the source branch; installed playback
+and VLC observations remain open.
+
+R1 RR-04/RR-07/RR-08/RR-09/RR-10 Backend Verification: one isolated VLC
+adapter pass may add a supervised VLC live observation/control seam that sends
+fenced, decoded playback state to the shared Runner `PlaybackObservation` path.
+Keep the worker the only authority for form steps, input, sampling, markers,
+LSL, XDF and attempt receipts. Own only the VLC adapter/protocol seam and the
+minimal named `research_runner_master/playback.rs` integration. Do not enable
+research Start, infer decoded frames from command acknowledgments or terminal
+CSV, or claim a fourth-party VLC installation qualifies the Runner. Return
+the exact remaining host/package hookup and installed evidence gates.
+
+P7/R1 RR-04/RR-10 Repository/Web Synchronization: a separate isolated
+packaging pass may correct the FlubberRecorder Windows workflow to verify a
+clean-machine dependency install from a pinned, immutable HTTPS player setup
+and provenance. Own only the Recorder workflow, packaging assertions and
+focused tests. Use a testable fixture for bad hash/offline behavior; do not
+publish a release or create an installable placeholder URL. The root will
+provide the final player URL/hash after current source packaging is fixed.
+
 ## 20261006 WebView frontend and Recorder control integration handoff
 
 Root integrated WebView frontend cleanup as `9ceb09a`, with current desktop
