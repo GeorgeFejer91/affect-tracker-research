@@ -1,0 +1,128 @@
+name: Build unqualified FlubberRecorder Windows package
+
+on:
+  workflow_dispatch:
+    inputs:
+      player_setup_url:
+        description: Fixed HTTPS URL of the separately published player setup
+        required: true
+        type: string
+      player_setup_sha256:
+        description: Exact SHA-256 of that player setup
+        required: true
+        type: string
+      player_provenance_url:
+        description: Fixed HTTPS URL of the matching player package provenance
+        required: true
+        type: string
+      player_provenance_sha256:
+        description: Exact SHA-256 of that provenance JSON
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Builds an internal candidate only. No signing, release publication, research
+# Start, playback qualification, or independent XDF/LSL evidence is implied.
+jobs:
+  recorder-windows-x64:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact repository state
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.19.0
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@ebb3d1676050bfd0971c36c1e215b5751473994d # 1.96.0
+      - name: Verify exact player download and independent installation
+        shell: pwsh
+        env:
+          PLAYER_SETUP_URL: ${{ inputs.player_setup_url }}
+          PLAYER_SETUP_SHA256: ${{ inputs.player_setup_sha256 }}
+          PLAYER_PROVENANCE_URL: ${{ inputs.player_provenance_url }}
+          PLAYER_PROVENANCE_SHA256: ${{ inputs.player_provenance_sha256 }}
+        run: |
+          if ($env:RUNNER_OS -cne 'Windows' -or $env:RUNNER_ARCH -cne 'X64') {
+            throw 'Recorder packaging requires a native Windows x64 runner.'
+          }
+          if ($env:PLAYER_PROVENANCE_URL -cnotmatch '^https://[A-Za-z0-9.-]+(?:/[A-Za-z0-9._~/-]+)+$' -or
+              $env:PLAYER_PROVENANCE_SHA256 -cnotmatch '^[0-9a-fA-F]{64}$' -or
+              $env:PLAYER_SETUP_SHA256 -cnotmatch '^[0-9a-fA-F]{64}$') {
+            throw 'Fixed player package provenance URL and SHA-256 pins are required.'
+          }
+          $source = Join-Path $env:RUNNER_TEMP 'recorder-player-source'
+          New-Item -ItemType Directory -Path $source | Out-Null
+          $setup = Join-Path $source 'Flubber_VLC_Player_Setup_0.1.0_x64.exe'
+          $receipt = Join-Path $source 'player-package-provenance.json'
+          & .\experiments\vlc-flubber\flubbercorder-tauri\src-tauri\windows\download-player.ps1 `
+            -Url $env:PLAYER_SETUP_URL -ExpectedSha256 $env:PLAYER_SETUP_SHA256 -OutFile $setup
+          Invoke-WebRequest -Uri $env:PLAYER_PROVENANCE_URL -OutFile $receipt
+          if ((Get-FileHash -LiteralPath $receipt -Algorithm SHA256).Hash -cne
+              $env:PLAYER_PROVENANCE_SHA256.ToUpperInvariant()) {
+            throw 'Player provenance download differs from its trusted SHA-256.'
+          }
+          $install = Start-Process -FilePath $setup `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
+            -PassThru -Wait -WindowStyle Hidden
+          if ($install.ExitCode -ne 0) { throw "Standalone player setup exited with $($install.ExitCode)." }
+          $player = Join-Path $env:LOCALAPPDATA 'Programs\FlubberVLCPlayer'
+          if (-not (Test-Path -LiteralPath (Join-Path $player 'manifest.json') -PathType Leaf) -or
+              -not (Test-Path -LiteralPath (Join-Path $player 'payload-manifest.json') -PathType Leaf)) {
+            throw 'Independent player installation has no matching manifests.'
+          }
+          "PLAYER_SETUP_PATH=$setup" >> $env:GITHUB_ENV
+          "PLAYER_STAGE_PATH=$player" >> $env:GITHUB_ENV
+          "PLAYER_PROVENANCE_PATH=$receipt" >> $env:GITHUB_ENV
+      - name: Check Recorder source contracts
+        shell: pwsh
+        run: |
+          node --test experiments/vlc-flubber/flubbercorder-tauri/test/*.test.js
+          if ($LASTEXITCODE -ne 0) { throw 'Recorder shell tests failed.' }
+          cargo fmt --manifest-path experiments/vlc-flubber/flubbercorder-tauri/src-tauri/Cargo.toml -- --check
+          if ($LASTEXITCODE -ne 0) { throw 'Recorder Rust formatting failed.' }
+          cargo test --locked --manifest-path experiments/vlc-flubber/flubbercorder-tauri/src-tauri/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw 'Recorder native tests failed.' }
+      - name: Build Recorder bound to the published player artifact
+        shell: pwsh
+        env:
+          PLAYER_SETUP_URL: ${{ inputs.player_setup_url }}
+        run: |
+          & .\experiments\vlc-flubber\flubbercorder-tauri\build-recorder-installer.ps1 `
+            -PlayerSetupUrl $env:PLAYER_SETUP_URL `
+            -PlayerSetupPath $env:PLAYER_SETUP_PATH `
+            -PlayerStagePath $env:PLAYER_STAGE_PATH `
+            -PlayerProvenancePath $env:PLAYER_PROVENANCE_PATH
+          if ($LASTEXITCODE -ne 0) { throw 'Recorder package build failed.' }
+      - name: Install and verify Recorder package candidate
+        shell: pwsh
+        run: |
+          $bundle = 'experiments/vlc-flubber/flubbercorder-tauri/src-tauri/target/release/bundle/nsis'
+          $installers = @(Get-ChildItem -LiteralPath $bundle -Filter '*-setup.exe' -File)
+          if ($installers.Count -ne 1) { throw 'Expected one Recorder NSIS installer.' }
+          $install = Start-Process -FilePath $installers[0].FullName `
+            -ArgumentList '/S' -PassThru -Wait -WindowStyle Hidden
+          if ($install.ExitCode -ne 0) { throw "Recorder setup exited with $($install.ExitCode)." }
+          $recorder = Join-Path $env:LOCALAPPDATA 'FlubberRecorder\FlubberRecorder.exe'
+          if (-not (Test-Path -LiteralPath $recorder -PathType Leaf)) {
+            throw 'Installed FlubberRecorder executable is missing.'
+          }
+          & $recorder --verify-player
+          if ($LASTEXITCODE -ne 0) { throw 'Installed Recorder rejected the player payload.' }
+      - name: Upload unqualified Recorder installer candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: flubber-recorder-0.1.0-unqualified-windows-x64-${{ github.sha }}
+          path: |
+            experiments/vlc-flubber/flubbercorder-tauri/src-tauri/target/release/bundle/nsis/*-setup.exe
+            experiments/vlc-flubber/flubbercorder-tauri/src-tauri/target/release/bundle/nsis/recorder-package-provenance.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

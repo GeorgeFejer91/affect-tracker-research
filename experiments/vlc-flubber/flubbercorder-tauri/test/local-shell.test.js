@@ -14,6 +14,8 @@ const cargo = readFileSync(join(root, 'src-tauri/Cargo.toml'), 'utf8');
 test('Recorder is a distinct local installer with no copied player tree or listener', () => {
   assert.equal(config.bundle.targets, 'nsis');
   assert.equal(config.bundle.resources, undefined);
+  assert.equal(config.mainBinaryName, 'FlubberRecorder');
+  assert.equal(config.bundle.windows.nsis.installerHooks, './windows/player-dependency.nsh');
   assert.equal(config.identifier, 'io.github.georgefejer91.flubbercorder');
   assert.doesNotMatch(source, /TcpListener|tiny_http|127\.0\.0\.1|--control-stdio/);
   assert.doesNotMatch(control, /TcpListener|TcpStream|tiny_http|127\.0\.0\.1/);
@@ -26,6 +28,7 @@ test('inspection uses the installed player and research Start stays disabled', (
   assert.match(source, /option_env!\("FLUBBERVLC_MANIFEST_SHA256"\)/);
   assert.match(source, /option_env!\("FLUBBERVLC_PAYLOAD_MANIFEST_SHA256"\)/);
   assert.match(source, /verify_payload_tree\(&root, &root, "", &payload, &mut found\)\?/);
+  assert.match(source, /--verify-player/);
   assert.match(source, /found != payload\.keys\(\)\.cloned\(\)\.collect\(\)/);
   assert.match(source, /\.arg\("--inspect-master"\)/);
   assert.match(source, /\.arg\("--participant"\)/);

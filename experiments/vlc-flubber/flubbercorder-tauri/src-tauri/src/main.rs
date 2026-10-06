@@ -395,6 +395,20 @@ fn inspect_master(
 }
 
 fn main() {
+    if env::args_os().skip(1).collect::<Vec<_>>() == [std::ffi::OsString::from("--verify-player")] {
+        if let Err(error) = default_player_directory().and_then(|directory| {
+            verify_player(
+                &directory,
+                TRUSTED_MANIFEST_SHA256,
+                TRUSTED_PAYLOAD_MANIFEST_SHA256,
+            )
+            .map(|_| ())
+        }) {
+            eprintln!("{error}");
+            std::process::exit(1);
+        }
+        return;
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(Selection::default())
