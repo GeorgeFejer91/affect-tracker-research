@@ -17,9 +17,21 @@ preview inlet, which discovered VLC outlets but did not deliver samples in the
 installed Tauri run. The XDF remains the authoritative LSL recording and the
 VLC per-frame CSV remains its independent fallback. A native 300-frame short
 trial using the updated recorder produced 300 XDF affect samples, 300 console
-preview samples, and both exact filename markers. Installed Tauri phone and
-installer checks are still in progress; this paragraph does not claim a
-published download.
+preview samples, and both exact filename markers.
+
+The final standalone installer is 164,555,123 bytes, SHA-256
+`41CA2A044BC6E94AB3172A757002B898621CE7B4FB0CEE7F06C371CE38B46A7B`.
+Its installed player passed all seven manifest hashes; the affect and marker
+LSL outlets were discovered and opened while VLC was idle with no video.
+The final Tauri installer is 256,147,263 bytes, SHA-256
+`2427CECCAFAE754A5D49AB5E134AEB267895EBDA6AFD052D43A92ADC9047B565`.
+It installed successfully over the local validation installation. Installed
+runner, recorder, player manifest, and bundled film hashes matched their
+sources. A phone-controlled default-demo trial applied Start, Pause, Resume,
+and Stop, showed 67 live affect samples and the exact
+`dictator-3-study.mp4_Start`/`_Stop` markers, and reached Complete with a
+closed XDF and 67 fallback CSV rows. The runner promotes XDF only after its
+sample count matches that CSV and the exact markers are present.
 
 ## Frame-matched sampling follow-up, 2026-10-05
 
