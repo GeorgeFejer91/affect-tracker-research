@@ -482,7 +482,7 @@ test("the application projects successor settings to Setup and invalidates saved
 });
 
 test("desktop media probes stay bounded to the primary renderer instead of the scrolling editor", () => {
-  assert.equal(count(nativeBridgeSource, /"\.preview-pane \.preview-primary-stage"/gu), 2);
+  assert.equal(count(nativeBridgeSource, /"\.preview-pane \.preview-primary-stage"/gu), 1);
   assert.doesNotMatch(nativeBridgeSource, /"\.preview-pane \.research-preview-stage"/u);
 });
 
