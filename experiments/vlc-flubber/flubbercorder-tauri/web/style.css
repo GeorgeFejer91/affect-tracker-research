@@ -1,0 +1,21 @@
+:root { font-family: system-ui, sans-serif; color: #202124; background: #f7f7f6; }
+body { margin: 0; }
+main { max-width: 850px; margin: 0 auto; padding: 28px; }
+header { border-bottom: 1px solid #d6d7d5; padding-bottom: 16px; }
+h1 { margin: 0 0 8px; font-size: 1.55rem; }
+h2 { margin: 0 0 12px; font-size: 1.1rem; }
+p { line-height: 1.5; }
+section { padding: 22px 0; border-bottom: 1px solid #d6d7d5; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+label { display: grid; gap: 6px; font-size: .9rem; }
+input { font: inherit; padding: 8px; border: 1px solid #aeb0ad; border-radius: 4px; background: white; }
+button { font: inherit; padding: 8px 12px; border: 1px solid #666b69; border-radius: 4px; background: #fff; cursor: pointer; }
+button:hover:not(:disabled) { background: #e9edeb; }
+button:focus-visible, input:focus-visible { outline: 2px solid #185c78; outline-offset: 2px; }
+button:disabled { color: #6e7370; border-color: #b8bab7; background: #e8e9e7; cursor: not-allowed; }
+dl { display: grid; gap: 8px; margin: 14px 0 24px; }
+dl div { display: grid; grid-template-columns: 130px minmax(0, 1fr); }
+dt { color: #5a5f5b; }
+dd { margin: 0; overflow-wrap: anywhere; }
+#start-note { color: #5a5f5b; font-size: .9rem; }
+@media (max-width: 620px) { .fields { grid-template-columns: 1fr; } main { padding: 20px; } }

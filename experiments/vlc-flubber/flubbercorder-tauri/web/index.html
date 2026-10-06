@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlubberRecorder</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>FlubberRecorder</h1>
+      <p>Inspect a Planner master with the separately installed FlubberVLC Player.</p>
+    </header>
+    <section aria-labelledby="player-heading">
+      <h2 id="player-heading">Player</h2>
+      <p id="player-status" role="status">Checking installation…</p>
+      <button type="button" id="choose-player">Select player installation</button>
+    </section>
+    <section aria-labelledby="master-heading">
+      <h2 id="master-heading">Planner master</h2>
+      <p id="master-name">No master selected</p>
+      <button type="button" id="choose-master">Select master JSON</button>
+      <div class="fields">
+        <label>Participant ID <input id="participant" value="P001" autocomplete="off" spellcheck="false"></label>
+        <label>Variant ID <input id="variant" autocomplete="off" spellcheck="false"></label>
+        <label>Language ID <input id="language" value="en" autocomplete="off" spellcheck="false"></label>
+        <label>Language path (comma separated) <input id="path" placeholder="both, en" autocomplete="off" spellcheck="false"></label>
+      </div>
+      <button type="button" id="inspect">Inspect selected plan</button>
+    </section>
+    <section aria-labelledby="plan-heading">
+      <h2 id="plan-heading">Selected plan</h2>
+      <p id="inspection-status" role="status">Select a master and inspect its route.</p>
+      <dl id="plan" hidden>
+        <div><dt>Participant</dt><dd id="plan-participant"></dd></div>
+        <div><dt>Steps</dt><dd id="plan-steps"></dd></div>
+        <div><dt>Plan identity</dt><dd id="plan-identity"></dd></div>
+      </dl>
+      <button type="button" disabled aria-describedby="start-note">Start research session</button>
+      <p id="start-note">Session execution and recording are not available in this build.</p>
+    </section>
+  </main>
+</body>
+</html>

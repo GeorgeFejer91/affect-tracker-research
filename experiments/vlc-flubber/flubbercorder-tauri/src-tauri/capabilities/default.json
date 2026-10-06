@@ -1,0 +1,6 @@
+{
+  "identifier": "recorder-local",
+  "description": "Local Recorder window",
+  "windows": ["recorder"],
+  "permissions": ["core:default"]
+}
