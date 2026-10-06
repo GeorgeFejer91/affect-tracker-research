@@ -1,8 +1,9 @@
 //! One explicit Planner-master video occurrence, without claiming a Runner session.
-use super::{run_with_args_cancellable, Args, Result};
+use super::{live, run_with_args_cancellable, Args, Result};
 use affect_research::research_runner_master::{
     MasterSelector, MasterStep, MasterStepKind, PreparedMaster,
 };
+use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::env;
@@ -24,6 +25,14 @@ fn selected_asset<'a>(steps: &'a [MasterStep], entry_id: &str) -> Result<&'a Val
         return Err("Choose one exact saved video occurrence entry ID".into());
     };
     Ok(&step.payload["asset"])
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LiveHostBinding {
+    attempt_id: String,
+    generation: u64,
+    workspace_file_id: String,
 }
 
 fn asset_path(master: &Path, asset: &Value) -> Result<PathBuf> {
@@ -187,7 +196,51 @@ pub(super) fn run(
     entry_id: &str,
     data_dir: Option<PathBuf>,
 ) -> Result<Value> {
-    run_cancellable(master, participant, selector_json, entry_id, data_dir, None)
+    run_cancellable(
+        master,
+        participant,
+        selector_json,
+        entry_id,
+        data_dir,
+        None,
+        None,
+    )
+}
+
+pub(super) fn run_live(
+    master: &Path,
+    participant: &str,
+    selector_json: &str,
+    entry_id: &str,
+    data_dir: Option<PathBuf>,
+    binding_json: &str,
+) -> Result<Value> {
+    let binding: LiveHostBinding = serde_json::from_str(binding_json)?;
+    if binding.attempt_id.is_empty()
+        || binding.attempt_id.len() > 128
+        || !binding
+            .attempt_id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_:".contains(&b))
+        || binding.generation == 0
+        || binding.workspace_file_id.is_empty()
+        || binding.workspace_file_id.len() > 128
+        || !binding
+            .workspace_file_id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_:".contains(&b))
+    {
+        return Err("Live Runner binding needs attempt, generation, and workspace file".into());
+    }
+    run_cancellable(
+        master,
+        participant,
+        selector_json,
+        entry_id,
+        data_dir,
+        None,
+        Some(binding),
+    )
 }
 
 fn run_cancellable(
@@ -197,6 +250,7 @@ fn run_cancellable(
     entry_id: &str,
     data_dir: Option<PathBuf>,
     cancel: Option<&Arc<AtomicBool>>,
+    live_host: Option<LiveHostBinding>,
 ) -> Result<Value> {
     if cancelled(cancel) {
         return Err("Selected sequence stopped before video binding".into());
@@ -205,6 +259,19 @@ fn run_cancellable(
     let master_sha = file_sha256(master, cancel)?;
     let prepared = PreparedMaster::read_file(master, participant, selector)?;
     let asset = selected_asset(&prepared.plan.steps, entry_id)?;
+    let live_position = if live_host.is_some() {
+        Some(
+            prepared
+                .plan
+                .steps
+                .iter()
+                .find(|step| step.entry_id == entry_id && step.kind == MasterStepKind::Video)
+                .ok_or("Selected live occurrence disappeared")?
+                .position,
+        )
+    } else {
+        None
+    };
     let expected_sha = asset["sha256"]
         .as_str()
         .ok_or("Selected video has no hash")?;
@@ -250,6 +317,15 @@ fn run_cancellable(
             wait: true,
             selected_master_video: true,
             master_duration_ms: Some(duration_ms),
+            live: live_host
+                .zip(live_position)
+                .map(|(host, position)| live::Binding {
+                    attempt_id: host.attempt_id,
+                    position,
+                    generation: host.generation,
+                    workspace_file_id: host.workspace_file_id,
+                    asset_sha256: expected_sha.to_owned(),
+                }),
             ..Args::default()
         },
         cancel,
@@ -490,6 +566,7 @@ pub(super) fn run_sequence_cancellable(
                         &step.entry_id,
                         Some(step_dir),
                         cancel,
+                        None,
                     )?;
                     if receipt["masterFileByteSha256"].as_str() != Some(master_sha.as_str())
                         || receipt["planIdentitySha256"].as_str()
@@ -582,6 +659,31 @@ pub(super) fn run_sequence_cancellable(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn live_binding_rejects_unbounded_or_missing_host_identity_before_file_access() {
+        let invalid = [
+            r#"{"attemptId":"","generation":1,"workspaceFileId":"wf-1"}"#,
+            r#"{"attemptId":"a","generation":0,"workspaceFileId":"wf-1"}"#,
+            r#"{"attemptId":"a","generation":1,"workspaceFileId":"../other"}"#,
+            r#"{"attemptId":"a","generation":1,"workspaceFileId":"wf-1","assetSha256":"spoof"}"#,
+        ];
+        for binding in invalid {
+            let error = run_live(
+                Path::new("absent-master.json"),
+                "P001",
+                "{}",
+                "video-1",
+                None,
+                binding,
+            )
+            .unwrap_err();
+            assert!(
+                error.to_string().contains("Live Runner binding")
+                    || error.to_string().contains("unknown field")
+            );
+        }
+    }
 
     #[test]
     fn interval_wait_observes_cooperative_stop_before_duration() {

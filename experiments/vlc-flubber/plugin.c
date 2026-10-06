@@ -76,7 +76,7 @@ typedef struct {
     uint64_t frame_count;
     uint64_t blank_run;
     int64_t video_ms;
-    bool started, ended, sentinel, terminal_receipt;
+    bool started, ended, sentinel, terminal_receipt, live_stdout;
     bool replay_start_marker;
     double lsl_start_stamp;
     lsl_pending_t pending[LSL_BUFFER];
@@ -92,7 +92,7 @@ static picture_t *Render(filter_t *, picture_t *);
 static int KeyEvent(vlc_object_t *, const char *, vlc_value_t, vlc_value_t, void *);
 static int OutletOpen(vlc_object_t *);
 static void OutletClose(vlc_object_t *);
-static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "render-fps-num", "render-fps-den", "csv", "marker-base", "control-name", "lsl", "sentinel", "terminal-receipt", NULL };
+static const char *const options[] = { "panel-percent", "video-height", "step-percent", "render-fps", "render-fps-num", "render-fps-den", "csv", "marker-base", "control-name", "lsl", "sentinel", "terminal-receipt", "live-stdout", NULL };
 
 vlc_module_begin()
     set_shortname("Flubber")
@@ -118,6 +118,7 @@ vlc_module_begin()
     add_bool(PREFIX "lsl", false, "LSL output", "Send affect and start/end markers", false)
     add_bool(PREFIX "sentinel", false, "Prepared-media boundary signal", "Start data when the reserved panel indicates original video", false)
     add_bool(PREFIX "terminal-receipt", false, "Decoded completion row", "Emit an extra CSV row only when the prepared video reaches its decoded sentinel", false)
+    add_bool(PREFIX "live-stdout", false, "Decoded frame stdout reports", "Emit bounded live frame/completion reports to a supervising launcher", false)
     set_callbacks(Open, Close)
     add_submodule()
     set_shortname("Flubber outlets")
@@ -444,6 +445,7 @@ static int Open(vlc_object_t *object)
     s->rate_den = rate_den;
     s->sentinel = configured || var_CreateGetBool(f, PREFIX "sentinel");
     s->terminal_receipt = var_CreateGetBool(f, PREFIX "terminal-receipt");
+    s->live_stdout = var_CreateGetBool(f, PREFIX "live-stdout");
     s->width = width;
     s->video_height = height;
     s->total_height = total_height;
@@ -482,7 +484,7 @@ static int Open(vlc_object_t *object)
     free(marker_base);
     char *control_name = configured ? _strdup(config.control_name) :
         copy_vlc_string(f, PREFIX "control-name");
-    if (control_name && control_name[0]) {
+    if (!s->live_stdout && control_name && control_name[0]) {
         s->control_handle = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL,
                                                PAGE_READWRITE, 0,
                                                sizeof(control_t), control_name);
@@ -560,7 +562,8 @@ static int Open(vlc_object_t *object)
     init_profiles(s);
     f->p_sys = (filter_sys_t *)s;
     f->pf_video_filter = Render;
-    var_AddCallback(f->obj.libvlc, "key-pressed", KeyEvent, f);
+    if (!s->live_stdout)
+        var_AddCallback(f->obj.libvlc, "key-pressed", KeyEvent, f);
     msg_Info(f, "Flubber ready: %dx%d video, %dpx panel", width, height, panel);
     return VLC_SUCCESS;
 }
@@ -569,7 +572,8 @@ static void Close(vlc_object_t *object)
 {
     filter_t *f = (filter_t *)object;
     flubber_t *s = (flubber_t *)f->p_sys;
-    var_DelCallback(f->obj.libvlc, "key-pressed", KeyEvent, f);
+    if (!s->live_stdout)
+        var_DelCallback(f->obj.libvlc, "key-pressed", KeyEvent, f);
     EnterCriticalSection(&s->lock);
     if (s->started && !s->ended) row(s, "video_end");
     if (s->pending_dropped)
@@ -595,6 +599,7 @@ static int KeyEvent(vlc_object_t *object, const char *name,
 {
     (void)object; (void)previous;
     flubber_t *s = (flubber_t *)((filter_t *)opaque)->p_sys;
+    if (s->live_stdout) return VLC_SUCCESS;
     double step = s->step_percent / 100.0;
     const char *event = NULL;
     (void)name;
@@ -731,7 +736,9 @@ static picture_t *Render(filter_t *f, picture_t *source)
                    plane==0?16:128,out->p[plane].i_visible_pitch);
     }
     EnterCriticalSection(&s->lock);
-    if (s->control) {
+    /* The shared Runner owns affect input in live mode; neutral rendering is
+     * retained until its feedback projection is connected. */
+    if (!s->live_stdout && s->control) {
         LONG next = InterlockedCompareExchange(&s->control->sequence, 0, 0);
         if (next != InterlockedCompareExchange(&s->control->applied, 0, 0)) {
             LONG action = InterlockedCompareExchange(&s->control->action, 0, 0);
@@ -758,6 +765,11 @@ static picture_t *Render(filter_t *f, picture_t *source)
         if (s->terminal_receipt) row(s, "video_complete");
         row(s, "video_end");
         s->ended = true;
+        if (s->live_stdout) {
+            fprintf(stdout, "FLUBBER_LIVE_V1 ended %llu %lld\n",
+                    (unsigned long long)s->frame_count, (long long)s->video_ms);
+            fflush(stdout);
+        }
     }
     if (s->ended || (s->sentinel && !content)) {
         LeaveCriticalSection(&s->lock);
@@ -787,6 +799,11 @@ static picture_t *Render(filter_t *f, picture_t *source)
     }
     row(s,"sample");
     s->frame_count++;
+    if (s->live_stdout) {
+        fprintf(stdout, "FLUBBER_LIVE_V1 playing %llu %lld\n",
+                (unsigned long long)s->frame_count, (long long)s->video_ms);
+        fflush(stdout);
+    }
     LeaveCriticalSection(&s->lock);
     picture_CopyProperties(out,source);
     picture_Release(source);

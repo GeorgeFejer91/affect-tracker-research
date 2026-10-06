@@ -15,6 +15,7 @@ use std::time::Duration;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 mod control;
+mod live;
 mod selected_master;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -24,6 +25,7 @@ struct Args {
     control_stdio: bool,
     inspect_master: Option<PathBuf>,
     play_master_video: Option<PathBuf>,
+    live_binding_json: Option<String>,
     play_master_sequence: Option<PathBuf>,
     participant: Option<String>,
     selector_json: Option<String>,
@@ -37,6 +39,7 @@ struct Args {
     arm: bool,
     selected_master_video: bool,
     master_duration_ms: Option<u64>,
+    live: Option<live::Binding>,
 }
 
 #[derive(Deserialize)]
@@ -90,6 +93,13 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                 parsed.play_master_video =
                     Some(PathBuf::from(value(&mut args, "--play-master-video")?))
             }
+            Some("--live-binding-json") if parsed.live_binding_json.is_none() => {
+                parsed.live_binding_json = Some(
+                    value(&mut args, "--live-binding-json")?
+                        .into_string()
+                        .map_err(|_| "--live-binding-json must be valid text")?,
+                )
+            }
             Some("--play-master-sequence") if parsed.play_master_sequence.is_none() => {
                 parsed.play_master_sequence =
                     Some(PathBuf::from(value(&mut args, "--play-master-sequence")?))
@@ -142,6 +152,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                     "FlubberVLC --inspect-master PATH --participant P001 --selector-json JSON"
                 );
                 println!("FlubberVLC --play-master-video PATH --participant P001 --selector-json JSON --entry-id ENTRY_ID [--data-dir PATH]");
+                println!("Add --live-binding-json JSON for supervised decoded-frame reports and stdin pause/resume/stop requests.");
                 println!("FlubberVLC --play-master-sequence PATH --participant P001 --selector-json JSON [--data-dir PATH]");
                 println!("FlubberVLC --control-stdio [--data-dir PATH]");
                 println!("Inspection validates a saved Planner master and prints its selected plan without starting VLC.");
@@ -162,6 +173,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
     if parsed.control_stdio {
         if parsed.inspect_master.is_some()
             || parsed.play_master_video.is_some()
+            || parsed.live_binding_json.is_some()
             || parsed.play_master_sequence.is_some()
             || parsed.participant.is_some()
             || parsed.selector_json.is_some()
@@ -182,6 +194,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
             || parsed.selector_json.is_none()
             || parsed.entry_id.is_some()
             || parsed.play_master_video.is_some()
+            || parsed.live_binding_json.is_some()
             || parsed.play_master_sequence.is_some()
             || parsed.video.is_some()
             || parsed.data_dir.is_some()
@@ -216,6 +229,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
             || parsed.selector_json.is_none()
             || parsed.entry_id.is_some()
             || parsed.video.is_some()
+            || parsed.live_binding_json.is_some()
             || parsed.panel_percent.is_some()
             || parsed.step_percent.is_some()
             || parsed.headless
@@ -228,6 +242,9 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
     }
     if parsed.participant.is_some() || parsed.selector_json.is_some() || parsed.entry_id.is_some() {
         return Err("Selection options require --inspect-master, --play-master-video, or --play-master-sequence".into());
+    }
+    if parsed.live_binding_json.is_some() {
+        return Err("--live-binding-json requires --play-master-video".into());
     }
     if parsed.arm {
         return Err("--arm direct RC is retired; use --control-stdio".into());
@@ -561,6 +578,14 @@ fn wait_for_rc(port: u16) -> Result<()> {
     Err("VLC did not open its local control port".into())
 }
 
+fn rc_interface(live: bool) -> &'static str {
+    if live {
+        "--extraintf=rc"
+    } else {
+        "--extraintf=flubberoutlet:rc"
+    }
+}
+
 fn run() -> Result<()> {
     let args = parse_args()?;
     if let Some(master) = &args.play_master_sequence {
@@ -589,20 +614,50 @@ fn run() -> Result<()> {
         return Ok(());
     }
     if let Some(master) = &args.play_master_video {
-        let result = selected_master::run(
-            master,
-            args.participant.as_deref().ok_or("Missing participant")?,
-            args.selector_json.as_deref().ok_or("Missing selector")?,
-            args.entry_id.as_deref().ok_or("Missing entry ID")?,
-            args.data_dir.clone(),
-        );
+        let participant = args.participant.as_deref().ok_or("Missing participant")?;
+        let selector = args.selector_json.as_deref().ok_or("Missing selector")?;
+        let entry_id = args.entry_id.as_deref().ok_or("Missing entry ID")?;
+        let result = if let Some(binding) = args.live_binding_json.as_deref() {
+            selected_master::run_live(
+                master,
+                participant,
+                selector,
+                entry_id,
+                args.data_dir.clone(),
+                binding,
+            )
+        } else {
+            selected_master::run(
+                master,
+                participant,
+                selector,
+                entry_id,
+                args.data_dir.clone(),
+            )
+        };
         match result {
+            Ok(receipt) if args.live_binding_json.is_some() => live::emit(serde_json::json!({
+                "protocol":"flubber-vlc-runner-live/v1","kind":"terminal","status":"ended",
+                "selectedVideoReceipt":receipt
+            }))?,
             Ok(receipt) => println!("{}", receipt),
             Err(error) => {
-                println!(
-                    "{}",
-                    serde_json::json!({"schema":"flubber-vlc-selected-video-status","version":1,"status":"failed","error":error.to_string()})
-                );
+                if args.live_binding_json.is_some() {
+                    let status = if error.downcast_ref::<live::Stopped>().is_some() {
+                        "stopped"
+                    } else {
+                        "failed"
+                    };
+                    live::emit(serde_json::json!({
+                        "protocol":"flubber-vlc-runner-live/v1","kind":"terminal",
+                        "status":status,"error":error.to_string()
+                    }))?;
+                } else {
+                    println!(
+                        "{}",
+                        serde_json::json!({"schema":"flubber-vlc-selected-video-status","version":1,"status":"failed","error":error.to_string()})
+                    );
+                }
                 return Err(error);
             }
         }
@@ -705,11 +760,11 @@ fn run_with_args_cancellable(args: Args, cancel: Option<&Arc<AtomicBool>>) -> Re
         "--no-video-title-show",
         "--no-osd",
     ]);
-    let rc_port = if args.arm {
+    let rc_port = if args.arm || args.live.is_some() {
         let reservation = TcpListener::bind("127.0.0.1:0")?;
         let port = reservation.local_addr()?.port();
         drop(reservation);
-        command.arg("--extraintf=flubberoutlet:rc");
+        command.arg(rc_interface(args.live.is_some()));
         command.arg(format!("--rc-host=127.0.0.1:{port}"));
         command.args(["-I", "dummy"]);
         Some(port)
@@ -776,6 +831,9 @@ fn run_with_args_cancellable(args: Args, cancel: Option<&Arc<AtomicBool>>) -> Re
             .arg(format!("--flubber-step-percent={step}"))
             .arg(format!("--flubber-marker-base={filename}"))
             .arg(format!("--flubber-csv={}", csv.display()));
+        if args.live.is_some() {
+            command.arg("--flubber-live-stdout");
+        }
         if !args.selected_master_video {
             command.arg("--flubber-lsl");
         } else {
@@ -792,6 +850,9 @@ fn run_with_args_cancellable(args: Args, cancel: Option<&Arc<AtomicBool>>) -> Re
         }
         if !args.arm {
             command.arg(&prepared);
+        }
+        if args.live.is_some() {
+            command.stdout(Stdio::piped());
         }
         let mut child = command.spawn()?;
         if let Err(error) = (if args.selected_master_video {
@@ -831,6 +892,17 @@ fn run_with_args_cancellable(args: Args, cancel: Option<&Arc<AtomicBool>>) -> Re
             }
         }
         if args.wait {
+            if let Some(binding) = args.live {
+                let port = rc_port.ok_or("Live VLC control port is absent")?;
+                let duration_ms = args
+                    .master_duration_ms
+                    .ok_or("Live VLC duration is absent")?;
+                if let Err(error) = live::forward(&mut child, port, binding, duration_ms) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(error);
+                }
+            }
             let status = if let Some(duration_ms) = args.master_duration_ms {
                 wait_for_selected_child(&mut child, duration_ms, cancel)?
             } else {
@@ -1111,6 +1183,47 @@ mod tests {
         .is_err());
         assert!(parse_args_from(
             ["--arm", "--video", "clip.mp4"]
+                .into_iter()
+                .map(OsString::from)
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn live_observation_is_opt_in_only_for_one_selected_master_video() {
+        assert_eq!(super::rc_interface(true), "--extraintf=rc");
+        assert_eq!(super::rc_interface(false), "--extraintf=flubberoutlet:rc");
+        let selected = [
+            "--play-master-video",
+            "master.json",
+            "--participant",
+            "P001",
+            "--selector-json",
+            "{}",
+            "--entry-id",
+            "video-1",
+            "--live-binding-json",
+            "{}",
+        ];
+        let parsed = parse_args_from(selected.into_iter().map(OsString::from)).unwrap();
+        assert_eq!(parsed.live_binding_json.as_deref(), Some("{}"));
+        assert!(parse_args_from(
+            [
+                "--play-master-sequence",
+                "master.json",
+                "--participant",
+                "P001",
+                "--selector-json",
+                "{}",
+                "--live-binding-json",
+                "{}"
+            ]
+            .into_iter()
+            .map(OsString::from)
+        )
+        .is_err());
+        assert!(parse_args_from(
+            ["--control-stdio", "--live-binding-json", "{}"]
                 .into_iter()
                 .map(OsString::from)
         )
