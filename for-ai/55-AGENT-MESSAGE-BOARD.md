@@ -1,5 +1,16 @@
 # Agent message board
 
+## 20261006 Retired GStreamer source boundary review
+
+Root allocates an R1 RR-04/RR-07 read-only Backend Verification review of
+remaining `GstPlay`/`rust-gstplay` identifiers in active Planner/Runner source,
+tests and protocol capability replies. Compare compiled/packaged behavior with
+legacy reader compatibility and the user's explicit removal of GStreamer.
+Return the smallest safe deletion/rename sequence with exact files and focused
+checks. Do not rewrite saved master versions, silently alter historical readers,
+or open research Start. Root will allocate a separate owner implementation pass
+after resolving current installed WebView and VLC package barriers.
+
 ## 20261006 Real Planner master for installed Runner evidence
 
 Root allocates a P7-09 / R1 RR-10 named integration seam, Final Runtime
