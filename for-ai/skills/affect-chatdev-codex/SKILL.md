@@ -52,11 +52,11 @@ agents or mandatory roles for every pass.
 
 | Reviewer | Checks |
 | --- | --- |
-| UI | Visible control and participant display behavior, keyboard/accessibility, bounded rendered Chrome/Edge checks and missing installed observations; use the project Uncodixfy Pretext skill for text-bearing UI |
+| UI | Visible control and participant display behavior, keyboard/accessibility, bounded rendered Chrome/Edge checks and missing installed observations; use the [project Uncodixfy Pretext skill](../uncodixfy-pretext/SKILL.md) for text-bearing UI |
 | Function and JSON | Input validation, strict master1–5 readers, deterministic output, JS/Rust producer/consumer parity and focused checks; use `for-ai/66` as the compatibility map |
 | Recording | Shared Runner sampling and recording contract in both playback programs: observed timestamps, outbound LSL, own/external XDF, incomplete receipts, privacy and recovery gates |
-| Packaging | Four separate Windows entrypoints/installers, player available alone and through Recorder, package contents, runtime provenance and missing release gates; use the Tauri Rust developer skill when changing Tauri packaging |
-| Simplicity | Apply the Ponytail skill to a proposed design or patch when added code, dependencies or process are in question; name a smaller working alternative, if any |
+| Packaging | Four separate Windows entrypoints/installers, player available alone and through Recorder, package contents, runtime provenance and missing release gates; use the Tauri Rust developer skill when available and changing Tauri packaging |
+| Simplicity | Apply the Ponytail skill, when available, to a proposed design or patch if added code, dependencies or process are in question; name a smaller working alternative, if any |
 
 Each assigned reviewer labels its response `UI_VERIFY`, `FUNCTION_JSON_VERIFY`,
 `RECORDING_GATE`, `PACKAGING_GATE`, or `SIMPLICITY_VERIFY`; reports pass, fail,

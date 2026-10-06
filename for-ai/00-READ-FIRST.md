@@ -80,7 +80,7 @@ validation availability and controller override execution.
 | Questionnaires / SurveyJS | [SurveyJS](../docs/surveyjs-questionnaires.md), [P2](../docs/planner-p2-questionnaire-recipe.md); [70](70-RESEARCH-PROVENANCE.md) for source/content changes |
 | CLI | [68](68-PLANNER-CLI.md), [71](71-CLI-LIBRARY.md), registered descriptors and linked command contracts |
 | Runner / recording | [65](65-RUNNER-SEGMENTS.md), [72](72-RUNNER-FINAL-VALIDATION.md), session/stream contracts |
-| Planner or Runner text-bearing UI | [Project Uncodixfy Pretext skill](skills/uncodixfy-pretext/SKILL.md), its [Pretext reference](skills/uncodixfy-pretext/references/pretext.md), and the [accordion stretch reference](skills/uncodixfy-pretext/references/accordion-stretch.md) for requested bounded panels; [source pin](skills/uncodixfy-pretext/SOURCE.md) |
+| Text-bearing UI in any of the four programs | [Project Uncodixfy Pretext skill](skills/uncodixfy-pretext/SKILL.md), its [Pretext reference](skills/uncodixfy-pretext/references/pretext.md), and the [accordion stretch reference](skills/uncodixfy-pretext/references/accordion-stretch.md) for requested bounded panels; [source pin](skills/uncodixfy-pretext/SOURCE.md) |
 | Optional XR authoring | [63](63-P6-XR-LAYOUT.md); desktop Runner cannot execute XR |
 | Build / qualification | Relevant [40](40-ROADMAP.md) receipts, [72](72-RUNNER-FINAL-VALIDATION.md), [73](73-CURRENT-APP-BUILD.md) |
 | Parallel Planner, Runner, VLC Runner or FlubberRecorder development in Codex | [Codex development team skill](skills/affect-chatdev-codex/SKILL.md), using existing owner contracts and gates |
