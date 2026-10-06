@@ -20,7 +20,9 @@ pass. The host must mint the exact attempt/occurrence/generation/file/hash
 binding from the shared master worker, launch and supervise the installed VLC
 player for only that video step, drain its opt-in decoded observations, and
 route them internally through `MasterWorker::observe_playback`. The existing
-worker remains the sole form/ISI/input/sample/marker/LSL/XDF/attempt authority.
+worker remains the sole form/ISI/input/sample/marker/LSL/XDF/attempt authority;
+its current affect state must drive any VLC Flubber feedback display, while
+the plugin's legacy local stepping stays disabled in Runner mode.
 Keep pause unavailable until an observed paused state exists, and keep normal
 research Start closed. Test wrong identities, child loss, no first decoded
 frame, end and stop against the worker before assigning the distinct VLC Runner
