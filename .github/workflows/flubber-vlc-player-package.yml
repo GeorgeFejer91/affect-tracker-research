@@ -1,0 +1,55 @@
+name: Build unqualified Flubber VLC Player Windows package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# This is an internal package and install smoke check. It does not qualify
+# playback, LSL, XDF, participant timing, or research Start.
+jobs:
+  player-windows-x64:
+    runs-on: windows-2022
+    steps:
+      - name: Check out exact repository state
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@ebb3d1676050bfd0971c36c1e215b5751473994d # 1.96.0
+      - name: Build pinned player payload and Inno installer
+        shell: pwsh
+        run: |
+          if ($env:RUNNER_OS -cne 'Windows' -or $env:RUNNER_ARCH -cne 'X64') {
+            throw 'The player package requires a native Windows x64 runner.'
+          }
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) {
+            throw 'The runner image does not provide Inno Setup 6.'
+          }
+          $env:PATH = "$(Split-Path -Parent $iscc);$env:PATH"
+          & .\experiments\vlc-flubber\package-player.ps1 -CompileInstaller
+          if ($LASTEXITCODE -ne 0) { throw 'Player package build failed.' }
+      - name: Install and launch the packaged player help command
+        shell: pwsh
+        run: |
+          $setup = Join-Path $PWD 'experiments\vlc-flubber\build\player-package\out\Flubber_VLC_Player_Setup_0.1.0_x64.exe'
+          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'Player installer is missing.' }
+          $install = Join-Path $env:RUNNER_TEMP 'flubber-vlc-player-installed'
+          $process = Start-Process -FilePath $setup -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$install") -PassThru -Wait -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw "Player installer exited with $($process.ExitCode)." }
+          $player = Join-Path $install 'FlubberVLC.exe'
+          $manifest = Join-Path $install 'manifest.json'
+          if (-not (Test-Path -LiteralPath $player -PathType Leaf) -or
+              -not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
+            throw 'Installed player or manifest is missing.'
+          }
+          & $player --help
+          if ($LASTEXITCODE -ne 0) { throw 'Installed player help command failed.' }
+      - name: Upload unqualified player installer candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: flubber-vlc-player-0.1.0-unqualified-windows-x64-${{ github.sha }}
+          path: experiments/vlc-flubber/build/player-package/out/Flubber_VLC_Player_Setup_0.1.0_x64.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
