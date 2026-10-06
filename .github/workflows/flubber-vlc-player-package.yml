@@ -1,10 +1,6 @@
 name: Build unqualified Flubber VLC Player Windows package
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/flubber-vlc-player-package.yml
-      - experiments/vlc-flubber/**
   workflow_dispatch:
 
 permissions:
