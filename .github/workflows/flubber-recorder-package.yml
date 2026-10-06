@@ -42,7 +42,7 @@ jobs:
           node-version: 22
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@ebb3d1676050bfd0971c36c1e215b5751473994d # 1.96.0
-      - name: Verify exact player download and independent installation
+      - name: Download and stage the exact standalone player package
         shell: pwsh
         env:
           PLAYER_SETUP_URL: ${{ inputs.player_setup_url }}
@@ -69,14 +69,24 @@ jobs:
               $env:PLAYER_PROVENANCE_SHA256.ToUpperInvariant()) {
             throw 'Player provenance download differs from its trusted SHA-256.'
           }
+          $provenance = Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
+          if ($provenance.schema -cne 'flubber-vlc-player-package-provenance/v1' -or
+              $provenance.setupFileName -cne [IO.Path]::GetFileName($setup) -or
+              $provenance.setupByteLength -ne (Get-Item -LiteralPath $setup).Length -or
+              $provenance.setupSha256 -ine $env:PLAYER_SETUP_SHA256 -or
+              $provenance.researchQualified -ne $false -or
+              $provenance.manifestSha256 -cnotmatch '^[0-9a-fA-F]{64}$' -or
+              $provenance.payloadManifestSha256 -cnotmatch '^[0-9a-fA-F]{64}$') {
+            throw 'Downloaded player provenance does not match the pinned setup.'
+          }
+          $player = Join-Path $source 'installed-player'
           $install = Start-Process -FilePath $setup `
-            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$player`"") `
             -PassThru -Wait -WindowStyle Hidden
           if ($install.ExitCode -ne 0) { throw "Standalone player setup exited with $($install.ExitCode)." }
-          $player = Join-Path $env:LOCALAPPDATA 'Programs\FlubberVLCPlayer'
           if (-not (Test-Path -LiteralPath (Join-Path $player 'manifest.json') -PathType Leaf) -or
               -not (Test-Path -LiteralPath (Join-Path $player 'payload-manifest.json') -PathType Leaf)) {
-            throw 'Independent player installation has no matching manifests.'
+            throw 'Isolated player staging has no matching manifests.'
           }
           "PLAYER_SETUP_PATH=$setup" >> $env:GITHUB_ENV
           "PLAYER_STAGE_PATH=$player" >> $env:GITHUB_ENV
@@ -101,9 +111,32 @@ jobs:
             -PlayerStagePath $env:PLAYER_STAGE_PATH `
             -PlayerProvenancePath $env:PLAYER_PROVENANCE_PATH
           if ($LASTEXITCODE -ne 0) { throw 'Recorder package build failed.' }
+      - name: Uninstall staging and require an absent player dependency
+        shell: pwsh
+        run: |
+          $stage = $env:PLAYER_STAGE_PATH
+          $uninstaller = Join-Path $stage 'uninst\unins000.exe'
+          if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) {
+            throw 'Isolated player staging has no uninstaller.'
+          }
+          $uninstall = Start-Process -FilePath $uninstaller `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
+            -PassThru -Wait -WindowStyle Hidden
+          if ($uninstall.ExitCode -ne 0 -or
+              (Test-Path -LiteralPath (Join-Path $stage 'FlubberVLC.exe') -PathType Leaf)) {
+            throw 'Isolated player staging was not removed.'
+          }
+          $player = Join-Path $env:LOCALAPPDATA 'Programs\FlubberVLCPlayer'
+          if (Test-Path -LiteralPath $player) {
+            throw 'The default player installation must be absent before Recorder setup.'
+          }
       - name: Install and verify Recorder package candidate
         shell: pwsh
         run: |
+          $player = Join-Path $env:LOCALAPPDATA 'Programs\FlubberVLCPlayer'
+          if (Test-Path -LiteralPath $player) {
+            throw 'Recorder dependency test requires no preinstalled player.'
+          }
           $bundle = 'experiments/vlc-flubber/flubbercorder-tauri/src-tauri/target/release/bundle/nsis'
           $installers = @(Get-ChildItem -LiteralPath $bundle -Filter '*-setup.exe' -File)
           if ($installers.Count -ne 1) { throw 'Expected one Recorder NSIS installer.' }
@@ -113,6 +146,14 @@ jobs:
           $recorder = Join-Path $env:LOCALAPPDATA 'FlubberRecorder\FlubberRecorder.exe'
           if (-not (Test-Path -LiteralPath $recorder -PathType Leaf)) {
             throw 'Installed FlubberRecorder executable is missing.'
+          }
+          $provenance = Get-Content -LiteralPath $env:PLAYER_PROVENANCE_PATH -Raw | ConvertFrom-Json
+          if (-not (Test-Path -LiteralPath (Join-Path $player 'FlubberVLC.exe') -PathType Leaf) -or
+              (Get-FileHash -LiteralPath (Join-Path $player 'manifest.json') -Algorithm SHA256).Hash -ine
+              $provenance.manifestSha256 -or
+              (Get-FileHash -LiteralPath (Join-Path $player 'payload-manifest.json') -Algorithm SHA256).Hash -ine
+              $provenance.payloadManifestSha256) {
+            throw 'Recorder setup did not obtain the exact standalone player.'
           }
           & $recorder --verify-player
           if ($LASTEXITCODE -ne 0) { throw 'Installed Recorder rejected the player payload.' }

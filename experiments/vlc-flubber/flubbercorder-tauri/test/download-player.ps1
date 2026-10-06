@@ -25,7 +25,11 @@ try {
     catch { $rejected = $true }
     if (-not $rejected -or (Test-Path -LiteralPath $out)) { throw 'Tampered download was accepted or retained.' }
 
-    function Invoke-WebRequest { throw 'Offline fixture' }
+    function Invoke-WebRequest {
+        param([string]$Uri, [string]$OutFile, [int]$TimeoutSec, [switch]$UseBasicParsing)
+        [IO.File]::WriteAllBytes($OutFile, [Text.Encoding]::UTF8.GetBytes('partial setup fixture'))
+        throw 'Offline fixture'
+    }
     $rejected = $false
     try { & $download -Url 'https://example.org/releases/player.exe' -ExpectedSha256 $expected -OutFile $out }
     catch { $rejected = $true }

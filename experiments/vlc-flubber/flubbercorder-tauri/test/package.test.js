@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +10,24 @@ import test from 'node:test';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const builder = join(root, 'build-recorder-installer.ps1');
 const downloaderTest = join(root, 'test/download-player.ps1');
+const workflow = join(root, '..', '..', '..', '.github', 'workflows', 'flubber-recorder-package.yml');
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex').toUpperCase();
+
+test('Recorder workflow removes isolated player staging before dependency installation', () => {
+  const source = readFileSync(workflow, 'utf8');
+  const stage = source.indexOf('- name: Download and stage the exact standalone player package');
+  const build = source.indexOf('- name: Build Recorder bound to the published player artifact');
+  const uninstall = source.indexOf('- name: Uninstall staging and require an absent player dependency');
+  const install = source.indexOf('- name: Install and verify Recorder package candidate');
+  assert.ok(stage >= 0 && stage < build && build < uninstall && uninstall < install);
+  assert.match(source.slice(stage, build), /Join-Path \$source 'installed-player'/u);
+  assert.doesNotMatch(source.slice(stage, build), /Join-Path \$env:LOCALAPPDATA 'Programs\\FlubberVLCPlayer'/u);
+  assert.match(source.slice(stage, build), /\$provenance\.setupSha256 -ine \$env:PLAYER_SETUP_SHA256/u);
+  assert.match(source.slice(uninstall, install), /Start-Process -FilePath \$uninstaller/u);
+  assert.match(source.slice(uninstall, install), /The default player installation must be absent/u);
+  assert.match(source.slice(install), /Recorder dependency test requires no preinstalled player/u);
+  assert.match(source.slice(install), /\$recorder --verify-player/u);
+});
 
 test('Recorder package accepts only one matching player setup and manifest receipt', () => {
   const dir = mkdtempSync(join(tmpdir(), 'flubber-recorder-package-'));
