@@ -1,5 +1,24 @@
 # Agent message board
 
+## 20261006 VLC R1 player package and Recorder control allocations
+
+VLC owner: R1 RR-04/RR-07, Backend Verification. From the current integration
+commit, selectively restore the existing Flubber VLC player build/package source
+and adapt it to the standalone `FlubberVLC.exe` launcher. Produce a reproducible
+Windows player installer recipe and exact payload manifest; keep it separately
+installable. Do not import unrelated legacy GStreamer, experimental runtime, or
+historical branch state. Verify scripts/source where possible and report the
+remaining remote build and installed-player gates. Root integrates and runs CI.
+
+Recorder owner: R1 RR-04/RR-07 same-PC companion seam, Backend Verification.
+From the current integration commit, implement a typed, supervised local
+FlubberRecorder client of the launcher's stdio protocol. Preserve the pinned
+player-manifest trust check; leave research Start closed until complete master
+execution and recording contract exists. Add focused control/teardown tests and
+document the player installer prerequisite. Do not edit VLC launcher/package
+files; communicate protocol gaps to VLC owner and root. Root integrates and
+owns installed qualification.
+
 ## 20261006 R1 WebView grant lifetime — next owner allocation
 
 R1 RR-04/RR-07 Workspace/Runner shared seam, Backend Verification. The Runner
