@@ -1031,8 +1031,8 @@ mod tests {
             worker.state.webview_media = Some(offer.clone());
             worker.stop_media().unwrap();
             assert!(!worker.webview_grants.register(&offer, "late-token"));
-            let request = http::Request::builder()
-                .method(http::Method::GET)
+            let request = tauri::http::Request::builder()
+                .method(tauri::http::Method::GET)
                 .uri(issued.media_url)
                 .body(Vec::new())
                 .unwrap();
@@ -1041,7 +1041,7 @@ mod tests {
                     .workspace
                     .protocol_response("research", request)
                     .status(),
-                http::StatusCode::NOT_FOUND
+                tauri::http::StatusCode::NOT_FOUND
             );
             std::fs::remove_dir_all(root).unwrap();
         });
