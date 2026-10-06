@@ -104,8 +104,10 @@ The current synchronous selected-video actor waits for normal child exit and
 kills/reaps it on deadline or wait error. There is no sequence stop command or
 parent-death guard: a Recorder force-kill of the launcher can leave VLC alive.
 That needs a separately allocated supervisor seam before Recorder depends on
-this route. Focused plan/CSV checks and Windows package execution remain
-separate from the source compile receipt.
+this route. `cargo check --locked` passed for the launcher, and its five
+focused `selected_master::tests` passed with the native test binary linked;
+they cover repeated-video/ISI plan order and decoded CSV event order. Installed
+VLC sequence execution and Windows package correspondence remain separate.
 
 ## 20261006 Windows desktop installer image pin
 
