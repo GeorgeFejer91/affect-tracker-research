@@ -19,6 +19,7 @@ use crate::research_planner_recipe_supported::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::path::Path;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -92,6 +93,17 @@ pub(crate) fn validate_master_participant(id: &str) -> ResearchResult<()> {
 }
 
 impl PreparedMaster {
+    /// Read the saved Planner file and its adjacent assets with the same strict
+    /// checks used by the Planner, then build the ordinary Runner selection.
+    pub fn read_file(
+        path: &Path,
+        participant_id: &str,
+        selector: MasterSelector,
+    ) -> ResearchResult<Self> {
+        let loaded = crate::research_planner_recipe_file::read_supported_planner_recipe_file(path)?;
+        Self::read(&loaded.transport_text()?, participant_id, selector)
+    }
+
     pub fn read(
         source: &str,
         participant_id: &str,
@@ -277,6 +289,9 @@ fn integer(value: &Value) -> ResearchResult<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+    use uuid::Uuid;
     const SOURCE: &str =
         include_str!("../../test/fixtures/planner-recipe-locations-current-v1.canonical.json");
     fn selector() -> MasterSelector {
@@ -286,6 +301,100 @@ mod tests {
             language_selection_path: vec!["both".into(), "en".into()],
             presentation_target: "desktop-screen".into(),
         }
+    }
+
+    struct MasterFileDirectory(PathBuf);
+    impl MasterFileDirectory {
+        fn new() -> Self {
+            let path = std::env::temp_dir().join(format!("affect-vlc-master-{}", Uuid::new_v4()));
+            fs::create_dir(&path).unwrap();
+            Self(path)
+        }
+    }
+    impl Drop for MasterFileDirectory {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn saved_master_file_matches_complete_reader_for_all_versions() {
+        let root = MasterFileDirectory::new();
+        for (version, source) in [
+            (
+                1,
+                include_str!("../../test/fixtures/planner-recipe-current-v1.canonical.json"),
+            ),
+            (
+                2,
+                include_str!("../../test/fixtures/planner-recipe-v2-mixed.canonical.json"),
+            ),
+            (
+                3,
+                include_str!("../../test/fixtures/runner-master-v3-owner.canonical.json"),
+            ),
+            (
+                4,
+                include_str!("../../test/fixtures/planner-recipe-v4-surveyjs.canonical.json"),
+            ),
+            (
+                5,
+                include_str!("../../test/fixtures/planner-recipe-v5.bundle.json"),
+            ),
+        ] {
+            let path = root.0.join(format!("master-{version}.json"));
+            if version == 5 {
+                crate::research_planner_recipe_file::write_selected_supported_planner_recipe(
+                    &path, source,
+                )
+                .unwrap();
+            } else {
+                fs::write(&path, source).unwrap();
+            }
+            let from_file = PreparedMaster::read_file(&path, "P001", selector()).unwrap();
+            let from_text = PreparedMaster::read(source, "P001", selector()).unwrap();
+            let js_plan_identity = [
+                "e24b7472da37e6eb55b6a04bd401728c99eb8efa76d78e8e16da515e411eeffb",
+                "77d2da839c3b80dc042d3c9a55892181abfc6a79635f855a9b9ba70eb0c6b195",
+                "03f45f7d2d1bd54e7bfd0cf26979935648a6b7ad610e9603d04514a6b8df4886",
+                "9415cfdf4485ad96657098bff42061686e3562e950c2c170767a0168951082c7",
+                "b38a17321ab7e5b7ce936b99fa1d5829d7f65efe24b5300d3cc207b763398bc9",
+            ][version - 1];
+            assert_eq!(
+                from_file.plan.plan_identity_sha256, js_plan_identity,
+                "master {version}"
+            );
+            assert_eq!(
+                from_file.loaded.canonical_source_text,
+                from_text.loaded.canonical_source_text
+            );
+            assert_eq!(
+                serde_json::to_value(from_file.plan).unwrap(),
+                serde_json::to_value(from_text.plan).unwrap(),
+                "master {version}"
+            );
+        }
+    }
+
+    #[test]
+    fn saved_master_file_rejects_missing_assets_and_invalid_selection() {
+        let root = MasterFileDirectory::new();
+        let path = root.0.join("master.json");
+        let bundle = include_str!("../../test/fixtures/planner-recipe-v5.bundle.json");
+        crate::research_planner_recipe_file::write_selected_supported_planner_recipe(&path, bundle)
+            .unwrap();
+        assert!(PreparedMaster::read_file(&path, "P000", selector()).is_err());
+        let mut wrong_route = selector();
+        wrong_route.language_selection_path.clear();
+        assert!(PreparedMaster::read_file(&path, "P001", wrong_route).is_err());
+        let parsed: Value = serde_json::from_str(bundle).unwrap();
+        let asset = parsed["questionnaireAssets"][0]["relativePath"]
+            .as_str()
+            .unwrap();
+        fs::remove_file(root.0.join(asset)).unwrap();
+        assert!(PreparedMaster::read_file(&path, "P001", selector()).is_err());
+        fs::write(&path, "{\"schema\":\"vlc-flubber-sidequest/v1\"}\n").unwrap();
+        assert!(PreparedMaster::read_file(&path, "P001", selector()).is_err());
     }
 
     #[test]
