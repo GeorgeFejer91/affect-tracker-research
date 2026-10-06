@@ -51,6 +51,24 @@ receipt, and do not claim Runner playback or XDF from Planner authoring alone.
 The standard Runner owner retains the WebView diagnostic and installed evidence
 reader; root coordinates the shared JSON and fresh package at the barrier.
 
+## 20261006 VLC launcher CRT link handoff
+
+R1 VLC launcher owner traced source CI `37404888283` and a separate local
+target: `tauri-build 2.7.1` writes an 82-byte placeholder `msvcrt.lib` into
+the `affect-research` build output when its static VC runtime mode is active.
+The standalone `flubber-vlc-player` imports that crate with default features
+off, yet inherits the output directory in its native library search path.
+`link.exe` reports `LNK4003` for the placeholder, then leaves 63 CRT/C++
+symbols unresolved. The same failure with an independent target excludes a
+shared `CARGO_TARGET_DIR` as the necessary cause.
+
+The bounded `src-tauri/build.rs` fix disables that Tauri static VC runtime
+override only when neither Planner nor Runner desktop feature is enabled.
+Tauri build still runs to generate its normal context and resources. A fresh
+local launcher build-script output has no `msvcrt.lib` and no forced static
+CRT link directives; the full native test link and Windows CI/package reruns
+remain pending. This is a source handoff, not a playback or release claim.
+
 ## 20261006 Planner and standard Runner isolated installer receipts
 
 Planner Windows package job `37404200312` at `f19b12d` succeeded. Root
