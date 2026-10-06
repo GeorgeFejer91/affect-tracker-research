@@ -43,9 +43,10 @@ test("native WebView playback reports decoded start, buffering, end and fences s
   const video = new Video();
   globalThis.document = { createElement: () => video };
   const host = new Element(), observations = [];
+  let pulse;
   const player = createRunnerHtmlVideoPlayer(host, {
     invoke: () => assert.fail("bound native playback must use its native URL receipt"),
-    windowObject: { setTimeout, clearTimeout, setInterval, clearInterval },
+    windowObject: { setTimeout, clearTimeout, setInterval: callback => { pulse = callback; return 1; }, clearInterval },
   });
   try {
     await player.playStep({ step, receipt, onObservation: observation => observations.push(observation) });
@@ -53,13 +54,18 @@ test("native WebView playback reports decoded start, buffering, end and fences s
     video.decodedFrame(1);
     assert.equal(observations[0].state, "playing");
     assert.equal(observations[0].decodedFrames, 1);
+    pulse();
+    assert.equal(observations.length, 1, "a still frame cannot refresh Playing");
+    video.decodedFrame(2); pulse();
+    assert.equal(observations[1].state, "playing");
+    assert.equal(observations[1].decodedFrames, 2);
     video.currentTime = 0.5; video.dispatch("waiting");
-    assert.equal(observations[1].state, "buffering");
+    assert.equal(observations[2].state, "buffering");
     video.currentTime = 1; video.dispatch("ended");
-    assert.equal(observations[2].state, "ended");
-    assert.deepEqual(observations.map(value => value.sequence), [1, 2, 3]);
+    assert.equal(observations[3].state, "ended");
+    assert.deepEqual(observations.map(value => value.sequence), [1, 2, 3, 4]);
     player.stop(); video.dispatch("error");
-    assert.equal(observations.length, 3);
+    assert.equal(observations.length, 4);
   } finally {
     player.destroy();
     globalThis.HTMLElement = priorElement;

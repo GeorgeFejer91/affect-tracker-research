@@ -110,7 +110,7 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
     assertReceipt(receipt, asset);
     if (onObservation) {
       observing = true;
-      let sequence = 0, decodedFrames = 0, awaitingFrame = true;
+      let sequence = 0, decodedFrames = 0, lastReportedFrames = 0, awaitingFrame = true;
       requireNextFrame = () => { awaitingFrame = true; };
       const emit = (state) => {
         if (token !== generation) return;
@@ -121,7 +121,11 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       const frame = (_now, metadata) => {
         if (token !== generation) return;
         decodedFrames = Math.max(decodedFrames + 1, Number(metadata?.presentedFrames) || 0);
-        if (awaitingFrame && !element.paused) { awaitingFrame = false; emit("playing"); }
+        if (awaitingFrame && !element.paused) {
+          awaitingFrame = false;
+          lastReportedFrames = decodedFrames;
+          emit("playing");
+        }
         element.requestVideoFrameCallback(frame);
       };
       if (typeof element.requestVideoFrameCallback !== "function") {
@@ -136,7 +140,11 @@ export function createRunnerHtmlVideoPlayer(host, { invoke, windowObject = windo
       for (const [name, handler] of handlers) element.addEventListener(name, handler);
       const heartbeat = windowObject.setInterval(() => {
         if (element.error) emit("failed");
-        else if (!element.paused && !awaitingFrame && element.readyState >= 2) emit("playing");
+        else if (!element.paused && !awaitingFrame && element.readyState >= 2
+          && decodedFrames > lastReportedFrames) {
+          lastReportedFrames = decodedFrames;
+          emit("playing");
+        }
       }, 250);
       element.requestVideoFrameCallback(frame);
       clearObservation = () => {

@@ -945,7 +945,7 @@ fn webview_event_matches(
     offer: &WebviewMediaOffer,
     attempt_id: &str,
     position: u32,
-    phase: MasterPhase,
+    _phase: MasterPhase,
     last_sequence: u64,
     last_position_ms: Option<f64>,
     last_decoded_frames: u64,
@@ -967,10 +967,6 @@ fn webview_event_matches(
             WebviewMediaState::Playing | WebviewMediaState::Ended
         ) || event.decoded_frames > 0)
         && !(matches!(event.state, WebviewMediaState::Playing)
-            && matches!(
-                phase,
-                MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Paused
-            )
             && event.decoded_frames <= last_decoded_frames)
 }
 #[cfg(test)]
@@ -1019,6 +1015,19 @@ mod tests {
             )
         };
         assert!(accepts(&event));
+        assert!(!webview_event_matches(
+            &offer,
+            "attempt",
+            3,
+            MasterPhase::Playing,
+            7,
+            Some(100.),
+            1,
+            &WebviewMediaEvent {
+                sequence: 8,
+                ..event.clone()
+            },
+        ));
         let mut stale = event.clone();
         stale.generation = 1;
         assert!(!accepts(&stale));
