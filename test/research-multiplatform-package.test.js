@@ -29,10 +29,16 @@ test("multiplatform packaging is manual, read-only, and cannot publish a release
 test("workflow uses host-native Windows, macOS ARM, macOS Intel, and Ubuntu 22.04 x64 jobs", async () => {
   const workflow = await source(WORKFLOW_PATH);
 
-  assert.match(workflow, /target: windows-x64\n\s+runner: windows-latest\n\s+platform: windows\n\s+architecture: x64/u);
-  assert.match(workflow, /target: macos-arm64\n\s+runner: macos-15\n\s+platform: macos\n\s+architecture: arm64/u);
-  assert.match(workflow, /target: macos-x64\n\s+runner: macos-15-intel\n\s+platform: macos\n\s+architecture: x64/u);
-  assert.match(workflow, /target: linux-x64\n\s+runner: ubuntu-22\.04\n\s+platform: linux\n\s+architecture: x64/u);
+  for (const [target, runner, platform, architecture] of [
+    ["windows-x64", "windows-latest", "windows", "x64"],
+    ["runner-windows-x64", "windows-latest", "windows", "x64"],
+    ["macos-arm64", "macos-15", "macos", "arm64"],
+    ["macos-x64", "macos-15-intel", "macos", "x64"],
+    ["linux-x64", "ubuntu-22.04", "linux", "x64"],
+  ]) {
+    assert.ok(workflow.includes(`'${target}' = @{ target = '${target}'; runner = '${runner}'; platform = '${platform}'; architecture = '${architecture}' }`));
+  }
+  assert.match(workflow, /matrix: \$\{\{ fromJSON\(needs\.select-targets\.outputs\.matrix\) \}\}/u);
   assert.match(workflow, /RUNNER_OS -cne 'Windows'/u);
   assert.match(workflow, /Darwin\/arm64/u);
   assert.match(workflow, /Darwin\/x86_64/u);
@@ -136,7 +142,7 @@ test("standard Runner has a separate unsigned NSIS target and no Planner CLI sid
   assert.equal(runnerConfig.productName, "Experiment Runner");
   assert.equal(runnerConfig.mainBinaryName, "affect-runner");
   assert.match(provenance, /"runner-windows-x64"[\s\S]*prefix: "Experiment Runner_"/u);
-  assert.match(await source(".github/workflows/desktop-release.yml"), /target: runner-windows-x64[\s\S]*runner: windows-latest/u);
+  assert.match(await source(".github/workflows/desktop-release.yml"), /'runner-windows-x64' = @\{ target = 'runner-windows-x64'; runner = 'windows-latest'/u);
 });
 
 test("provenance binds artifact hashes and sets every requested qualification claim false", async () => {
