@@ -30,9 +30,8 @@ fn main() {
     let library_only = env::var_os(PLANNER_DESKTOP_FEATURE).is_none()
         && env::var_os(RUNNER_DESKTOP_FEATURE).is_none();
     let attributes = if library_only {
-        tauri_build::Attributes::new().windows_attributes(
-            tauri_build::WindowsAttributes::new().static_vc_runtime(false),
-        )
+        tauri_build::Attributes::new()
+            .windows_attributes(tauri_build::WindowsAttributes::new().static_vc_runtime(false))
     } else {
         tauri_build::Attributes::new()
     };
