@@ -2,8 +2,9 @@
 
 This is a separate Windows Tauri application and NSIS bundle. It contains no
 VLC, FFmpeg, player launcher, video, Node runtime, LAN listener, or research
-session engine. It verifies the seven files in the independently installed
-FlubberVLC Player's `manifest.json`, then calls its `--inspect-master` command
+session engine. It verifies the seven critical files in the independently installed
+FlubberVLC Player's `manifest.json` and every player payload file in
+`payload-manifest.json`, then calls its `--inspect-master` command
 to inspect a selected Planner master. The selected master and player location
 remain in memory. The local Connect action starts a supervised player child
 through `--control-stdio`; Disconnect sends a correlated shutdown request and
@@ -19,18 +20,21 @@ case needs installed validation and a reviewed process-tree strategy.
 By default the player is expected at
 `%LOCALAPPDATA%\Programs\FlubberVLCPlayer`. A different local installation
 folder can be selected in the UI. Before accepting any installed player, the
-Recorder requires `FLUBBERVLC_MANIFEST_SHA256` embedded at build time. Its value
-must be the SHA-256 of the **exact manifest.json bytes** from the trusted player
-package. With the value absent or malformed, player selection and master
-inspection fail closed. With a trusted pin, missing, altered, or linked
-components are rejected. A manifest supplied only by the installed player is
-not a trust anchor.
+Recorder requires both `FLUBBERVLC_MANIFEST_SHA256` and
+`FLUBBERVLC_PAYLOAD_MANIFEST_SHA256` embedded at build time. Each value must
+be the SHA-256 of the corresponding **exact manifest bytes** from the trusted
+player package. With either value absent or malformed, player selection,
+master inspection, and local control fail closed. The payload inventory must
+match the installed player files; missing, extra, altered, or linked files and
+unsafe relative paths are rejected. The installer's own files in the real
+top-level `uninst` directory are excluded from the player payload check.
+Manifests supplied only by the installed player are not trust anchors.
 
-The pin is intentionally absent in this source build: no qualified published
+The pins are intentionally absent in this source build: no qualified published
 player package exists yet. The player installer must be installed separately
 for now. A published, qualified player setup asset with fixed URL and SHA-256
 is required before Recorder setup can download and verify it; no download URL
-is assumed. The packaging pass must record the source artifact and exact pin.
+is assumed. The packaging pass must record the source artifact and both exact pins.
 
 Build the Windows installer with `pnpm install --frozen-lockfile` followed by
 `pnpm build` from this directory when Windows build prerequisites are available.

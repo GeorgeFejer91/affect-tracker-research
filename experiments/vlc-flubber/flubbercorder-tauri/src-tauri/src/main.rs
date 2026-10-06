@@ -2,7 +2,7 @@ mod control;
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs::{self, File};
 use std::io::Read;
@@ -24,6 +24,8 @@ const COMPONENTS: [&str; 7] = [
 ];
 const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
 const TRUSTED_MANIFEST_SHA256: Option<&str> = option_env!("FLUBBERVLC_MANIFEST_SHA256");
+const TRUSTED_PAYLOAD_MANIFEST_SHA256: Option<&str> =
+    option_env!("FLUBBERVLC_PAYLOAD_MANIFEST_SHA256");
 
 #[derive(Default)]
 struct Selection {
@@ -61,91 +63,174 @@ fn player_directory(selection: &Selection) -> Result<PathBuf, String> {
 fn verify_player(
     directory: &Path,
     trusted_manifest_sha256: Option<&str>,
+    trusted_payload_manifest_sha256: Option<&str>,
 ) -> Result<PathBuf, String> {
-    let trusted = trusted_manifest_sha256
-        .filter(|hash| hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
-        .ok_or("No trusted FlubberVLC Player package is configured for this Recorder build")?;
+    fn pin(value: Option<&str>) -> Result<String, String> {
+        value
+            .filter(|hash| hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
+            .map(str::to_ascii_lowercase)
+            .ok_or(
+                "No trusted FlubberVLC Player package is configured for this Recorder build".into(),
+            )
+    }
+    let trusted = pin(trusted_manifest_sha256)?;
+    let trusted_payload = pin(trusted_payload_manifest_sha256)?;
     let root = directory.canonicalize().map_err(|_| {
         "Install FlubberVLC Player separately, then select its installation folder".to_string()
     })?;
+    if fs::symlink_metadata(directory)
+        .map_err(|_| "Player installation folder cannot be inspected".to_string())?
+        .file_attributes()
+        & FILE_ATTRIBUTE_REPARSE_POINT
+        != 0
+    {
+        return Err("Player installation folder cannot be a link".into());
+    }
     let location = root.to_string_lossy();
     if location.starts_with("\\\\?\\UNC\\")
         || (location.starts_with("\\\\") && !location.starts_with("\\\\?\\"))
     {
         return Err("Player installation must be on this PC".into());
     }
-    let manifest_path = root.join("manifest.json");
-    if fs::symlink_metadata(&manifest_path)
-        .map_err(|_| "Player manifest is missing".to_string())?
-        .file_attributes()
-        & FILE_ATTRIBUTE_REPARSE_POINT
-        != 0
-    {
-        return Err("Player manifest cannot be a link".into());
-    }
-    let manifest_bytes =
-        fs::read(manifest_path).map_err(|_| "Player manifest cannot be read".to_string())?;
-    if format!("{:x}", Sha256::digest(&manifest_bytes)) != trusted.to_ascii_lowercase() {
-        return Err("Installed player manifest does not match the trusted package".into());
-    }
+    let manifest_bytes = read_pinned_manifest(&root, "manifest.json", &trusted)?;
+    let payload_bytes = read_pinned_manifest(&root, "payload-manifest.json", &trusted_payload)?;
     let manifest: BTreeMap<String, String> = serde_json::from_slice(&manifest_bytes)
         .map_err(|_| "Player manifest is invalid".to_string())?;
+    let payload: BTreeMap<String, String> = serde_json::from_slice(&payload_bytes)
+        .map_err(|_| "Player payload manifest is invalid".to_string())?;
     if manifest.len() != COMPONENTS.len()
         || COMPONENTS.iter().any(|name| !manifest.contains_key(*name))
     {
         return Err("Player manifest has an unexpected component list".into());
+    }
+    if payload.is_empty()
+        || !payload.contains_key("manifest.json")
+        || payload.contains_key("payload-manifest.json")
+    {
+        return Err("Player payload manifest has an invalid file list".into());
+    }
+    for (name, claimed) in &payload {
+        if name.starts_with('/')
+            || name.contains('\\')
+            || name.contains(':')
+            || name
+                .split('/')
+                .any(|part| part.is_empty() || part == "." || part == "..")
+            || claimed.len() != 64
+            || !claimed.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(format!("Invalid player payload entry: {name}"));
+        }
     }
     for name in COMPONENTS {
         let claimed = &manifest[name];
         if claimed.len() != 64 || !claimed.bytes().all(|byte| byte.is_ascii_hexdigit()) {
             return Err(format!("Invalid digest for {name}"));
         }
-        let relative = Path::new(name);
-        let mut current = root.clone();
-        for part in relative.components() {
-            current.push(part);
-            if fs::symlink_metadata(&current)
-                .map_err(|_| format!("Missing player component: {name}"))?
-                .file_attributes()
-                & FILE_ATTRIBUTE_REPARSE_POINT
-                != 0
-            {
-                return Err(format!("Linked player component: {name}"));
-            }
+        if payload.get(name).map(String::as_str) != Some(claimed.as_str()) {
+            return Err(format!(
+                "Player component differs from payload inventory: {name}"
+            ));
         }
-        if !current.is_file()
-            || !current
-                .canonicalize()
-                .map_err(|_| format!("Unreadable player component: {name}"))?
-                .starts_with(&root)
-        {
-            return Err(format!("Invalid player component: {name}"));
-        }
-        let mut file =
-            File::open(&current).map_err(|_| format!("Unreadable player component: {name}"))?;
-        let mut digest = Sha256::new();
-        let mut buffer = [0_u8; 65536];
-        loop {
-            let size = file
-                .read(&mut buffer)
-                .map_err(|_| format!("Unreadable player component: {name}"))?;
-            if size == 0 {
-                break;
-            }
-            digest.update(&buffer[..size]);
-        }
-        if format!("{:x}", digest.finalize()) != claimed.to_ascii_lowercase() {
-            return Err(format!("Player component digest mismatch: {name}"));
-        }
+    }
+    if payload["manifest.json"] != format!("{:x}", Sha256::digest(&manifest_bytes)) {
+        return Err("Player component manifest differs from payload inventory".into());
+    }
+    let mut found = BTreeSet::new();
+    verify_payload_tree(&root, &root, "", &payload, &mut found)?;
+    if found != payload.keys().cloned().collect() {
+        return Err("Player payload is missing an inventoried file".into());
     }
     Ok(root.join("FlubberVLC.exe"))
 }
 
+fn read_pinned_manifest(root: &Path, name: &str, trusted: &str) -> Result<Vec<u8>, String> {
+    let path = root.join(name);
+    let metadata = fs::symlink_metadata(&path).map_err(|_| format!("Player {name} is missing"))?;
+    if !metadata.is_file() || metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+        return Err(format!("Player {name} cannot be a link"));
+    }
+    let bytes = fs::read(path).map_err(|_| format!("Player {name} cannot be read"))?;
+    if format!("{:x}", Sha256::digest(&bytes)) != trusted {
+        return Err(format!(
+            "Installed player {name} does not match the trusted package"
+        ));
+    }
+    Ok(bytes)
+}
+
+fn verify_payload_tree(
+    root: &Path,
+    directory: &Path,
+    prefix: &str,
+    payload: &BTreeMap<String, String>,
+    found: &mut BTreeSet<String>,
+) -> Result<(), String> {
+    for entry in
+        fs::read_dir(directory).map_err(|_| "Player payload cannot be listed".to_string())?
+    {
+        let entry = entry.map_err(|_| "Player payload cannot be listed".to_string())?;
+        let name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| "Player payload has an invalid filename".to_string())?;
+        let relative = if prefix.is_empty() {
+            name
+        } else {
+            format!("{prefix}/{name}")
+        };
+        let path = entry.path();
+        let metadata = fs::symlink_metadata(&path)
+            .map_err(|_| format!("Unreadable player payload: {relative}"))?;
+        if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return Err(format!("Linked player payload: {relative}"));
+        }
+        if metadata.is_dir() {
+            // Inno Setup creates its own uninstall files after staging the pinned payload.
+            if prefix.is_empty() && relative == "uninst" {
+                continue;
+            }
+            verify_payload_tree(root, &path, &relative, payload, found)?;
+        } else if metadata.is_file() {
+            if relative == "payload-manifest.json" && directory == root {
+                continue;
+            }
+            let claimed = payload
+                .get(&relative)
+                .ok_or_else(|| format!("Unexpected player payload: {relative}"))?;
+            let mut file =
+                File::open(&path).map_err(|_| format!("Unreadable player payload: {relative}"))?;
+            let mut digest = Sha256::new();
+            let mut buffer = [0_u8; 65536];
+            loop {
+                let size = file
+                    .read(&mut buffer)
+                    .map_err(|_| format!("Unreadable player payload: {relative}"))?;
+                if size == 0 {
+                    break;
+                }
+                digest.update(&buffer[..size]);
+            }
+            if format!("{:x}", digest.finalize()) != *claimed {
+                return Err(format!("Player payload digest mismatch: {relative}"));
+            }
+            found.insert(relative);
+        } else {
+            return Err(format!("Invalid player payload: {relative}"));
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn player_status(selection: State<'_, Selection>) -> PlayerStatus {
-    match player_directory(&selection)
-        .and_then(|directory| verify_player(&directory, TRUSTED_MANIFEST_SHA256))
-    {
+    match player_directory(&selection).and_then(|directory| {
+        verify_player(
+            &directory,
+            TRUSTED_MANIFEST_SHA256,
+            TRUSTED_PAYLOAD_MANIFEST_SHA256,
+        )
+    }) {
         Ok(_) => PlayerStatus {
             ready: true,
             detail: "Installed player components verified".into(),
@@ -169,7 +254,11 @@ async fn choose_player(
     let directory = folder
         .into_path()
         .map_err(|_| "Select a local installation folder".to_string())?;
-    verify_player(&directory, TRUSTED_MANIFEST_SHA256)?;
+    verify_player(
+        &directory,
+        TRUSTED_MANIFEST_SHA256,
+        TRUSTED_PAYLOAD_MANIFEST_SHA256,
+    )?;
     let previous = control
         .0
         .lock()
@@ -198,7 +287,11 @@ fn connect_player(
         return Ok("Player control is connected".into());
     }
     *client = None;
-    let player = verify_player(&player_directory(&selection)?, TRUSTED_MANIFEST_SHA256)?;
+    let player = verify_player(
+        &player_directory(&selection)?,
+        TRUSTED_MANIFEST_SHA256,
+        TRUSTED_PAYLOAD_MANIFEST_SHA256,
+    )?;
     *client = Some(control::ControlClient::spawn(&player)?);
     Ok("Player control is connected".into())
 }
@@ -280,7 +373,11 @@ fn inspect_master(
     }
     let _: serde_json::Value =
         serde_json::from_str(&selector_json).map_err(|_| "Invalid selector JSON".to_string())?;
-    let player = verify_player(&player_directory(&selection)?, TRUSTED_MANIFEST_SHA256)?;
+    let player = verify_player(
+        &player_directory(&selection)?,
+        TRUSTED_MANIFEST_SHA256,
+        TRUSTED_PAYLOAD_MANIFEST_SHA256,
+    )?;
     let output = Command::new(player)
         .arg("--inspect-master")
         .arg(master)
@@ -338,6 +435,20 @@ mod tests {
             serde_json::to_vec(&manifest).unwrap(),
         )
         .unwrap();
+        let extra = root.join("vlc/plugins/codec.dll");
+        fs::create_dir_all(extra.parent().unwrap()).unwrap();
+        fs::write(&extra, b"extra player payload").unwrap();
+        let mut payload = manifest;
+        payload.insert(
+            "vlc/plugins/codec.dll",
+            format!("{:x}", Sha256::digest(b"extra player payload")),
+        );
+        payload.insert("manifest.json", manifest_pin(&root));
+        fs::write(
+            root.join("payload-manifest.json"),
+            serde_json::to_vec(&payload).unwrap(),
+        )
+        .unwrap();
         root
     }
 
@@ -348,13 +459,28 @@ mod tests {
         )
     }
 
+    fn payload_pin(root: &Path) -> String {
+        format!(
+            "{:x}",
+            Sha256::digest(fs::read(root.join("payload-manifest.json")).unwrap())
+        )
+    }
+
     #[test]
     fn rejects_missing_or_invalid_package_pin() {
         let root = fixture();
-        assert!(verify_player(&root, None)
+        let payload = payload_pin(&root);
+        let manifest = manifest_pin(&root);
+        assert!(verify_player(&root, None, Some(&payload))
             .unwrap_err()
             .contains("No trusted"));
-        assert!(verify_player(&root, Some("bad"))
+        assert!(verify_player(&root, Some("bad"), Some(&payload))
+            .unwrap_err()
+            .contains("No trusted"));
+        assert!(verify_player(&root, Some(&manifest), None)
+            .unwrap_err()
+            .contains("No trusted"));
+        assert!(verify_player(&root, Some(&manifest), Some("bad"))
             .unwrap_err()
             .contains("No trusted"));
         fs::remove_dir_all(root).unwrap();
@@ -364,11 +490,12 @@ mod tests {
     fn rejects_changed_manifest_even_when_component_hashes_still_match() {
         let root = fixture();
         let pin = manifest_pin(&root);
+        let payload = payload_pin(&root);
         let manifest_path = root.join("manifest.json");
         let mut bytes = fs::read(&manifest_path).unwrap();
         bytes.push(b' ');
         fs::write(manifest_path, bytes).unwrap();
-        assert!(verify_player(&root, Some(&pin))
+        assert!(verify_player(&root, Some(&pin), Some(&payload))
             .unwrap_err()
             .contains("does not match the trusted package"));
         fs::remove_dir_all(root).unwrap();
@@ -378,12 +505,13 @@ mod tests {
     fn verifies_exact_player_components_and_rejects_tampering() {
         let root = fixture();
         let pin = manifest_pin(&root);
+        let payload = payload_pin(&root);
         assert_eq!(
-            verify_player(&root, Some(&pin)).unwrap(),
+            verify_player(&root, Some(&pin), Some(&payload)).unwrap(),
             root.canonicalize().unwrap().join("FlubberVLC.exe")
         );
         fs::write(root.join("lsl.dll"), b"tampered").unwrap();
-        assert!(verify_player(&root, Some(&pin))
+        assert!(verify_player(&root, Some(&pin), Some(&payload))
             .unwrap_err()
             .contains("digest mismatch"));
         fs::remove_dir_all(root).unwrap();
@@ -393,10 +521,11 @@ mod tests {
     fn rejects_missing_manifest_or_component() {
         let root = fixture();
         let pin = manifest_pin(&root);
+        let payload = payload_pin(&root);
         fs::remove_file(root.join("ffmpeg/ffprobe.exe")).unwrap();
-        assert!(verify_player(&root, Some(&pin))
+        assert!(verify_player(&root, Some(&pin), Some(&payload))
             .unwrap_err()
-            .contains("Missing player component"));
+            .contains("missing an inventoried file"));
         fs::remove_dir_all(root).unwrap();
     }
 
@@ -409,9 +538,122 @@ mod tests {
         manifest.insert("../escape.exe".into(), "0".repeat(64));
         fs::write(manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
         let pin = manifest_pin(&root);
-        assert!(verify_player(&root, Some(&pin))
+        let payload = payload_pin(&root);
+        assert!(verify_player(&root, Some(&pin), Some(&payload))
             .unwrap_err()
             .contains("unexpected component list"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rejects_changed_payload_manifest_and_noncritical_file() {
+        let root = fixture();
+        let manifest = manifest_pin(&root);
+        let payload = payload_pin(&root);
+        fs::write(root.join("vlc/plugins/codec.dll"), b"tampered").unwrap();
+        assert!(verify_player(&root, Some(&manifest), Some(&payload))
+            .unwrap_err()
+            .contains("payload digest mismatch"));
+        fs::write(root.join("payload-manifest.json"), b"{}").unwrap();
+        assert!(verify_player(&root, Some(&manifest), Some(&payload))
+            .unwrap_err()
+            .contains("does not match the trusted package"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rejects_missing_and_extra_payload_files() {
+        let root = fixture();
+        let manifest = manifest_pin(&root);
+        let payload = payload_pin(&root);
+        fs::remove_file(root.join("vlc/plugins/codec.dll")).unwrap();
+        assert!(verify_player(&root, Some(&manifest), Some(&payload))
+            .unwrap_err()
+            .contains("missing an inventoried file"));
+        fs::write(root.join("vlc/plugins/codec.dll"), b"extra player payload").unwrap();
+        fs::write(root.join("unexpected.exe"), b"surprise").unwrap();
+        assert!(verify_player(&root, Some(&manifest), Some(&payload))
+            .unwrap_err()
+            .contains("Unexpected player payload"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn accepts_only_the_real_top_level_installer_uninstall_directory() {
+        let root = fixture();
+        let manifest = manifest_pin(&root);
+        let payload = payload_pin(&root);
+        let uninst = root.join("uninst");
+        fs::create_dir(&uninst).unwrap();
+        fs::write(uninst.join("unins000.exe"), b"installer-owned").unwrap();
+        fs::write(uninst.join("unins000.dat"), b"installer-owned").unwrap();
+        assert!(verify_player(&root, Some(&manifest), Some(&payload)).is_ok());
+
+        let nested = root.join("vlc/uninst");
+        fs::create_dir(&nested).unwrap();
+        fs::write(nested.join("unexpected.exe"), b"not installer-owned").unwrap();
+        assert!(verify_player(&root, Some(&manifest), Some(&payload))
+            .unwrap_err()
+            .contains("Unexpected player payload: vlc/uninst/unexpected.exe"));
+        fs::remove_dir_all(nested).unwrap();
+
+        fs::remove_dir_all(&uninst).unwrap();
+        fs::write(&uninst, b"not a directory").unwrap();
+        assert!(verify_player(&root, Some(&manifest), Some(&payload))
+            .unwrap_err()
+            .contains("Unexpected player payload: uninst"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn verifies_hidden_files_in_the_payload_inventory() {
+        let root = fixture();
+        let hidden = root.join("vlc/hidden.dll");
+        fs::write(&hidden, b"hidden player payload").unwrap();
+        let status = Command::new("attrib")
+            .arg("+H")
+            .arg(&hidden)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let path = root.join("payload-manifest.json");
+        let mut payload: BTreeMap<String, String> =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        payload.insert(
+            "vlc/hidden.dll".into(),
+            format!("{:x}", Sha256::digest(b"hidden player payload")),
+        );
+        fs::write(&path, serde_json::to_vec(&payload).unwrap()).unwrap();
+        let manifest_pin = manifest_pin(&root);
+        let payload_pin = payload_pin(&root);
+        assert!(verify_player(&root, Some(&manifest_pin), Some(&payload_pin)).is_ok());
+        fs::write(&hidden, b"tampered").unwrap();
+        assert!(
+            verify_player(&root, Some(&manifest_pin), Some(&payload_pin))
+                .unwrap_err()
+                .contains("payload digest mismatch: vlc/hidden.dll")
+        );
+        Command::new("attrib")
+            .arg("-H")
+            .arg(&hidden)
+            .status()
+            .unwrap();
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rejects_payload_inventory_directory_traversal_even_with_matching_pin() {
+        let root = fixture();
+        let manifest = manifest_pin(&root);
+        let path = root.join("payload-manifest.json");
+        let mut payload: BTreeMap<String, String> =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        payload.insert("../outside.exe".into(), "0".repeat(64));
+        fs::write(&path, serde_json::to_vec(&payload).unwrap()).unwrap();
+        let pin = payload_pin(&root);
+        assert!(verify_player(&root, Some(&manifest), Some(&pin))
+            .unwrap_err()
+            .contains("Invalid player payload entry"));
         fs::remove_dir_all(root).unwrap();
     }
 }

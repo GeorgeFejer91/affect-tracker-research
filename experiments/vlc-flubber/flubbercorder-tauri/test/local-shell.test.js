@@ -22,8 +22,11 @@ test('Recorder is a distinct local installer with no copied player tree or liste
 });
 
 test('inspection uses the installed player and research Start stays disabled', () => {
-  assert.match(source, /verify_player\(&player_directory\(&selection\)\?, TRUSTED_MANIFEST_SHA256\)\?/);
+  assert.match(source, /verify_player\(\s*&player_directory\(&selection\)\?,\s*TRUSTED_MANIFEST_SHA256,\s*TRUSTED_PAYLOAD_MANIFEST_SHA256,\s*\)\?/);
   assert.match(source, /option_env!\("FLUBBERVLC_MANIFEST_SHA256"\)/);
+  assert.match(source, /option_env!\("FLUBBERVLC_PAYLOAD_MANIFEST_SHA256"\)/);
+  assert.match(source, /verify_payload_tree\(&root, &root, "", &payload, &mut found\)\?/);
+  assert.match(source, /found != payload\.keys\(\)\.cloned\(\)\.collect\(\)/);
   assert.match(source, /\.arg\("--inspect-master"\)/);
   assert.match(source, /\.arg\("--participant"\)/);
   assert.match(source, /\.arg\("--selector-json"\)/);
