@@ -220,7 +220,7 @@ fn line_value<'a>(lines: &'a [String], prefix: &str) -> Result<&'a str> {
         .ok_or_else(|| format!("Player omitted {prefix}").into())
 }
 
-fn launch(recipe: &Recipe, player_dir: &Path, data_dir: &Path, headless: bool) -> Result<Launched> {
+fn launch(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
     let exe = player_dir.join("FlubberVLC.exe");
     if !exe.is_file() {
         return Err(format!("Missing installed player: {}", exe.display()).into());
@@ -233,8 +233,6 @@ fn launch(recipe: &Recipe, player_dir: &Path, data_dir: &Path, headless: bool) -
         .arg(recipe.panel_percent.to_string())
         .arg("--step-percent")
         .arg(recipe.step_percent.to_string())
-        .arg("--data-dir")
-        .arg(data_dir)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -269,7 +267,15 @@ fn launch(recipe: &Recipe, player_dir: &Path, data_dir: &Path, headless: bool) -
     let port = line_value(&lines, "VLC RC: 127.0.0.1:")?.parse()?;
     let source = PathBuf::from(line_value(&lines, "Source video: ")?);
     let csv = PathBuf::from(line_value(&lines, "Affect CSV: ")?);
-    if pid != child.id() || !source.is_file() || !csv.starts_with(data_dir.join("recordings")) {
+    if pid != child.id()
+        || source.canonicalize()? != recipe.video
+        || csv.extension().is_none_or(|value| value != "csv")
+        || csv
+            .parent()
+            .ok_or("Player CSV has no parent")?
+            .canonicalize()?
+            != recipe.video.parent().ok_or("Video has no parent")?
+    {
         return Err("Player returned invalid media or recording paths".into());
     }
     let output = thread::spawn(move || {
@@ -301,28 +307,6 @@ fn rc(port: u16, command: &str) -> Result<()> {
     Ok(())
 }
 
-fn rc_is_playing(port: u16) -> Result<Option<bool>> {
-    let address: SocketAddr = format!("127.0.0.1:{port}").parse()?;
-    let mut stream = TcpStream::connect_timeout(&address, Duration::from_millis(200))?;
-    stream.set_read_timeout(Some(Duration::from_millis(100)))?;
-    stream.write_all(b"is_playing\n")?;
-    for line in BufReader::new(stream).lines().take(16) {
-        match line {
-            Ok(line) if line.trim() == "1" => return Ok(Some(true)),
-            Ok(line) if line.trim() == "0" => return Ok(Some(false)),
-            Ok(_) => {}
-            Err(error)
-                if error.kind() == std::io::ErrorKind::TimedOut
-                    || error.kind() == std::io::ErrorKind::WouldBlock =>
-            {
-                return Ok(None)
-            }
-            Err(error) => return Err(error.into()),
-        }
-    }
-    Ok(None)
-}
-
 fn hex(value: &str) -> String {
     value.bytes().map(|b| format!("{b:02x}")).collect()
 }
@@ -339,6 +323,44 @@ fn unhex(value: &str) -> Result<String> {
     Ok(String::from_utf8(bytes)?)
 }
 
+fn marker_suffix<'a>(label: &'a str, filename: &str) -> Option<&'a str> {
+    label
+        .strip_prefix(&format!("{filename}_"))
+        .filter(|suffix| {
+            matches!(
+                *suffix,
+                "Start"
+                    | "Stop"
+                    | "Pause"
+                    | "Resume"
+                    | "Interrupt"
+                    | "BufferingStart"
+                    | "BufferingEnd"
+                    | "End"
+                    | "Error"
+            )
+        })
+}
+
+pub(crate) fn valid_marker_sequence(labels: &[String], filename: &str) -> bool {
+    if labels.len() < 2 {
+        return false;
+    }
+    labels.iter().enumerate().all(|(index, label)| {
+        let suffix = marker_suffix(label, filename);
+        if index == 0 {
+            suffix == Some("Start")
+        } else if index + 1 == labels.len() {
+            suffix == Some("Stop")
+        } else {
+            matches!(
+                suffix,
+                Some("Pause" | "Resume" | "Interrupt" | "BufferingStart" | "BufferingEnd")
+            ) || (index + 2 == labels.len() && matches!(suffix, Some("End" | "Error")))
+        }
+    })
+}
+
 pub struct Session {
     recipe: Recipe,
     launched: Launched,
@@ -353,9 +375,6 @@ pub struct Session {
     markers: Vec<Marker>,
     first_data: HashSet<String>,
     summary: Option<Summary>,
-    playback_seen: bool,
-    stopping: bool,
-    last_rc_poll: Instant,
     volume_percent: u32,
     variables: Vec<Variable>,
     metadata_path: PathBuf,
@@ -372,7 +391,7 @@ impl Session {
         let recipe = Recipe::read(recipe_path)?;
         fs::create_dir_all(data_dir)?;
         let data_dir = data_dir.canonicalize()?;
-        let launched = launch(&recipe, player_dir, &data_dir, headless)?;
+        let launched = launch(&recipe, player_dir, headless)?;
         let result = Self::arm_launched(recipe, launched, recorder_dir, &data_dir);
         if let Err((port, _)) = &result {
             let _ = rc(*port, "quit");
@@ -519,9 +538,6 @@ impl Session {
                 markers: Vec::new(),
                 first_data: HashSet::new(),
                 summary: None,
-                playback_seen: false,
-                stopping: false,
-                last_rc_poll: Instant::now() - Duration::from_millis(250),
                 volume_percent: 100,
                 variables: Vec::new(),
                 metadata_path,
@@ -613,7 +629,6 @@ impl Session {
         }
         rc(self.launched.port, "pause")?;
         self.phase = Phase::Running;
-        self.playback_seen = false;
         Ok(())
     }
 
@@ -622,7 +637,6 @@ impl Session {
             return Err("No active experiment to stop".into());
         }
         rc(self.launched.port, "stop")?;
-        self.stopping = true;
         let deadline = Instant::now() + Duration::from_secs(5);
         while !self.is_complete() && Instant::now() < deadline {
             self.tick()?;
@@ -653,31 +667,19 @@ impl Session {
         if self.recorder.try_wait()?.is_some() {
             return Err("XDF recorder exited during experiment".into());
         }
-        let start = format!("{}_Start", self.recipe.filename);
         let stop = format!("{}_Stop", self.recipe.filename);
         while let Ok(line) = self.receipts.try_recv() {
-            self.consume_receipt(&line, &start, &stop)?;
+            self.consume_receipt(&line)?;
         }
-        let playing = if (matches!(self.phase, Phase::Running) || self.stopping)
-            && self.last_rc_poll.elapsed() >= Duration::from_millis(250)
-        {
-            self.last_rc_poll = Instant::now();
-            rc_is_playing(self.launched.port)?
-        } else {
-            None
-        };
-        if playing == Some(true) {
-            self.playback_seen = true;
-        }
-        if self.markers.last().is_some_and(|m| m.label == stop)
-            || (playing == Some(false) && (self.stopping || self.playback_seen))
-        {
+        if self.markers.last().is_some_and(|m| m.label == stop) {
             self.finish()?;
+        } else if self.launched.child.try_wait()?.is_some() {
+            return Err("VLC exited without a recorded Stop marker".into());
         }
         Ok(())
     }
 
-    fn consume_receipt(&mut self, line: &str, start: &str, stop: &str) -> Result<()> {
+    fn consume_receipt(&mut self, line: &str) -> Result<()> {
         if line.contains("RESPYRA_RECORDER_ERROR") {
             return Err("XDF recorder reported an error".into());
         }
@@ -722,8 +724,14 @@ impl Session {
             }
             let stamp: f64 = parts[1].parse()?;
             let label = unhex(parts[2])?;
-            if !stamp.is_finite() || (label != start && label != stop) {
+            let suffix = marker_suffix(&label, &self.recipe.filename);
+            if !stamp.is_finite() || suffix.is_none() {
                 return Err("Unexpected VLC marker".into());
+            }
+            match suffix {
+                Some("Pause") if self.phase == Phase::Running => self.phase = Phase::Paused,
+                Some("Resume") if self.phase == Phase::Paused => self.phase = Phase::Running,
+                _ => {}
             }
             self.markers.push(Marker {
                 lsl_time: stamp,
@@ -758,12 +766,10 @@ impl Session {
         if !status.success() {
             return Err("XDF recorder failed; partial file preserved".into());
         }
-        let start = format!("{}_Start", self.recipe.filename);
-        let stop = format!("{}_Stop", self.recipe.filename);
         let receipts_deadline = Instant::now() + Duration::from_secs(2);
         while Instant::now() < receipts_deadline {
             match self.receipts.recv_timeout(Duration::from_millis(50)) {
-                Ok(line) => self.consume_receipt(&line, &start, &stop)?,
+                Ok(line) => self.consume_receipt(&line)?,
                 Err(mpsc::RecvTimeoutError::Disconnected) => break,
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
             }
@@ -810,7 +816,7 @@ impl Drop for Session {
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_variables, Variable};
+    use super::{valid_marker_sequence, validate_variables, Variable};
 
     #[test]
     fn variable_labels_are_unique_before_recording() {
@@ -826,5 +832,41 @@ mod tests {
         ];
         assert!(validate_variables(&rows).is_err());
         assert!(validate_variables(&rows[..1]).is_ok());
+    }
+
+    #[test]
+    fn xdf_marker_contract_accepts_control_events_between_bookends() {
+        let filename = "clip.mp4";
+        let labels = [
+            "clip.mp4_Start",
+            "clip.mp4_Interrupt",
+            "clip.mp4_Pause",
+            "clip.mp4_Resume",
+            "clip.mp4_BufferingStart",
+            "clip.mp4_BufferingEnd",
+            "clip.mp4_End",
+            "clip.mp4_Stop",
+        ]
+        .map(str::to_owned);
+        assert!(valid_marker_sequence(&labels, filename));
+        assert!(valid_marker_sequence(
+            &["clip.mp4_Start".into(), "clip.mp4_Stop".into()],
+            filename
+        ));
+        let duplicate_start = [
+            "clip.mp4_Start".into(),
+            "clip.mp4_Start".into(),
+            "clip.mp4_Stop".into(),
+        ];
+        assert!(!valid_marker_sequence(&duplicate_start, filename));
+        let wrong_video = ["other.mp4_Start".into(), "clip.mp4_Stop".into()];
+        assert!(!valid_marker_sequence(&wrong_video, filename));
+        let terminal_before_pause = [
+            "clip.mp4_Start".into(),
+            "clip.mp4_End".into(),
+            "clip.mp4_Pause".into(),
+            "clip.mp4_Stop".into(),
+        ];
+        assert!(!valid_marker_sequence(&terminal_before_pause, filename));
     }
 }

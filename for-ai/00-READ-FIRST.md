@@ -49,7 +49,7 @@ not undo a later explicit amendment.
 
 ## Current status and work routes
 
-The [native VLC Flubber side quest](74-VLC-FLUBBER-SIDE-QUEST.md) is an isolated
+The [native VLC Flubber side quest](75-VLC-FLUBBER-SIDE-QUEST.md) is an isolated
 feasibility probe, not an approved Planner or Runner capability. The user's
 current main playback direction uses FFmpeg conversion; older player-stack
 instructions and receipts in this repository are historical where they
@@ -80,7 +80,7 @@ validation availability and controller override execution.
 | Planner or Runner text-bearing UI | [Project Uncodixfy Pretext skill](skills/uncodixfy-pretext/SKILL.md), its [Pretext reference](skills/uncodixfy-pretext/references/pretext.md), and the [accordion stretch reference](skills/uncodixfy-pretext/references/accordion-stretch.md) for requested bounded panels; [source pin](skills/uncodixfy-pretext/SOURCE.md) |
 | Optional XR authoring | [63](63-P6-XR-LAYOUT.md); desktop Runner cannot execute XR |
 | Build / qualification | Relevant [40](40-ROADMAP.md) receipts, [72](72-RUNNER-FINAL-VALIDATION.md), [73](73-CURRENT-APP-BUILD.md) |
-| Native VLC Flubber side quest | [74](74-VLC-FLUBBER-SIDE-QUEST.md) and its [runbook](../experiments/vlc-flubber/README.md); no main-suite checklist credit |
+| Native VLC Flubber side quest | [75](75-VLC-FLUBBER-SIDE-QUEST.md) and its [runbook](../experiments/vlc-flubber/README.md); no main-suite checklist credit |
 | Historical context | [05](05-PROJECT-METADATA.md), [10](10-PRODUCT-REQUIREMENTS.md), [45](45-FUTURE-AGENT-CHECKLIST.md), [61](61-IMPLEMENTATION-AUDIT.md), [62](62-PLANNER-CLOSURE-PLAN.md), [64](64-SEGMENT-VISUAL-AUDIT.md), [67](67-PLANNER-COMPLETION-GOAL.md) |
 
 The [old entrypoint](../docs/history/00-READ-FIRST-2026-09-13.md) is preserved

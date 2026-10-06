@@ -4,12 +4,14 @@ This Windows Tauri app is a separate experimenter console for the native VLC
 Flubber player. It loads a `flubbercorder-experiment/v1` JSON, prepares the
 original video, waits for exact Flubber LSL subscriptions before playback, controls
 VLC, shows live affect and marker streams, and records an XDF. VLC writes an
-independent `time_s,valence,arousal` CSV as a fallback. The app bundles its
+independent `time_s,valence,arousal` CSV beside the played video as a backup;
+that directory must be writable. The app bundles its
 own player and native XDF recorder; Python is not part of this installer.
 The player gives the original file directly to LibVLC. Its native SVG panel
 and LSL affect outlet each run at nominal 30 Hz independently of video frame
 rate. The fallback CSV contains 30 Hz video-bounded time, valence, and arousal
-rows. The recorder checks for both filename markers and that the XDF contains
+rows. The Recorder is a separate executable. It checks for filename Start/Stop
+bookends, bounded VLC control markers between them, and that the XDF contains
 at least as many affect samples as the video CSV before finalizing.
 
 The app remains an experimental side project, outside the main Affect
@@ -79,11 +81,12 @@ recipe uses a video path relative to its JSON file:
 any required stream is absent or ambiguous. The bundled player emits both
 Flubber outlets while armed, before the video starts. The recorder must
 confirm both subscriptions before Start is enabled. At completion,
-Flubbercorder verifies the exact `<video filename>_Start` and `_Stop` XDF
-markers and checks XDF affect coverage against VLC's video CSV before promoting
+Flubbercorder verifies `<video filename>_Start` and `_Stop` as XDF bookends,
+accepts Pause, Resume, Interrupt, BufferingStart, BufferingEnd, End, and Error
+events between them, and checks XDF affect coverage against VLC's video CSV before promoting
 the partial recording to `.xdf`.
 
 The experimental `.xdf.partial` is preserved when a run cannot be validated.
 Do not treat this software as research-qualified without the remaining
 timing, input, recovery, and broader installed checks in
-[`for-ai/74`](../../../for-ai/74-VLC-FLUBBER-SIDE-QUEST.md).
+[`for-ai/75`](../../../for-ai/75-VLC-FLUBBER-SIDE-QUEST.md).

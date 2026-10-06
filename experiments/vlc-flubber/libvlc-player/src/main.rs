@@ -18,12 +18,13 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use windows_sys::Win32::Foundation::{
-    CloseHandle, HANDLE, HWND, LPARAM, LRESULT, RECT, WAIT_OBJECT_0, WPARAM,
+    CloseHandle, HANDLE, HWND, LPARAM, LRESULT, POINT, RECT, WAIT_OBJECT_0, WPARAM,
 };
 use windows_sys::Win32::Graphics::Gdi::{
-    BeginPaint, EndPaint, GetMonitorInfoW, InvalidateRect, MonitorFromWindow, PatBlt,
-    StretchDIBits, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, BLACKNESS, DIB_RGB_COLORS, MONITORINFO,
-    MONITOR_DEFAULTTONEAREST, PAINTSTRUCT, SRCCOPY,
+    BeginPaint, ClientToScreen, CreatePen, CreateSolidBrush, DeleteObject, Ellipse, EndPaint,
+    GetMonitorInfoW, InvalidateRect, LineTo, MonitorFromWindow, MoveToEx, PatBlt, SelectObject,
+    StretchDIBits, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, BLACKNESS, DIB_RGB_COLORS, HDC,
+    MONITORINFO, MONITOR_DEFAULTTONEAREST, PAINTSTRUCT, PS_SOLID, SRCCOPY,
 };
 use windows_sys::Win32::Media::{timeBeginPeriod, timeEndPeriod};
 use windows_sys::Win32::System::LibraryLoader::{GetModuleHandleW, SetDllDirectoryW};
@@ -40,13 +41,18 @@ use windows_sys::Win32::UI::HiDpi::{
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
     SetFocus, VK_DOWN, VK_ESCAPE, VK_LEFT, VK_RIGHT, VK_SPACE, VK_UP,
 };
+use windows_sys::Win32::UI::Input::{
+    GetRawInputData, RegisterRawInputDevices, MOUSE_MOVE_ABSOLUTE, RAWINPUT, RAWINPUTDEVICE,
+    RAWINPUTHEADER, RIDEV_REMOVE, RID_INPUT, RIM_TYPEMOUSE,
+};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect, GetMessageW,
-    GetWindowLongPtrW, MoveWindow, PostMessageW, PostQuitMessage, RegisterClassW,
-    SetWindowLongPtrW, SetWindowPos, ShowWindow, TranslateMessage, CW_USEDEFAULT, GWLP_USERDATA,
-    GWL_STYLE, MSG, SWP_FRAMECHANGED, SWP_NOZORDER, SWP_SHOWWINDOW, SW_HIDE, SW_SHOW, WM_APP,
-    WM_CLOSE, WM_DESTROY, WM_KEYDOWN, WM_PAINT, WM_SIZE, WNDCLASSW, WS_CHILD, WS_CLIPCHILDREN,
-    WS_OVERLAPPEDWINDOW, WS_POPUP, WS_VISIBLE,
+    ClipCursor, CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect,
+    GetForegroundWindow, GetMessageW, GetWindowLongPtrW, MoveWindow, PostMessageW, PostQuitMessage,
+    RegisterClassW, SetForegroundWindow, SetWindowLongPtrW, SetWindowPos, ShowCursor, ShowWindow,
+    TranslateMessage, CW_USEDEFAULT, GWLP_USERDATA, GWL_STYLE, MSG, SWP_FRAMECHANGED, SWP_NOZORDER,
+    SWP_SHOWWINDOW, SW_HIDE, SW_SHOW, WM_ACTIVATEAPP, WM_APP, WM_CLOSE, WM_DESTROY, WM_INPUT,
+    WM_KEYDOWN, WM_PAINT, WM_SIZE, WNDCLASSW, WS_CHILD, WS_CLIPCHILDREN, WS_OVERLAPPEDWINDOW,
+    WS_POPUP, WS_VISIBLE,
 };
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -54,6 +60,7 @@ const RATE: Duration = Duration::from_nanos(33_333_333);
 const POINTS: usize = 192;
 const WAVES: usize = 16;
 const WM_FLUBBER_TICK: u32 = WM_APP + 1;
+const MAX_MOUSE_STEP: i32 = 150;
 
 struct TimerResolution {
     policy_changed: bool,
@@ -407,8 +414,95 @@ struct Shared {
     playing: bool,
 }
 
+fn apply_mouse_rating(shared: &mut Shared, dx: i32, dy: i32, client_height: i32) {
+    // Match the reference task's 60%-of-screen travel and per-event step cap,
+    // mapped onto this player's normalized [-1, 1] two-axis output.
+    let full_scale = (client_height.max(1) as f32 * 0.6).max(1.0);
+    let dx = dx.clamp(-MAX_MOUSE_STEP, MAX_MOUSE_STEP) as f32;
+    let dy = dy.clamp(-MAX_MOUSE_STEP, MAX_MOUSE_STEP) as f32;
+    shared.valence = (shared.valence + 2.0 * dx / full_scale).clamp(-1.0, 1.0);
+    shared.arousal = (shared.arousal - 2.0 * dy / full_scale).clamp(-1.0, 1.0);
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum VideoMarker {
+    Pause,
+    Resume,
+    Interrupt,
+    BufferingStart,
+    BufferingEnd,
+    End,
+    Error,
+}
+
+impl VideoMarker {
+    fn suffix(self) -> &'static str {
+        match self {
+            Self::Pause => "Pause",
+            Self::Resume => "Resume",
+            Self::Interrupt => "Interrupt",
+            Self::BufferingStart => "BufferingStart",
+            Self::BufferingEnd => "BufferingEnd",
+            Self::End => "End",
+            Self::Error => "Error",
+        }
+    }
+}
+
+#[derive(Default)]
+struct PlaybackEvents {
+    paused: bool,
+    buffering: bool,
+    interrupted: bool,
+}
+
+impl PlaybackEvents {
+    fn interrupt(&mut self) -> bool {
+        if self.interrupted {
+            false
+        } else {
+            self.interrupted = true;
+            true
+        }
+    }
+
+    fn observe(&mut self, state: i32, previous_state: i32) -> Vec<VideoMarker> {
+        let mut events = Vec::new();
+        if self.buffering && state != 2 {
+            events.push(VideoMarker::BufferingEnd);
+            self.buffering = false;
+        }
+        if state == 2 && !self.buffering {
+            events.push(VideoMarker::BufferingStart);
+            self.buffering = true;
+        }
+        if state == 4 && !self.paused {
+            events.push(VideoMarker::Pause);
+            self.paused = true;
+        }
+        if state == 3 && (self.paused || (self.interrupted && previous_state == 4)) {
+            events.push(VideoMarker::Resume);
+            self.paused = false;
+            self.interrupted = false;
+        }
+        match state {
+            6 => events.push(VideoMarker::End),
+            7 => events.push(VideoMarker::Error),
+            _ => {}
+        }
+        events
+    }
+}
+
 enum SampleCommand {
-    Start { media_ms: i64, observed_at: f64 },
+    Start {
+        media_ms: i64,
+        observed_at: f64,
+    },
+    Marker {
+        marker: VideoMarker,
+        observed_at: f64,
+    },
     Stop,
     Quit,
 }
@@ -594,6 +688,12 @@ fn sampler(
                     markers.push_text_at(&format!("{name}_Stop"), labstream::clock())?;
                     csv_commands.try_send(CsvCommand::Close)?;
                     started = false;
+                }
+                SampleCommand::Marker {
+                    marker,
+                    observed_at,
+                } if started => {
+                    markers.push_text_at(&format!("{name}_{}", marker.suffix()), observed_at)?;
                 }
                 SampleCommand::Quit => {
                     if started {
@@ -857,6 +957,10 @@ struct App {
     panel_top: i32,
     started: bool,
     last_state: i32,
+    events: PlaybackEvents,
+    mouse_active: bool,
+    skip_next_mouse: bool,
+    cursor_hide_calls: u32,
     panel_percent: u32,
     step: f32,
     close_at: Option<Instant>,
@@ -867,6 +971,145 @@ struct App {
 }
 
 impl App {
+    fn marker(&self, marker: VideoMarker) {
+        if self
+            .commands
+            .send(SampleCommand::Marker {
+                marker,
+                observed_at: labstream::clock(),
+            })
+            .is_err()
+        {
+            self.worker_failed.store(true, Ordering::Release);
+        }
+    }
+
+    fn clip_mouse(hwnd: HWND) -> bool {
+        let mut client = RECT::default();
+        let mut top_left = POINT::default();
+        // SAFETY: All coordinates refer to the live top-level player HWND.
+        if unsafe { GetClientRect(hwnd, &mut client) } == 0
+            || unsafe { ClientToScreen(hwnd, &mut top_left) } == 0
+        {
+            return false;
+        }
+        let mut bottom_right = POINT {
+            x: client.right,
+            y: client.bottom,
+        };
+        // SAFETY: ClipCursor receives a fully initialized screen-space rectangle.
+        if unsafe { ClientToScreen(hwnd, &mut bottom_right) } == 0 {
+            return false;
+        }
+        let screen = RECT {
+            left: top_left.x,
+            top: top_left.y,
+            right: bottom_right.x,
+            bottom: bottom_right.y,
+        };
+        unsafe { ClipCursor(&screen) != 0 }
+    }
+
+    fn capture_mouse(&mut self, hwnd: HWND) -> Result<()> {
+        // Raw input is registered only for this window and only used while it
+        // owns foreground focus. No background mouse movement is collected.
+        if self.mouse_active || unsafe { GetForegroundWindow() } != hwnd {
+            return Ok(());
+        }
+        if !Self::clip_mouse(hwnd) {
+            return Err("Could not confine the rating pointer to the player".into());
+        }
+        self.cursor_hide_calls = 0;
+        loop {
+            // SAFETY: Balanced by the same number of ShowCursor(TRUE) calls in
+            // release_mouse, including on focus loss and window destruction.
+            let count = unsafe { ShowCursor(0) };
+            self.cursor_hide_calls += 1;
+            if count < 0 {
+                break;
+            }
+            if self.cursor_hide_calls == 32 {
+                self.release_mouse();
+                return Err("Could not hide the rating pointer".into());
+            }
+        }
+        self.mouse_active = true;
+        self.skip_next_mouse = true;
+        Ok(())
+    }
+
+    fn release_mouse(&mut self) {
+        if self.cursor_hide_calls == 0 && !self.mouse_active {
+            return;
+        }
+        // SAFETY: Release any global clip before the application loses focus.
+        unsafe { ClipCursor(null()) };
+        for _ in 0..self.cursor_hide_calls {
+            // SAFETY: Each call balances one ShowCursor(FALSE) above.
+            unsafe { ShowCursor(1) };
+        }
+        self.cursor_hide_calls = 0;
+        self.mouse_active = false;
+        self.skip_next_mouse = true;
+    }
+
+    fn interrupt(&mut self) {
+        let was_rating = self.mouse_active;
+        self.release_mouse();
+        if was_rating
+            && self.started
+            && matches!(self.vlc.state(), 2 | 3)
+            && self.events.interrupt()
+        {
+            self.marker(VideoMarker::Interrupt);
+            self.vlc.pause(true);
+        }
+    }
+
+    fn mouse(&mut self, raw_handle: LPARAM) {
+        if !self.mouse_active || !self.started || self.vlc.state() != 3 {
+            return;
+        }
+        let mut raw = RAWINPUT::default();
+        let mut size = std::mem::size_of::<RAWINPUT>() as u32;
+        // SAFETY: WM_INPUT's handle is valid during this callback; the stack
+        // buffer is aligned for RAWINPUT and its declared size is exact.
+        let read = unsafe {
+            GetRawInputData(
+                raw_handle as _,
+                RID_INPUT,
+                (&mut raw as *mut RAWINPUT).cast(),
+                &mut size,
+                std::mem::size_of::<RAWINPUTHEADER>() as u32,
+            )
+        };
+        if read != std::mem::size_of::<RAWINPUT>() as u32 || raw.header.dwType != RIM_TYPEMOUSE {
+            return;
+        }
+        // SAFETY: dwType identifies the active RAWINPUT union member as mouse.
+        let mouse = unsafe { raw.data.mouse };
+        if mouse.usFlags & MOUSE_MOVE_ABSOLUTE != 0 {
+            return;
+        }
+        if self.skip_next_mouse {
+            self.skip_next_mouse = false;
+            return;
+        }
+        let mut shared = match self.shared.lock() {
+            Ok(shared) => shared,
+            Err(_) => {
+                self.worker_failed.store(true, Ordering::Release);
+                return;
+            }
+        };
+        apply_mouse_rating(
+            &mut shared,
+            mouse.lLastX,
+            mouse.lLastY,
+            self.panel_top + self.panel_height,
+        );
+    }
+
     fn layout(&mut self, hwnd: HWND) {
         let mut rect = RECT::default();
         // SAFETY: `hwnd` is the live main window on its UI thread.
@@ -882,6 +1125,10 @@ impl App {
         }
         // SAFETY: The child window belongs to the same thread and parent.
         unsafe { MoveWindow(self.video_hwnd, 0, 0, width, video_height, 1) };
+        if self.mouse_active && !Self::clip_mouse(hwnd) {
+            self.release_mouse();
+            self.worker_failed.store(true, Ordering::Release);
+        }
         // SAFETY: Requests a repaint of only our parent surface.
         unsafe { InvalidateRect(hwnd, null(), 0) };
     }
@@ -909,21 +1156,32 @@ impl App {
         while let Ok(command) = self.remote_commands.try_recv() {
             let result = match command {
                 RemoteCommand::Play => {
-                    if let Some(path) = &self.armed_video {
+                    if let Some(path) = self.armed_video.clone() {
+                        self.release_mouse();
                         if self.started {
                             self.commands.send(SampleCommand::Stop).ok();
                             self.started = false;
                         }
                         self.last_state = -1;
+                        self.events = PlaybackEvents::default();
                         self.vlc
-                            .open(path, self.video_hwnd)
+                            .open(&path, self.video_hwnd)
                             .and_then(|()| self.vlc.volume(self.volume_percent))
+                            .map(|()| {
+                                // Best effort: Recorder can issue Play while its
+                                // separate experimenter window has focus.
+                                unsafe { SetForegroundWindow(hwnd) };
+                            })
                     } else {
                         Err("No video was armed".into())
                     }
                 }
                 RemoteCommand::Pause => {
-                    self.vlc.pause(self.vlc.state() == 3);
+                    let resume = self.vlc.state() != 3;
+                    if resume {
+                        unsafe { SetForegroundWindow(hwnd) };
+                    }
+                    self.vlc.pause(!resume);
                     Ok(())
                 }
                 RemoteCommand::Stop => {
@@ -960,6 +1218,7 @@ impl App {
             return;
         }
         let state = self.vlc.state();
+        let previous_state = self.last_state;
         self.ticks += 1;
         if self.close_at.is_some() && self.ticks % 30 == 0 {
             eprintln!(
@@ -982,9 +1241,25 @@ impl App {
                     observed_at: labstream::clock(),
                 })
                 .ok();
-        } else if self.started && matches!(state, 5..=7) {
-            self.started = false;
-            self.commands.send(SampleCommand::Stop).ok();
+        }
+        if self.started {
+            for marker in self.events.observe(state, previous_state) {
+                self.marker(marker);
+            }
+            if matches!(state, 5..=7) {
+                self.started = false;
+                self.commands.send(SampleCommand::Stop).ok();
+            }
+        }
+        if playing && self.started {
+            if unsafe { GetForegroundWindow() } != hwnd {
+                self.interrupt();
+            } else if let Err(error) = self.capture_mouse(hwnd) {
+                eprintln!("Mouse rating capture failed: {error}");
+                self.worker_failed.store(true, Ordering::Release);
+            }
+        } else {
+            self.release_mouse();
         }
         if let Ok(mut shared) = self.shared.lock() {
             shared.playing = playing;
@@ -1088,8 +1363,53 @@ impl App {
                 }
             }
         }
+        self.paint_rating(dc);
         // SAFETY: Closes the paint operation opened above.
         unsafe { EndPaint(hwnd, &paint) };
+    }
+
+    fn paint_rating(&self, dc: HDC) {
+        let side = (self.panel_height - 24).min(self.panel_width / 4).min(160);
+        if side < 48 {
+            return;
+        }
+        let (valence, arousal) = match self.shared.lock() {
+            Ok(shared) => (shared.valence, shared.arousal),
+            Err(_) => return,
+        };
+        let left = self.panel_width - side - 20;
+        let top = self.panel_top + (self.panel_height - side) / 2;
+        // SAFETY: The objects are selected only into this BeginPaint DC and
+        // restored before deletion; all coordinates are within the panel.
+        unsafe {
+            let pen = CreatePen(PS_SOLID, 1, 0x0080_8080);
+            if pen.is_null() {
+                return;
+            }
+            let old_pen = SelectObject(dc, pen);
+            for (x1, y1, x2, y2) in [
+                (left, top, left + side, top),
+                (left + side, top, left + side, top + side),
+                (left + side, top + side, left, top + side),
+                (left, top + side, left, top),
+                (left + side / 2, top, left + side / 2, top + side),
+                (left, top + side / 2, left + side, top + side / 2),
+            ] {
+                MoveToEx(dc, x1, y1, null_mut());
+                LineTo(dc, x2, y2);
+            }
+            let x = left + ((valence + 1.0) * side as f32 / 2.0).round() as i32;
+            let y = top + ((1.0 - arousal) * side as f32 / 2.0).round() as i32;
+            let brush = CreateSolidBrush(0x00f0_f0f0);
+            if !brush.is_null() {
+                let old_brush = SelectObject(dc, brush);
+                Ellipse(dc, x - 5, y - 5, x + 6, y + 6);
+                SelectObject(dc, old_brush);
+                DeleteObject(brush);
+            }
+            SelectObject(dc, old_pen);
+            DeleteObject(pen);
+        }
     }
 
     fn key(&mut self, key: u32) {
@@ -1127,6 +1447,7 @@ unsafe extern "system" fn window_proc(
                 // procedure; nested messages must not alias `app`.
                 unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
                 app.tick_stop.store(true, Ordering::Release);
+                app.release_mouse();
                 if let Ok(mut shared) = app.shared.lock() {
                     shared.playing = false;
                 }
@@ -1158,10 +1479,21 @@ unsafe extern "system" fn window_proc(
                 unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, pointer as isize) };
                 return 0;
             }
+            WM_ACTIVATEAPP if wparam == 0 => {
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
+                app.interrupt();
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, pointer as isize) };
+                return 0;
+            }
+            WM_INPUT => {
+                app.mouse(lparam);
+                // Foreground raw input must reach DefWindowProc for cleanup.
+            }
             WM_DESTROY => {
                 // SAFETY: Stop nested callbacks before releasing native VLC.
                 unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
                 app.tick_stop.store(true, Ordering::Release);
+                app.release_mouse();
                 app.vlc.close();
             }
             _ => {}
@@ -1179,7 +1511,6 @@ unsafe extern "system" fn window_proc(
 struct Args {
     video: Option<PathBuf>,
     csv: Option<PathBuf>,
-    data_dir: Option<PathBuf>,
     arm: bool,
     wait: bool,
     headless: bool,
@@ -1241,7 +1572,6 @@ impl Args {
         let mut parsed = Self {
             video: None,
             csv: None,
-            data_dir: None,
             arm: false,
             wait: false,
             headless: false,
@@ -1253,10 +1583,6 @@ impl Args {
                 Some("--arm") => parsed.arm = true,
                 Some("--wait") => parsed.wait = true,
                 Some("--headless") => parsed.headless = true,
-                Some("--data-dir") => {
-                    parsed.data_dir =
-                        Some(PathBuf::from(args.next().ok_or("--data-dir needs a path")?))
-                }
                 Some("--panel-percent") => {
                     parsed.panel_percent = Some(
                         args.next()
@@ -1274,7 +1600,7 @@ impl Args {
                     );
                 }
                 Some("--help" | "-h") => {
-                    println!("FlubberVLC [VIDEO] [CSV] [--arm] [--wait] [--data-dir DIR] [--panel-percent 25] [--step-percent 10]");
+                    println!("FlubberVLC [VIDEO] [CSV-in-video-folder] [--arm] [--wait] [--panel-percent 25] [--step-percent 10]");
                     std::process::exit(0);
                 }
                 Some(flag) if flag.starts_with('-') => {
@@ -1328,20 +1654,38 @@ fn run() -> Result<()> {
     if !(10..=100).contains(&panel_percent) || !(1..=100).contains(&step_percent) {
         return Err("Flubber panel must be 10–100%, and step must be 1–100%".into());
     }
-    let csv_path = if video.is_some() {
-        if let Some(csv) = args.csv.clone() {
-            Some(csv)
-        } else {
-            let root = args.data_dir.clone().unwrap_or(shared_data_root);
-            let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
-            Some(
-                root.join("recordings")
-                    .join(format!("flubber-{stamp}-{}.csv", std::process::id())),
-            )
-        }
-    } else {
-        None
-    };
+    let csv_path = video
+        .as_ref()
+        .map(|video| -> Result<PathBuf> {
+            let folder = video.parent().ok_or("Video has no parent folder")?;
+            if let Some(csv) = args.csv.as_ref() {
+                let path = if csv.is_absolute() {
+                    csv.clone()
+                } else {
+                    folder.join(csv)
+                };
+                if path
+                    .parent()
+                    .ok_or("CSV has no parent folder")?
+                    .canonicalize()?
+                    != folder
+                {
+                    return Err("Affect CSV must be beside the played video".into());
+                }
+                Ok(path)
+            } else {
+                let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+                let stem: String = video
+                    .file_stem()
+                    .ok_or("Video has no filename stem")?
+                    .to_string_lossy()
+                    .chars()
+                    .take(80)
+                    .collect();
+                Ok(folder.join(format!("{stem}-flubber-{stamp}-{}.csv", std::process::id())))
+            }
+        })
+        .transpose()?;
     let readiness_csv = csv_path.clone();
     let listener = if args.arm {
         Some(TcpListener::bind("127.0.0.1:0")?)
@@ -1424,6 +1768,10 @@ fn run() -> Result<()> {
         panel_top: 0,
         started: false,
         last_state: -1,
+        events: PlaybackEvents::default(),
+        mouse_active: false,
+        skip_next_mouse: true,
+        cursor_hide_calls: 0,
         panel_percent,
         step: step_percent as f32 / 100.0,
         close_at: None,
@@ -1490,6 +1838,28 @@ fn run() -> Result<()> {
         return Err("Could not create the video surface".into());
     }
     app.video_hwnd = video_hwnd;
+    let mouse_device = RAWINPUTDEVICE {
+        usUsagePage: 1,
+        usUsage: 2,
+        dwFlags: 0,
+        hwndTarget: hwnd,
+    };
+    // SAFETY: This process registers only the generic mouse for its own
+    // foreground player window; no background-input flag is requested.
+    if unsafe {
+        RegisterRawInputDevices(
+            &mouse_device,
+            1,
+            std::mem::size_of::<RAWINPUTDEVICE>() as u32,
+        )
+    } == 0
+    {
+        unsafe { DestroyWindow(hwnd) };
+        command_tx.send(SampleCommand::Quit).ok();
+        worker.join().map_err(|_| "LSL worker panicked")??;
+        csv_worker.join().map_err(|_| "CSV worker panicked")??;
+        return Err("Could not register the rating mouse".into());
+    }
     // SAFETY: `app` remains boxed at a stable address until the message loop ends.
     unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, (&mut *app as *mut App) as isize) };
     app.layout(hwnd);
@@ -1522,7 +1892,11 @@ fn run() -> Result<()> {
         }
     }
     app.close_at = test_exit_after.map(|delay| Instant::now() + delay);
-    // SAFETY: The focus target is our live main window.
+    // SAFETY: The visible player is the participant's active rating surface.
+    // SetFocus alone cannot activate a new top-level process window.
+    if !test_hidden {
+        unsafe { SetForegroundWindow(hwnd) };
+    }
     unsafe { SetFocus(hwnd) };
     let pending = Arc::clone(&app.tick_pending);
     let stop = Arc::clone(&app.tick_stop);
@@ -1581,6 +1955,19 @@ fn run() -> Result<()> {
             DispatchMessageW(&message);
         }
     }
+    let mouse_device = RAWINPUTDEVICE {
+        dwFlags: RIDEV_REMOVE,
+        hwndTarget: null_mut(),
+        ..mouse_device
+    };
+    // SAFETY: Unregister the same mouse collection after the owned HWND exits.
+    unsafe {
+        RegisterRawInputDevices(
+            &mouse_device,
+            1,
+            std::mem::size_of::<RAWINPUTDEVICE>() as u32,
+        )
+    };
     app.tick_stop.store(true, Ordering::Release);
     animation
         .join()
@@ -1604,5 +1991,38 @@ fn main() {
     if let Err(error) = run() {
         eprintln!("Flubber VLC prototype: {error}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{apply_mouse_rating, PlaybackEvents, Shared, VideoMarker};
+
+    #[test]
+    fn mouse_movement_drives_both_normalized_axes_with_bounded_steps() {
+        let mut rating = Shared::default();
+        apply_mouse_rating(&mut rating, 150, -150, 1_000);
+        assert!((rating.valence - 0.5).abs() < 0.0001);
+        assert!((rating.arousal - 0.5).abs() < 0.0001);
+        apply_mouse_rating(&mut rating, 10_000, -10_000, 1_000);
+        assert_eq!(rating.valence, 1.0);
+        assert_eq!(rating.arousal, 1.0);
+        apply_mouse_rating(&mut rating, -10_000, 10_000, 1_000);
+        assert_eq!(rating.valence, 0.5);
+        assert_eq!(rating.arousal, 0.5);
+    }
+
+    #[test]
+    fn observed_vlc_transitions_emit_control_markers_once_and_in_order() {
+        let mut events = PlaybackEvents::default();
+        assert!(events.observe(3, 2).is_empty());
+        assert!(events.interrupt());
+        assert!(!events.interrupt());
+        assert_eq!(events.observe(4, 3), [VideoMarker::Pause]);
+        assert!(events.observe(4, 4).is_empty());
+        assert_eq!(events.observe(3, 4), [VideoMarker::Resume]);
+        assert_eq!(events.observe(2, 3), [VideoMarker::BufferingStart]);
+        assert_eq!(events.observe(3, 2), [VideoMarker::BufferingEnd]);
+        assert_eq!(events.observe(6, 3), [VideoMarker::End]);
     }
 }

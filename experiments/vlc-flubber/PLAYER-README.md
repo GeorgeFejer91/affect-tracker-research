@@ -9,17 +9,30 @@ the bundled VLC runtime can handle on the computer.
 
 Opening **Flubber VLC Player** starts the `VLC_Flubber_Affect` and
 `VLC_Flubber_Markers` LSL outlets, even with no video playing. Drag a video
-onto its shortcut, or run `FlubberVLC.exe "C:\path\to\video.mp4"`. Arrow keys
-change valence and arousal, Space pauses or resumes, and Escape stops the
-video. The SVG is rendered at physical display resolution on its own nominal
+onto its shortcut, or run `FlubberVLC.exe "C:\path\to\video.mp4"`. While the
+player is in the foreground, moving the mouse changes the two-axis rating:
+right/left changes valence and up/down changes arousal. The pointer is confined
+to the player and hidden during active rating, then released on pause, focus
+loss, stop, and close. The first movement after capture is ignored. A small
+grid beside Flubber shows the current position. Arrow keys remain available;
+Space pauses or resumes, and Escape stops the video. Moving to another app
+while actively rating pauses the video and requires an explicit resume. The
+SVG is rendered at physical display resolution on its own nominal
 30 Hz clock. An independent 30 Hz worker publishes valence and arousal with
-an LSL timestamp. It emits `<video filename>_Start` and `_Stop` markers.
+an LSL timestamp. The marker outlet emits `<video filename>_Start` and `_Stop`
+around each run, plus observed `_Pause`, `_Resume`, `_Interrupt`,
+`_BufferingStart`, `_BufferingEnd`, `_End`, and `_Error` events as applicable.
+An `_Interrupt` marks loss of foreground while mouse rating was active;
+`_Pause` follows when LibVLC reports its paused state. `_End` denotes natural
+completion, while `_Stop` closes every run, including manual stop and error.
 
-Each video run creates a `time_s,valence,arousal` CSV under
-`%LOCALAPPDATA%\VLC_Flubber_Player\recordings`. The time column is a monotonic
+Each video run creates a unique `time_s,valence,arousal` CSV **in the same
+folder as the played video**. That folder must be writable. The time column is a monotonic
 30 Hz clock aligned to LibVLC's first advancing media time; it is not a
 decoded-frame presentation timestamp. The CSV writer is independent of LSL.
 Replaying in one process creates another CSV instead of overwriting the first.
+The player does not write XDF; a separate Recorder can subscribe to its LSL
+streams and store XDF elsewhere.
 
 The player creates `%LOCALAPPDATA%\VLC_Flubber_Player\presets\default.flubber.json`:
 

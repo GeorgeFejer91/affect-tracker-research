@@ -1,5 +1,56 @@
 # Native VLC Flubber side quest
 
+## One current VLC line: mouse rating and control markers, 2026-10-06
+
+The current source now keeps the separated LibVLC player and separate
+Flubbercorder Recorder as the sole active VLC implementation. The 0.1.x
+video-filter, conversion launcher, Python console, and obsolete package
+workflow have been removed from the current tree; the public 0.1.1 tag and
+Git history retain their exact source. This source consolidation does not
+turn the VLC side project into the standard WebView Experiment Runner.
+
+The player reads foreground relative mouse movement for normalized two-axis
+valence/arousal rating, with a small position grid beside the SVG Flubber.
+The pointer is confined and hidden only while rating is active; focus loss
+during active rating emits `Interrupt`, requests pause, and releases the
+pointer. The player alone owns the 30 Hz affect LSL outlet, control marker
+outlet, and unique three-column CSV backup beside the played video. Source
+video folders must be writable. The Recorder remains a separate LSL/XDF
+subscriber and controller; it accepts bounded intermediate control markers
+but still requires filename Start/Stop bookends and affect coverage before
+XDF promotion. No saved experiment JSON schema changed.
+
+Focused Rust tests cover mouse direction, normalization and step clamping,
+observed LibVLC state-to-marker chronology, and Recorder marker validation.
+A local visible four-second H.264 run sent 150 affect samples over 4.966 s
+through an independent inlet at 30.002 Hz, with filename Start, End, Stop
+markers. Its player-owned CSV held 120 rows beside the test video. A separate
+local Recorder run subscribed before playback and promoted XDF with 219 affect
+samples and the same three marker labels; VLC again wrote 120 CSV rows beside
+the played video, while XDF stayed in Recorder application data. An initial
+focus-loss run observed Start, Interrupt, Pause markers and continuous idle
+LSL delivery, but did not measure physical mouse input or a subsequent Resume.
+After the source cleanup and event-state refactor, the player package was
+rebuilt with `FlubberVLC.exe` SHA-256
+`945FFD4D8656B8494127373D3403006046DC80ACE9482D7E845498E7CCAD2ED9`.
+A fresh Recorder run against that exact staged executable promoted XDF with
+166 affect samples and Start/End/Stop, and VLC wrote 120 CSV rows beside the
+video. This binds the local functional check to the final package candidate;
+it is not an installed-input or research qualification. Physical mouse
+behavior, installed input timing, wider codecs, and research qualification
+remain open.
+
+The Tauri Recorder release executable was rebuilt with the pinned local demo
+clip and staged in the existing `%LOCALAPPDATA%/Programs/Flubbercorder` app
+location for inspection. Its SHA-256 is
+`48D1062D304A4CB085B907F804698F1D4C467F2C6EB6E27DED961875E96261C5`;
+the bundled Player matches the staged hash above, and the demo clip matches
+`B5327E7465EC92A4C93F3236A1EBAB4556CDF508E24EAFE6C593EAC1E13AFD49`.
+The preceding app files were archived under the side project's ignored
+`build/local-app-archive-20261006-212852/` directory. The current executable
+opened as the Flubbercorder desktop window. This handoff is a local staged
+build, not an Inno installer or interactive mouse-input qualification.
+
 ## Separated LibVLC stability prototype, 2026-10-06
 
 A Windows prototype, now packaged as an experimental 0.2.0 candidate, lives in

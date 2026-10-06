@@ -1,3 +1,4 @@
+use crate::valid_marker_sequence;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
@@ -170,8 +171,10 @@ pub fn inspect(
         .values()
         .find(|s| s.source_id == format!("{source}-markers"))
         .ok_or("XDF marker stream is missing")?;
-    let names = [format!("{filename}_Start"), format!("{filename}_Stop")];
-    if affect.samples == 0 || markers.labels != names || markers.samples != 2 {
+    if affect.samples == 0
+        || !valid_marker_sequence(&markers.labels, filename)
+        || markers.samples != markers.labels.len() as u64
+    {
         return Err("XDF affect samples or filename markers are incomplete".into());
     }
     Ok(Inspection {

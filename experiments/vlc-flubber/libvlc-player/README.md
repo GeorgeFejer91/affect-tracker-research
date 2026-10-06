@@ -1,53 +1,49 @@
-# LibVLC separated-surfaces prototype
+# VLC Flubber player
 
-This isolated Windows prototype tests original-file LibVLC playback in an upper
-child window, with a separately clocked native SVG Flubber panel below. Rust
-publishes `VLC_Flubber_Affect` at 30 Hz from application startup and emits
-`VLC_Flubber_Markers` at the beginning and end of video playback. A three-column
-`time_s,valence,arousal` CSV is bounded by video playback. `time_s` is a 30 Hz
-monotonic elapsed clock aligned to LibVLC's first advancing media time, not a
-per-decoded-frame presentation timestamp. LSL supplies the sample timestamp;
-its data channels are valence and arousal. The existing VLC 3
-video-filter player and public installers are unchanged.
+This is the current native VLC Flubber player. It passes the original media
+file to bundled LibVLC 3.0.20, displays video in an upper child window, and
+renders the native SVG Flubber plus a two-axis rating grid in a lower surface.
+No video frames are transcoded or copied through Flubber. This is a custom
+LibVLC shell, not VLC's Qt window.
 
-This is a feasibility test, not a released player. It has a loopback Recorder
-command endpoint but no playlist, ordinary VLC Qt menus, or installer. LibVLC
-uses VLC's normal decoder and video output path; the prototype does not
-transcode or modify video pixels. Package and installed-machine quality gates
-remain open. The CSV writer is separate from the LSL sampler. A bounded queue
-prevents disk writes from blocking LSL; a writer or renderer failure stops
-playback. CSV files are created without overwriting existing files, and a
-second play in the same process gets a `.repeat2.csv` suffix.
+From startup, the player publishes `VLC_Flubber_Affect` with normalized
+`[valence, arousal]` at nominal 30 Hz and `VLC_Flubber_Markers` as an irregular
+string stream. Relative mouse movement changes the two-axis rating while the
+player is foreground and playing. The pointer is hidden and confined during
+active rating, then released on pause, focus loss, stop, and close. Arrow keys
+remain available. Space toggles pause; Escape stops playback.
+The relative-motion mapping adapts the interaction described by
+[online-affect-rating](https://github.com/embodied-computation-group/online-affect-rating)
+(MIT): one rating range spans 60% of the player height and each movement
+event is capped at 150 units. Win32 raw mouse units can differ from browser
+pointer-lock pixels across devices. Raw movement events are not stored.
 
-The sampler and SVG workers use high-resolution Windows timers. The process
-requests a 1 ms timer period and disables Windows 11's timer and execution
-throttles while the player is running, then restores system-managed policy on
-exit. This is needed for the outlet to stay at 30 Hz when the player window is
-hidden or covered. In one hidden idle probe, an independent LSL inlet received
-241 samples over 7.999 seconds (30.002 Hz), with a 33.68 ms 95th-percentile
-interval, a 33.86 ms worst interval, and no interval over 50 ms. In a separate
-Recorder-controlled original-file video run, XDF contained both filename
-markers and 182 affect samples; the video-bounded CSV contained 120 rows from
-0.033 to 4.000 seconds. These are local software observations, not a Windows
-real-time guarantee or an installed-machine quality result.
+Markers use the video filename followed by a fixed suffix: `Start`, `Pause`,
+`Resume`, `Interrupt`, `BufferingStart`, `BufferingEnd`, `End`, `Error`, and
+`Stop`. `Start` and `Stop` bookend each playback. The other markers describe
+observed LibVLC state changes or loss of foreground during active rating.
+State polling is at the UI's nominal 30 Hz, so sub-interval transitions can
+be missed. The player owns these outlets; the separate Flubbercorder Recorder
+subscribes and writes XDF.
 
-Build with `cargo build --release --manifest-path libvlc-player/Cargo.toml`.
+The player independently writes a unique three-column
+`time_s,valence,arousal` CSV **beside the played video**, including when no
+Recorder is running. The video directory must be writable. CSV rows cover
+playing time and exclude paused intervals; `time_s` is a monotonic 30 Hz clock
+aligned to LibVLC's first advancing media time, not an exact decoded-frame
+presentation timestamp. LSL samples continue while paused.
+
+Build from `experiments/vlc-flubber/` with
+`cargo build --release --locked --manifest-path libvlc-player/Cargo.toml`.
 The executable expects sibling `vlc/libvlc.dll`, `vlc/plugins`, and
-`svg/flubber_svg.dll`; set `FLUBBER_VLC_DIR` and `FLUBBER_SVG_DLL` to override
-those paths for development. Run `flubber-libvlc-prototype.exe VIDEO [CSV]`.
-The player disables VLC's plugin cache and ignores the user's stock VLC
-configuration. This prevents installer timestamp changes from making a bundled
-cache stale; VLC scans its plugins on startup.
+`svg/flubber_svg.dll`; `FLUBBER_VLC_DIR` and `FLUBBER_SVG_DLL` can override
+these for local development. Run `FlubberVLC.exe VIDEO` or open the packaged
+standalone player. An optional positional CSV path must remain in the video
+folder. The `--arm` mode keeps the outlets live and waits for a loopback
+`play` command from the separate Recorder; the endpoint also accepts
+`pause`, `stop`, `volume 0..256`, `f on`, `is_playing`, and `quit`.
 
-Left/right and up/down adjust valence/arousal, Space pauses or resumes, and
-Escape stops. The player window can open with no video; LSL is then live while
-idle. A video path on the command line starts playback. `--arm` waits for a
-loopback `play` command from Flubbercorder; the same endpoint accepts `pause`,
-`stop`, `volume 0..256`, `f on`, `is_playing`, and `quit`. The window remains
-visible because hidden LibVLC video output did not decode in the local test.
-
-`cargo build --release --bins` also builds `probe.exe`. Start that receiver
-before playback to check 30 Hz delivery and the filename markers. For bounded
-local runs, set `FLUBBER_TEST_EXIT_MS` to 1000–30000. The prototype's window
-must be visible for video-output checks; `FLUBBER_TEST_HIDDEN` only tests idle
-LSL startup.
+The pinned VLC runtime and installed-package evidence are in
+[the side-project runbook](../README.md) and
+[status record](../../../for-ai/75-VLC-FLUBBER-SIDE-QUEST.md). This remains
+experimental and does not qualify the main suite for research use.

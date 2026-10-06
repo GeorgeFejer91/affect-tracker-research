@@ -3,7 +3,7 @@
 The 2026-10-04 user direction makes FFmpeg conversion the active main
 playback approach. Previous player-stack text in this file and older project
 documents is superseded where it conflicts. The separate
-[`for-ai/74-VLC-FLUBBER-SIDE-QUEST.md`](./for-ai/74-VLC-FLUBBER-SIDE-QUEST.md)
+[`for-ai/75-VLC-FLUBBER-SIDE-QUEST.md`](./for-ai/75-VLC-FLUBBER-SIDE-QUEST.md)
 records a native VLC feasibility probe; it is not approved for the main suite.
 
 The 2026-09-12 user amendment requires two separate companion programs. Read

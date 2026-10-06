@@ -1,10 +1,53 @@
 # Agent message board
 
+## VLC mouse rating and control markers — 2026-10-06
+
+Owner: current task; `codex/segment-vlc-mouse-markers` in
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-vlc-mouse-markers`,
+base `b43e8e1`; stage: Backend Verification, followed by a separate
+Repository/Web Synchronization pass to make `main` the one canonical VLC
+Runner line. This is the bounded `experiments/vlc-flubber/` side-project
+concern in [75](75-VLC-FLUBBER-SIDE-QUEST.md), outside P1–P7/R1. The player
+owns relative two-axis mouse input, 30 Hz affect LSL, video control marker
+LSL, and a unique CSV backup beside the played video. The Recorder remains a
+separate subscriber/controller; its marker receipt and XDF validators are the
+only consumer seam. No experiment JSON contribution or schema change is
+planned. Current source has arrow-only rating, filename Start/Stop markers,
+CSV under local app data or a Recorder data directory, and a Recorder that
+rejects additional markers and treats any non-playing RC state as completion.
+Allowed implementation files are the LibVLC player, Recorder marker validation,
+focused tests, current VLC runbooks, this board, and [74]. Evidence now:
+baseline Rust tests, focused input/marker tests, local build and stream/XDF
+session where available. Installed input latency, broad codec support, and
+research qualification remain open. The older 0.1.x filter, launcher and
+Python packaging are historical Git evidence, not a second active VLC line;
+dirty or unrelated worktrees will not be overwritten.
+Implementation result on this branch: LibVLC owns foreground relative mouse
+rating, a compact two-axis grid, observed intermediate control markers, and
+CSV backup beside the video. Recorder changes only its path/marker acceptance
+and the premature non-playing completion rule; it remains a separate process.
+Focused Rust tests and a local four-second player/independent-inlet run passed.
+A separate Recorder run promoted XDF with 219 affect samples and Start/End/Stop,
+while the VLC CSV had 120 rows in the video directory. Physical mouse input
+and installed timing are unverified. The local focus-loss observation emitted
+Start/Interrupt/Pause, but a direct RC pause/resume probe was inconclusive;
+the pure state-transition test covers its marker ordering. Rebuild and recheck
+the final candidate after source cleanup before synchronizing to `main`.
+Final staged player hash `945FFD4D8656B8494127373D3403006046DC80ACE9482D7E845498E7CCAD2ED9`;
+the post-cleanup Recorder run promoted XDF with 166 affect samples and
+Start/End/Stop, with 120 VLC CSV rows beside the source clip. One `main`
+integration remains; no parallel VLC release line is being promoted.
+The 0.2.0 Tauri Recorder with pinned demo was staged at the existing PC app
+location and opened; executable hash
+`48D1062D304A4CB085B907F804698F1D4C467F2C6EB6E27DED961875E96261C5`.
+The previous local app files are archived in the ignored side-project build
+directory. Installed and physical-input qualification remain open.
+
 ## 20261005 VLC side quest frame-matched sampling and Rust/Tauri candidate
 
 Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,
 isolated side-project worktree; stage: Backend Verification. Scope remains
-`experiments/vlc-flubber/` and [74](74-VLC-FLUBBER-SIDE-QUEST.md), outside
+`experiments/vlc-flubber/` and [75](75-VLC-FLUBBER-SIDE-QUEST.md), outside
 P1–P7/R1. The Rust launcher now preserves the source average frame rate as
 an exact rational rate for constant-rate preparation. The VLC native filter
 uses that rate for animation phase and CSV frame times. Fresh installed
@@ -20,7 +63,7 @@ contracts remain untouched.
 
 Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,
 isolated side-project worktree; stage: Backend Verification. Scope is the
-native VLC side quest only: `experiments/vlc-flubber/` and [74](74-VLC-FLUBBER-SIDE-QUEST.md),
+native VLC side quest only: `experiments/vlc-flubber/` and [75](75-VLC-FLUBBER-SIDE-QUEST.md),
 outside P1–P7/R1. The filter now renders generated SVG paths through a Rust
 `resvg` DLL loaded inside VLC and writes a separate three-variable
 `time_s,valence,arousal` CSV automatically. Focused 640x360 and 1920x1080
@@ -50,7 +93,7 @@ Owner: current task; branch `codex/segment-flubbercorder-runner`, isolated
 worktree; stage: Repository/Web Synchronization after installed Backend
 Verification. Bounded side-project concern:
 `experiments/vlc-flubber/flubbercorder/`, the native plugin's remote affect
-command bridge, and [74](74-VLC-FLUBBER-SIDE-QUEST.md). This is outside P1–P7/R1.
+command bridge, and [75](75-VLC-FLUBBER-SIDE-QUEST.md). This is outside P1–P7/R1.
 The existing Planner and Runner implementation, JSON contracts, and release
 claims remain under their segment owners. The side project tests a local HTML
 experimenter window, VLC process control, LSL/CSV/XDF recording, and a paired
@@ -59,14 +102,14 @@ The offline Windows installer passed five installed LSL/XDF/CSV scenarios and
 was published as a [public experimental prerelease](https://github.com/GeorgeFejer91/affect-tracker-research/releases/tag/vlc-experimentrunner-v0.1.0)
 from source commit `40e8493f1443c484afbd85c881451c9f6b8ea512`.
 The branch-only GitHub workflow could not be dispatched, so these are local
-installed checks, not clean CI evidence. See [74](74-VLC-FLUBBER-SIDE-QUEST.md)
+installed checks, not clean CI evidence. See [75](75-VLC-FLUBBER-SIDE-QUEST.md)
 for the asset digest and claim boundary.
 
 ## 20261004 Native VLC Flubber side quest
 
 Owner: current task; branch `codex/segment-vlc-flubber-sidequest`, isolated
 worktree; stage: Backend Verification. Bounded experimental concern:
-`experiments/vlc-flubber/` and [74](74-VLC-FLUBBER-SIDE-QUEST.md), outside
+`experiments/vlc-flubber/` and [75](75-VLC-FLUBBER-SIDE-QUEST.md), outside
 P1–P7/R1. No Planner or Runner source, JSON contract, or qualification status
 changed. Dependencies are VLC 3.0.20 x64, FFmpeg, and optional liblsl.
 The plugin, launcher, CSV, arrow controls, and independent LSL loopback passed
