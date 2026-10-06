@@ -5,7 +5,6 @@ import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTrave
 import { NativePackageProtocolAdapter } from "../../site/src/research/native-package-protocol.js";
 import { NativeMediaController } from "../../site/src/research/native-media-controller.js";
 import { attestNativeGstCatalogue } from "../../site/src/research/native-media-catalogue.js";
-import { attestMasterMedia } from "./master-media.js";
 import { nativeInputRegionRequest } from "../../site/src/research/input-region.js";
 import { createResearchPreview } from "../../site/src/research/preview.js";
 import { deriveParticipantRecord } from "../../site/src/research/identity.js";
@@ -42,7 +41,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const identity = await invoke("research_desktop_identity");
   if (identity?.schema !== "affect-research-desktop-identity" || identity.version !== 1 || identity.program !== "runner") throw new Error("Open this interface with the Experiment Runner executable.");
   if (identity.suite?.required && !identity.suite.complete) throw new Error(`Experiment Runner requires the complete Planner/Runner suite (${identity.suite.issues.join(", ")}).`);
-  const browserMode = identity.platform === "browser" || identity.playbackSurface === "htmlVideo";
+  const browserMode = identity.platform === "browser";
   const query = (id) => root.querySelector(`#${id}`);
   const text = (id, value) => { query(id).textContent = value; };
   const value = (id) => query(id).value;
@@ -61,6 +60,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let abortPending = false, actionEpoch = 0;
   let queue = Promise.resolve(), retentionQueue = Promise.resolve(), polling = false, timer = null, validationStepTimer = null;
   let validationPlaybackEpoch = 0;
+  let nativeWebview = null;
   let preview = createResearchPreview(root.querySelector(".research-preview-stage"), { initialState: { hideFeedback: true, lockPosition: true } });
   const validationVideo = createRunnerHtmlVideoPlayer(query("run-native-video-host"), {
     invoke, windowObject,
@@ -97,6 +97,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   let protocol = legacyProtocol;
   const masterProtocol = new NativeMasterProtocolAdapter({ invoke, windowObject, render: renderMaster, fail, terminal: async status => {
     if (destroyed) return;
+    validationVideo.stop(); nativeWebview = null;
     preflight = null; inputReceipt = null; clearQuestionnaire();
     text("runner-receipt", status.result ? `Participant ${participantLabel(status.participantId)} · ${status.result.status}\n${status.result.outputDirectory}` : `Participant ${participantLabel(status.participantId)} · incomplete attempt\n${status.failureCode ?? "Native finalization unavailable"}`);
     query("runner-receipt").hidden = false;
@@ -981,10 +982,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const scan = await invoke("research_runner_master_rescan", { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe) });
       if (destroyed || generation !== revision) return;
       if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Master media scan belongs to another workspace.");
-      if (!await requireNativeMediaReady(generation)) return;
-      const attested = await attestMasterMedia({ recipe: currentRecipe.recipe, controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
-        viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
-      if (attested.failures.length) throw new Error(`${attested.failures.length} master video files could not be verified by the native decoder.`);
+      // Exact native binding is checked here; decoded WebView frames and playback
+      // transitions are observed per occurrence during a validation attempt.
       const validation = query("runner-validation").checked;
       const preflightResponse = await invoke(validation ? "research_runner_master_validation_preflight" : "research_runner_master_preflight", { request: { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe),
         participantId: participantId(), selector: candidate.selector } });
@@ -993,7 +992,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       const checked = validation ? preflightResponse.result : preflightResponse;
       if (checked?.schema !== "affect-runner-master-preflight" || checked.version !== candidate.version || checked.planIdentitySha256 !== candidate.planIdentitySha256 || checked.recipeSourceByteSha256 !== candidate.recipeSourceByteSha256) throw new Error("Native master preflight does not bind this selection.");
       preflight = checked;
-      text("runner-preflight", checked.nativeStartReady ? "Master and media verified. Test the configured input before Start." : `Master and media verified. ${checked.reasons.join(" · ")}`);
+      text("runner-preflight", checked.nativeStartReady ? "Master files bound. Video decode will be checked during playback; test the configured input before Start." : `Master files bound. ${checked.reasons.join(" · ")}`);
       return;
     }
     const listing = await protocol.refreshRecoveries(currentWorkspace.workspaceId, currentRecipe.canonicalSourceText);
@@ -1041,6 +1040,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     if (destroyed || !status.active) return;
     const step = plan.steps[status.position - 1];
     if (!step) throw new Error("Native master status references an absent occurrence.");
+    const videoStep = step.kind === "video";
     text("runner-session", `${participantLabel(status.participantId)} · ${status.position}/${status.stepCount}`);
     text("runner-stimulus", step.kind === "video" ? step.payload.asset.annotationId : step.kind === "interval" ? "Interval" : step.payload.definition.title);
     text("runner-timing", `${status.sampleCount} samples · ${status.missedSlotCount} missed slots`);
@@ -1072,7 +1072,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     } else {
       clearQuestionnaire(); presentation.showPage("run");
       applyMasterDesktopLayout(root,plan,windowObject);
-      const videoStep = step.kind === "video";
       root.querySelector(".stimulus-stage").hidden=!videoStep;
       root.querySelector(".run-feedback-stage").hidden=!videoStep;
       query("run-native-video-host").hidden=!videoStep;
@@ -1082,6 +1081,55 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
         const ready=await setRegion(root.querySelector(".run-feedback-stage"),"runFeedback");
         if (!ready.runReady) throw new Error("Native participant input is not ready for this video.");
       }
+    }
+    const offer = status.webviewMedia;
+    const key = offer && `${status.runId}:${status.attemptId}:${status.position}:${offer.generation}`;
+    if (nativeWebview && nativeWebview.key !== key) {
+      validationVideo.stop(); nativeWebview = null;
+    }
+    if (videoStep && offer && !nativeWebview && status.phase === "preparing") {
+      const current = { key, sequence: 0, decodedFrames: 0, queue: Promise.resolve(), pauseIssued: false, resumeIssued: false };
+      nativeWebview = current;
+      current.send = observation => {
+        if (destroyed || nativeWebview !== current) return;
+        current.sequence = Math.max(current.sequence, observation.sequence);
+        current.decodedFrames = Math.max(current.decodedFrames, observation.decodedFrames);
+        current.queue = current.queue.then(() => {
+          if (destroyed || nativeWebview !== current) return;
+          return masterProtocol.webviewMediaObserved(status, observation);
+        });
+        void current.queue.catch(error => { if (nativeWebview === current) fail(error); });
+        return current.queue;
+      };
+      void (async () => {
+        try {
+          const receipt = await masterProtocol.webviewMediaUrl(status);
+          if (destroyed || nativeWebview !== current) return;
+          await validationVideo.playStep({ step, receipt, onObservation: current.send });
+        } catch (error) {
+          if (nativeWebview !== current) return;
+          fail(error);
+          void current.send({
+            state: "failed", sequence: ++current.sequence,
+            positionMs: Math.max(0, Number(validationVideo.video?.currentTime) * 1000 || 0), decodedFrames: current.decodedFrames,
+          });
+        }
+      })();
+    } else if (nativeWebview && status.phase === "pausing" && !nativeWebview.pauseIssued) {
+      nativeWebview.pauseIssued = true; nativeWebview.resumeIssued = false;
+      validationVideo.pause();
+    } else if (nativeWebview && status.phase === "resuming" && !nativeWebview.resumeIssued) {
+      nativeWebview.resumeIssued = true; nativeWebview.pauseIssued = false;
+      void validationVideo.resume().catch(error => {
+        if (nativeWebview?.key === key) {
+          fail(error);
+          void nativeWebview.send({ state: "failed", sequence: nativeWebview.sequence + 1,
+            positionMs: Math.max(0, Number(validationVideo.video?.currentTime) * 1000 || 0),
+            decodedFrames: nativeWebview.decodedFrames });
+        }
+      });
+    } else if (nativeWebview && status.phase === "playing") {
+      nativeWebview.pauseIssued = false; nativeWebview.resumeIssued = false;
     }
     renderControls();
   }

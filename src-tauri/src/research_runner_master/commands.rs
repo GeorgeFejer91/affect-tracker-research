@@ -1,7 +1,7 @@
 use super::runtime::{
     MasterAction, MasterActionRequestV3, MasterActionRequestV4, MasterActionV2, MasterActionV4,
     MasterRuntime, MasterStartRequest, MasterStartRequestV2, MasterStartRequestV3,
-    MasterStartRequestV4, MasterStatus,
+    MasterStartRequestV4, MasterStatus, WebviewMediaUrlReceipt, WebviewMediaUrlRequest,
 };
 use super::runtime::{MasterActionRequestV5, MasterStartRequestV5};
 use super::{MasterPlan, MasterSelector, PreparedMaster};
@@ -270,6 +270,18 @@ pub fn research_runner_master_status(
 ) -> ResearchResult<Option<MasterStatus>> {
     authorize(&window)?;
     Ok(runtime.status())
+}
+#[tauri::command]
+pub async fn research_runner_master_webview_media_url(
+    window: WebviewWindow,
+    runtime: State<'_, Arc<MasterRuntime>>,
+    request: WebviewMediaUrlRequest,
+) -> ResearchResult<WebviewMediaUrlReceipt> {
+    authorize(&window)?;
+    let runtime = Arc::clone(&runtime);
+    tauri::async_runtime::spawn_blocking(move || runtime.webview_media_url(request))
+        .await
+        .map_err(|_| CommandError::forbidden("WebView media URL verification did not finish."))?
 }
 #[tauri::command]
 pub async fn research_runner_master_action(

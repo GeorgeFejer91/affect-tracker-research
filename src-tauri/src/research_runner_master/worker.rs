@@ -6,7 +6,10 @@ use super::{
     lsl::MasterLslService,
     markers::{MarkerEvent, MasterMarkers},
     response::ResponseState,
-    runtime::{lock, InputAuthority, MasterAction, MasterPhase, MasterStatus, Message},
+    runtime::{
+        lock, InputAuthority, MasterAction, MasterPhase, MasterStatus, Message, WebviewMediaEvent,
+        WebviewMediaOffer, WebviewMediaState,
+    },
     storage::MasterStorage,
     MasterStep, MasterStepKind, PreparedMaster,
 };
@@ -40,7 +43,7 @@ pub(crate) struct MasterWorker {
     storage: MasterStorage,
     authority: InputAuthority,
     mailbox: Arc<ProtocolInputMailbox>,
-    workspace: Arc<WorkspaceService>,
+    _workspace: Arc<WorkspaceService>,
     media: Arc<NativeMediaService>,
     recorder: Arc<RecorderService>,
     _lease: CompanionLease,
@@ -57,6 +60,10 @@ pub(crate) struct MasterWorker {
     fence: Option<NativeMediaCommandFenceV1>,
     bound_file: Option<String>,
     media_sequence: u64,
+    webview_generation: u64,
+    webview_last_observation: Option<Instant>,
+    webview_buffering: bool,
+    webview_decoded_frames: u64,
     clock: Option<DeadlineClock>,
     interval_deadline: Option<Instant>,
     answers: FormAnswers,
@@ -144,6 +151,7 @@ impl MasterWorker {
             input_active: false,
             interval_remaining_ms: None,
             media_time_ms: None,
+            webview_media: None,
             failure_code: None,
             result: None,
         };
@@ -156,7 +164,7 @@ impl MasterWorker {
             storage,
             authority,
             mailbox,
-            workspace,
+            _workspace: workspace,
             media,
             recorder,
             _lease: lease,
@@ -173,6 +181,10 @@ impl MasterWorker {
             fence: None,
             bound_file: None,
             media_sequence: 0,
+            webview_generation: 0,
+            webview_last_observation: None,
+            webview_buffering: false,
+            webview_decoded_frames: 0,
             clock: None,
             interval_deadline: None,
             answers: Default::default(),
@@ -293,6 +305,7 @@ impl MasterWorker {
                 data,
                 page_no,
             } => self.survey_answers_action(position, data, page_no, true),
+            MasterAction::WebviewMedia { event } => self.observe_webview_media(event),
             MasterAction::Pause => {
                 if self.state.phase != MasterPhase::Playing {
                     return Err(invalid("Pause requires native Playing."));
@@ -300,6 +313,9 @@ impl MasterWorker {
                 self.quiesce()?;
                 self.state.phase = MasterPhase::Pausing;
                 self.transition_started = Instant::now();
+                if self.state.webview_media.is_some() {
+                    return Ok(());
+                }
                 let status = self.media.pause(
                     self.fence
                         .clone()
@@ -313,6 +329,9 @@ impl MasterWorker {
                 }
                 self.state.phase = MasterPhase::Resuming;
                 self.transition_started = Instant::now();
+                if self.state.webview_media.is_some() {
+                    return Ok(());
+                }
                 let status = self.media.play(
                     self.fence
                         .clone()
@@ -500,27 +519,94 @@ impl MasterWorker {
             .ok_or_else(|| {
                 invalid("The video occurrence has no exact native asset/location binding.")
             })?;
-        let grant = binding.issue_grant(&self.workspace, &self.workspace_id)?;
-        self.bound_file = Some(binding.workspace_file_id().to_owned());
-        let receipt = self.media.prepare(grant, self.viewport)?;
+        let (file, hash, bytes, mime) = binding.webview_identity();
+        self.webview_generation = self.webview_generation.saturating_add(1);
+        let generation = self.webview_generation;
+        self.bound_file = Some(file.to_owned());
         self.fence = Some(NativeMediaCommandFenceV1 {
-            session_id: receipt.session_id,
-            generation: receipt.generation,
+            session_id: format!("webview-{}-{generation}", self.state.run_id),
+            generation,
         });
         self.media_sequence = 0;
+        self.webview_last_observation = Some(Instant::now());
+        self.webview_buffering = false;
+        self.webview_decoded_frames = 0;
+        self.state.webview_media = Some(WebviewMediaOffer {
+            workspace_id: self.workspace_id.clone(),
+            workspace_file_id: file.to_owned(),
+            sha256: hash.to_owned(),
+            byte_length: bytes,
+            mime_type: mime.to_owned(),
+            generation,
+        });
         self.state.phase = MasterPhase::Preparing;
-        let status = self.media.play(
-            self.fence
-                .clone()
-                .ok_or_else(|| invalid("Missing media fence."))?,
-        )?;
+        self.transition_started = Instant::now();
+        Ok(())
+    }
+    fn observe_webview_media(&mut self, event: WebviewMediaEvent) -> ResearchResult<()> {
+        let offer = self
+            .state
+            .webview_media
+            .as_ref()
+            .ok_or_else(|| invalid("No WebView video is active."))?;
+        if !webview_event_matches(
+            offer,
+            &self.state.attempt_id,
+            self.state.position,
+            self.state.phase,
+            self.media_sequence,
+            self.state.media_time_ms,
+            self.webview_decoded_frames,
+            &event,
+        ) {
+            return Err(invalid(
+                "WebView media event does not match the active video binding.",
+            ));
+        }
+        let fence = self
+            .fence
+            .as_ref()
+            .ok_or_else(|| invalid("Missing WebView media fence."))?;
+        let mut status = NativeMediaStatusV1::ready();
+        status.sequence = event.sequence;
+        status.generation = fence.generation;
+        status.session_id = Some(fence.session_id.clone());
+        status.workspace_file_id = Some(offer.workspace_file_id.clone());
+        status.viewport = self.viewport;
+        status.position_ms = Some(event.position_ms);
+        status.state = match event.state {
+            WebviewMediaState::Playing => NativeMediaStateV1::Playing,
+            WebviewMediaState::Buffering => NativeMediaStateV1::Buffering,
+            WebviewMediaState::Paused => NativeMediaStateV1::Paused,
+            WebviewMediaState::Ended => NativeMediaStateV1::Ended,
+            WebviewMediaState::Failed => NativeMediaStateV1::Failed,
+        };
+        self.webview_last_observation = Some(Instant::now());
+        self.webview_decoded_frames = event.decoded_frames;
+        self.webview_buffering = matches!(event.state, WebviewMediaState::Buffering);
+        if self.webview_buffering {
+            self.transition_started = Instant::now();
+        }
         self.reconcile(status)
     }
     fn tick(&mut self) -> ResearchResult<()> {
-        if self.fence.is_some() {
+        if self.fence.is_some() && self.state.webview_media.is_none() {
             self.reconcile(self.media.status_snapshot()?)?;
         }
         let now = Instant::now();
+        if self.state.webview_media.is_some()
+            && ((self.state.phase == MasterPhase::Playing
+                && self
+                    .webview_last_observation
+                    .is_some_and(|at| now.duration_since(at) > Duration::from_secs(2)))
+                || (self.webview_buffering
+                    && now.duration_since(self.transition_started) > Duration::from_secs(15)))
+        {
+            return Err(CommandError::new(
+                "master-webview-playback-stalled",
+                "WebView playback observations stopped.",
+            ));
+        }
         if matches!(
             self.state.phase,
             MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Pausing
@@ -740,8 +826,14 @@ impl MasterWorker {
     }
     fn stop_media(&mut self) -> ResearchResult<()> {
         if let Some(fence) = self.fence.take() {
-            self.media.stop(fence)?;
+            if self.state.webview_media.is_none() {
+                self.media.stop(fence)?;
+            }
         }
+        self.state.webview_media = None;
+        self.webview_last_observation = None;
+        self.webview_buffering = false;
+        self.webview_decoded_frames = 0;
         self.bound_file = None;
         Ok(())
     }
@@ -848,6 +940,39 @@ impl Drop for MasterWorker {
 fn invalid(message: &str) -> CommandError {
     CommandError::invalid_contract(message)
 }
+#[allow(clippy::too_many_arguments)]
+fn webview_event_matches(
+    offer: &WebviewMediaOffer,
+    attempt_id: &str,
+    position: u32,
+    phase: MasterPhase,
+    last_sequence: u64,
+    last_position_ms: Option<f64>,
+    last_decoded_frames: u64,
+    event: &WebviewMediaEvent,
+) -> bool {
+    event.attempt_id == attempt_id
+        && event.position == position
+        && event.generation == offer.generation
+        && event.workspace_file_id == offer.workspace_file_id
+        && event.sha256 == offer.sha256
+        && event.sequence > last_sequence
+        && event.position_ms.is_finite()
+        && event.position_ms >= 0.
+        && event.decoded_frames >= last_decoded_frames
+        && (matches!(event.state, WebviewMediaState::Failed)
+            || last_position_ms.is_none_or(|prior| event.position_ms + 20. >= prior))
+        && (!matches!(
+            event.state,
+            WebviewMediaState::Playing | WebviewMediaState::Ended
+        ) || event.decoded_frames > 0)
+        && !(matches!(event.state, WebviewMediaState::Playing)
+            && matches!(
+                phase,
+                MasterPhase::Preparing | MasterPhase::Resuming | MasterPhase::Paused
+            )
+            && event.decoded_frames <= last_decoded_frames)
+}
 #[cfg(test)]
 #[path = "worker_survey_tests.rs"]
 mod survey_tests;
@@ -860,6 +985,62 @@ mod tests {
         research_native_protocol::runtime::PackageProtocolRuntime,
         research_runner_master::{runtime::MasterChoice, MasterSelector},
     };
+    #[test]
+    fn webview_observation_requires_current_binding_and_new_decoded_frame() {
+        let offer = WebviewMediaOffer {
+            workspace_id: "workspace".into(),
+            workspace_file_id: "file".into(),
+            sha256: "a".repeat(64),
+            byte_length: 4,
+            mime_type: "video/mp4".into(),
+            generation: 2,
+        };
+        let event = WebviewMediaEvent {
+            attempt_id: "attempt".into(),
+            position: 3,
+            generation: 2,
+            workspace_file_id: "file".into(),
+            sha256: offer.sha256.clone(),
+            sequence: 7,
+            state: WebviewMediaState::Playing,
+            position_ms: 100.,
+            decoded_frames: 1,
+        };
+        let accepts = |candidate: &WebviewMediaEvent| {
+            webview_event_matches(
+                &offer,
+                "attempt",
+                3,
+                MasterPhase::Preparing,
+                6,
+                Some(99.),
+                0,
+                candidate,
+            )
+        };
+        assert!(accepts(&event));
+        let mut stale = event.clone();
+        stale.generation = 1;
+        assert!(!accepts(&stale));
+        let mut wrong = event.clone();
+        wrong.attempt_id = "other".into();
+        assert!(!accepts(&wrong));
+        let mut wrong = event.clone();
+        wrong.workspace_file_id = "other".into();
+        assert!(!accepts(&wrong));
+        let mut wrong = event.clone();
+        wrong.sha256 = "b".repeat(64);
+        assert!(!accepts(&wrong));
+        let mut duplicate = event.clone();
+        duplicate.sequence = 6;
+        assert!(!accepts(&duplicate));
+        let mut undecoded = event.clone();
+        undecoded.decoded_frames = 0;
+        assert!(!accepts(&undecoded));
+        let mut rewind = event;
+        rewind.position_ms = 60.;
+        assert!(!accepts(&rewind));
+    }
     fn with_neutral_worker(check: impl FnOnce(&mut MasterWorker)) {
         // Exact saved fixture, synthetic worker boundary/input state only; no
         // decoded video, physical input, renderer paint or XDF attestation.

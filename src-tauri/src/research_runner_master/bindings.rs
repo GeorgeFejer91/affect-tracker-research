@@ -2,9 +2,7 @@
 use super::PreparedMaster;
 use crate::{
     research_error::{CommandError, ResearchResult},
-    research_workspace::{
-        NativeMediaGrant, RunnerVideoBinding, RunnerVideoBindingV3, WorkspaceService,
-    },
+    research_workspace::{RunnerVideoBinding, RunnerVideoBindingV3, WorkspaceService},
 };
 
 pub(crate) enum MasterVideoBinding {
@@ -52,18 +50,8 @@ impl MasterVideoBinding {
         };
         asset["assetId"] == *id && asset["sourceRelativePath"] == *path
     }
-    pub(crate) fn workspace_file_id(&self) -> &str {
+    pub(crate) fn webview_identity(&self) -> (&str, &str, u64, &str) {
         match self {
-            Self::Historical(value) => &value.workspace_file_id,
-            Self::V3(value) => &value.workspace_file_id,
-        }
-    }
-    pub(crate) fn issue_grant(
-        &self,
-        workspace: &WorkspaceService,
-        workspace_id: &str,
-    ) -> ResearchResult<NativeMediaGrant> {
-        let (id, hash, bytes, mime) = match self {
             Self::Historical(value) => (
                 &value.workspace_file_id,
                 &value.sha256,
@@ -76,7 +64,6 @@ impl MasterVideoBinding {
                 value.byte_length,
                 &value.mime_type,
             ),
-        };
-        workspace.issue_native_media_grant(workspace_id, id, hash, bytes, mime)
+        }
     }
 }

@@ -1,5 +1,35 @@
 # Agent message board
 
+## 20261006 R1 WebView native handoff — owner source receipt
+
+R1 RR-04, with RR-07/RR-08 native sampling/recording seams, Backend
+Verification. Owner branch `codex/segment-r1-webview-handoff` starts at
+`8e1d65d`. The standard desktop Runner now routes to the native master worker,
+while the static browser retains its CSV-only path. For a selected master video,
+the worker publishes the exact workspace file/hash/length/MIME and a generation;
+the Runner-only URL command checks the live run, attempt, step and binding
+before and after the existing workspace service rehashes and grants the file.
+The WebView sends bounded, sequence-fenced decoded playback observations through
+the existing versioned master action commands. Only accepted Playing opens the
+Rust scheduler and input; buffering/pause, observed end, error and observation
+loss close or fail that native acquisition segment. Rust retains LSL, XDF,
+events and attempt persistence. Root owns registration of
+`research_runner_master_webview_media_url` in the Runner-only Tauri command
+set. No GStreamer source or runtime is restored.
+
+The first pass preserves `qualifiedStartAvailable: false`. Master3–5 local
+validation remains permanently labelled `researchQualified: false`; normal
+research Start and master1–2 validation remain closed. Focused Node playback,
+adapter and master contract checks passed (16/16), as did Runner build/boundary,
+Rust formatting, JS syntax and whitespace checks. Rust
+compile and installed WebView decoded-frame, timing, real LSL/XDF, error,
+keyboard and independent XDF readback remain open; source tests cannot qualify
+the installer. Root must compile the integrated native command registration and
+retain one current installed candidate for those gates. The workspace URL grant
+is rehashed at issue time but is not revoked when a step ends or an attempt
+stops; per-grant lifetime/revocation is a separate Workspace/Runner seam before
+research qualification.
+
 ## 20261006 WebView pivot and next parallel allocations
 
 Planner P1 handoff: `dd03a37` was integrated as `17e77ad`. The WebView
