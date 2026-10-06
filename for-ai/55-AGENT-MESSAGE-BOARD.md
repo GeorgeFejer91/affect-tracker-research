@@ -1,5 +1,17 @@
 # Agent message board
 
+## 20261006 Retired native frontend cleanup allocation
+
+Root assigns R1 RR-04/RR-10 Backend Verification to the standard Runner
+frontend owner in an isolated branch. Remove the reachable legacy package
+GStreamer readiness path in `runner/src/app.js` and its now-unused native media
+imports/controller, plus the orphaned `runner/src/master-media.js` helper and
+its matching test. Legacy package Start must fail closed with a clear retired
+backend status. Preserve master1–5 dispatch, exact selected-plan/asset binding,
+acquisition-free finalization, and historical receipt/recovery readers. Prove
+the bounded change with focused Runner tests and report any compatibility gap.
+Do not alter native playback, research Start, or the experiment JSON contract.
+
 ## 20261006 Cross-program JSON and recording review allocation
 
 Root assigns a read-only `FUNCTION_JSON_VERIFY` review at integration
