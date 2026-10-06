@@ -27,6 +27,9 @@ The integrated FlubberRecorder source, built as a local debug executable with
 the two exact manifest hashes embedded, exited 0 for `--verify-player` against
 that installed player. This checks its dependency verifier; it is not a
 Recorder installer or interactive control test.
+The installed player also completed a same-PC `--control-stdio` greeting,
+correlated idle `status` request and correlated `shutdown` reply, then exited
+0. This no-media smoke does not attest to playback or sequence recording.
 
 This is an internal packaging and command-line check of the `b8c3b0e`
 candidate. Later source commits need a new installer and provenance. Visible
