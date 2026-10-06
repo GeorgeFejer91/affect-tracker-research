@@ -171,7 +171,9 @@ const receipt = {
     unsigned: true,
     notarized: false,
     published: false,
-    cargoFeatures: "no-default-features",
+    cargoFeatures: targetName === "runner-windows-x64"
+      ? "no-default-features,runner-desktop"
+      : "no-default-features,planner-desktop",
     webviewPlaybackQualified: false,
   },
   qualification: {

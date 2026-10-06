@@ -120,6 +120,12 @@ jobs:
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --no-default-features --no-run
       - name: Build unsigned host-native package candidate
         run: node scripts/build-unqualified-desktop-package.js ${{ matrix.target }}
+      - name: Write exact unqualified artifact provenance
+        run: >-
+          node scripts/write-unqualified-package-provenance.js
+          ${{ matrix.target }}
+          --output
+          src-tauri/target/release/bundle/unqualified-${{ matrix.target }}-provenance.json
       - name: Install unsigned Windows package candidate
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -129,23 +135,28 @@ jobs:
           $installers = @(Get-ChildItem -LiteralPath 'src-tauri/target/release/bundle/nsis' -Filter '*-setup.exe' -File)
           if ($installers.Count -ne 1) { throw "Expected one Windows installer; found $($installers.Count)." }
           $product = if ($env:PACKAGE_TARGET -eq 'runner-windows-x64') { 'Experiment Runner' } else { 'Experiment Planner' }
-          $binary = if ($env:PACKAGE_TARGET -eq 'runner-windows-x64') { 'affect-runner.exe' } else { 'Experiment Planner.exe' }
           $process = Start-Process -FilePath $installers[0].FullName -ArgumentList '/S' -PassThru -Wait -WindowStyle Hidden
           if ($process.ExitCode -ne 0) { throw "Windows installer exited with $($process.ExitCode)." }
           $install = Join-Path $env:LOCALAPPDATA $product
-          $executable = Join-Path $install $binary
-          if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) { throw "Installed executable is missing: $executable" }
           $registered = @(Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' |
             Get-ItemProperty | Where-Object {
               $_.InstallLocation -and $_.InstallLocation.Trim('"') -ieq $install
             })
           if ($registered.Count -ne 1) { throw 'Installed application has no matching current-user uninstall entry.' }
-      - name: Write exact unqualified artifact provenance
-        run: >-
-          node scripts/write-unqualified-package-provenance.js
-          ${{ matrix.target }}
-          --output
-          src-tauri/target/release/bundle/unqualified-${{ matrix.target }}-provenance.json
+          $uninstallCommand = $registered[0].UninstallString
+          if ($uninstallCommand -match '^\s*"([^"]+\.exe)"') { $uninstaller = $Matches[1] }
+          elseif ($uninstallCommand -match '^\s*(.+?\.exe)(?:\s|$)') { $uninstaller = $Matches[1] }
+          else { throw 'Registered uninstall command has no executable path.' }
+          $verify = @{
+            Target = $env:PACKAGE_TARGET
+            InstallDirectory = $install
+            UninstallerPath = $uninstaller
+            ProvenancePath = "src-tauri/target/release/bundle/unqualified-$($env:PACKAGE_TARGET)-provenance.json"
+          }
+          if ($env:PACKAGE_TARGET -eq 'windows-x64') {
+            $verify.StagedPlannerCli = 'src-tauri/target/planner-sidecars/affect-planner-cli-x86_64-pc-windows-msvc.exe'
+          }
+          ./scripts/verify-installed-desktop-package.ps1 @verify
       - name: Upload macOS workflow artifact only
         if: matrix.platform == 'macos'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

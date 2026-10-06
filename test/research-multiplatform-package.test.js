@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const WORKFLOW_PATH = ".github/workflows/desktop-release.yml";
 const BUILD_HELPER_PATH = "scripts/build-unqualified-desktop-package.js";
@@ -136,13 +141,89 @@ test("standard Runner has a separate unsigned NSIS target and no Planner CLI sid
   const runnerConfig = JSON.parse(await source("src-tauri/tauri.runner.conf.json"));
 
   assert.match(helper, /"runner-windows-x64"[\s\S]*config: "src-tauri\/tauri\.runner\.conf\.json"[\s\S]*binary: "affect-runner"/u);
-  assert.match(helper, /target\.binary \? \["--bin", target\.binary\] : \[\]/u);
+  assert.match(helper, /"--bin",\s*target\.binary/u);
   assert.match(helper, /if \(target\.name === "windows-x64"\) \{[\s\S]*build-planner-cli/u);
   assert.equal(packageJson.scripts["runner:bundle"], "node scripts/build-unqualified-desktop-package.js runner-windows-x64");
   assert.equal(runnerConfig.productName, "Experiment Runner");
   assert.equal(runnerConfig.mainBinaryName, "affect-runner");
   assert.match(provenance, /"runner-windows-x64"[\s\S]*prefix: "Experiment Runner_"/u);
   assert.match(await source(".github/workflows/desktop-release.yml"), /'runner-windows-x64' = @\{ target = 'runner-windows-x64'; runner = 'windows-latest'/u);
+});
+
+test("Tauri package features expose only the requested application binary", async () => {
+  const manifest = await source("src-tauri/Cargo.toml");
+  const helper = await source(BUILD_HELPER_PATH);
+  const workflow = await source(WORKFLOW_PATH);
+  const cliBuilder = await source("scripts/build-planner-cli.js");
+  const runnerBuilder = await source("scripts/build-runner-desktop.js");
+
+  assert.doesNotMatch(manifest, /default-run\s*=/u);
+  for (const [name, path, feature] of [
+    ["affect-research", "src/main.rs", "planner-desktop"],
+    ["affect-runner", "src/bin/runner.rs", "runner-desktop"],
+    ["affect-planner-cli", "src/bin/planner-cli.rs", "planner-cli"],
+  ]) {
+    assert.match(manifest, new RegExp(`name = "${name}"\\s+path = "${path.replaceAll(".", "\\.")}"\\s+required-features = \\["${feature}"\\]`, "u"));
+  }
+  assert.match(helper, /"windows-x64"[\s\S]*binary: "affect-research",\s*feature: "planner-desktop"/u);
+  assert.match(helper, /"runner-windows-x64"[\s\S]*binary: "affect-runner",\s*feature: "runner-desktop"/u);
+  assert.match(helper, /"--features",\s*target\.feature,\s*"--",\s*"--locked",\s*"--no-default-features",\s*"--bin",\s*target\.binary/u);
+  assert.match(cliBuilder, /tauri\/custom-protocol,planner-cli/u);
+  assert.match(runnerBuilder, /tauri\/custom-protocol,runner-desktop/u);
+  assert.match(await source(PROVENANCE_HELPER_PATH), /no-default-features,runner-desktop[\s\S]*no-default-features,planner-desktop/u);
+  assert.ok(workflow.indexOf("Write exact unqualified artifact provenance") < workflow.indexOf("Install unsigned Windows package candidate"));
+  assert.match(workflow, /verify-installed-desktop-package\.ps1 @verify/u);
+});
+
+test("installed Windows verifier rejects cross-app binaries and changed Planner CLI", { skip: process.platform !== "win32" }, async () => {
+  const fixture = await mkdtemp(join(tmpdir(), "affect-package-set-"));
+  const script = fileURLToPath(new URL("../scripts/verify-installed-desktop-package.ps1", import.meta.url));
+  const install = join(fixture, "install");
+  const uninstaller = join(install, "uninstall.exe");
+  const staged = join(fixture, "staged-cli.exe");
+  const provenance = join(fixture, "provenance.json");
+  const cliBytes = Buffer.from("staged planner cli");
+  const hash = createHash("sha256").update(cliBytes).digest("hex");
+  const run = (target, extra = []) => spawnSync("pwsh", ["-NoProfile", "-File", script,
+    "-Target", target, "-InstallDirectory", install, "-UninstallerPath", uninstaller,
+    "-ProvenancePath", provenance, ...extra], { encoding: "utf8" });
+
+  try {
+    await mkdir(install);
+    await writeFile(uninstaller, "uninstaller");
+    await writeFile(staged, cliBytes);
+    await writeFile(join(install, "Experiment Planner.exe"), "planner");
+    await writeFile(join(install, "affect-planner-cli.exe"), cliBytes);
+    await writeFile(provenance, JSON.stringify({
+      schema: "AffectResearchUnqualifiedInternalPackageProvenanceV2",
+      target: { platform: "windows", architecture: "x64" },
+      artifacts: [{ kind: "nsis" }],
+      plannerCli: { installedFileName: "affect-planner-cli.exe", byteLength: cliBytes.length, sha256: hash },
+    }));
+    assert.equal(run("windows-x64", ["-StagedPlannerCli", staged]).status, 0);
+    await writeFile(join(install, "affect-runner.exe"), "wrong app");
+    assert.match(run("windows-x64", ["-StagedPlannerCli", staged]).stderr, /Installed executable set differs/u);
+    await rm(join(install, "affect-runner.exe"));
+    await writeFile(join(install, "affect-planner-cli.exe"), "changed planner cli");
+    assert.match(run("windows-x64", ["-StagedPlannerCli", staged]).stderr, /differs from staged provenance/u);
+    await writeFile(join(install, "affect-planner-cli.exe"), cliBytes);
+    await writeFile(staged, "changed staged cli");
+    assert.match(run("windows-x64", ["-StagedPlannerCli", staged]).stderr, /differs from staged provenance/u);
+
+    await rm(join(install, "Experiment Planner.exe"));
+    await rm(join(install, "affect-planner-cli.exe"));
+    await writeFile(join(install, "affect-runner.exe"), "runner");
+    await writeFile(provenance, JSON.stringify({
+      schema: "AffectResearchUnqualifiedInternalPackageProvenanceV2",
+      target: { platform: "windows", architecture: "x64" }, artifacts: [{ kind: "nsis" }],
+    }));
+    const runnerResult = run("runner-windows-x64");
+    assert.equal(runnerResult.status, 0, runnerResult.stderr);
+    await writeFile(join(install, "affect-planner-cli.exe"), cliBytes);
+    assert.match(run("runner-windows-x64").stderr, /Installed executable set differs/u);
+  } finally {
+    await rm(fixture, { recursive: true, force: true });
+  }
 });
 
 test("provenance binds artifact hashes and sets every requested qualification claim false", async () => {

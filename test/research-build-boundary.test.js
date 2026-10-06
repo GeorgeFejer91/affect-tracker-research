@@ -73,7 +73,7 @@ test("the local Windows package is interface-only without a native media closure
   assert.match(helper, /"windows-x64"[\s\S]*nodePlatform: "win32"[\s\S]*bundles: "nsis"[\s\S]*tauri\.bundle-windows-unqualified\.conf\.json/u);
   assert.match(helper, /--no-default-features/u);
   assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME: "0"|--features[\s\S]*native-gstreamer|lsl-streaming/iu);
-  assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows"\]/u);
+  assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows", "planner-desktop"\]/u);
   assert.match(platform, /feature = "native-acquisition-windows"/u);
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
   assert.deepEqual(bundleConfig.bundle.resources, []);
