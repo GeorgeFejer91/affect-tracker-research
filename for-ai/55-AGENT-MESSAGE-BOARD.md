@@ -1,5 +1,20 @@
 # Agent message board
 
+## 20261006 Pending VLC Runner host barrier
+
+After the isolated live-observation adapter passes review and is integrated,
+R1 RR-04/RR-07/RR-08/RR-09/RR-10 needs one host-owned Backend Verification
+pass. The host must mint the exact attempt/occurrence/generation/file/hash
+binding from the shared master worker, launch and supervise the installed VLC
+player for only that video step, drain its opt-in decoded observations, and
+route them internally through `MasterWorker::observe_playback`. The existing
+worker remains the sole form/ISI/input/sample/marker/LSL/XDF/attempt authority.
+Keep pause unavailable until an observed paused state exists, and keep normal
+research Start closed. Test wrong identities, child loss, no first decoded
+frame, end and stop against the worker before assigning the distinct VLC Runner
+binary/installer pass. This is a dependency brief, not a claim that host wiring
+or installed VLC Runner exists.
+
 ## 20261006 Recorder clean-install workflow handoff
 
 Root integrated `ff18466` for P7/R1 RR-04/RR-10. The Recorder workflow stages
