@@ -95,6 +95,16 @@ source tests for local-only control, strict plan inspection, missing/tampered
 player rejection, and no duplicate player resources. Installed and research
 claims remain open.
 
+Recorder shell review after `857c9ac` (integrated `f073828`): comparing seven
+files only with the adjacent player-supplied manifest proves self-consistency,
+not trusted publisher identity. Before enabling `--inspect-master`, bind the
+whole installed manifest to an exact trusted SHA-256 embedded by the Recorder
+build, or fail closed when that pin is unavailable. Retain the no-LAN/no-bundle
+boundary and report the residual verify-to-execute file replacement race until
+an installed handle-based design is reviewed. Add focused missing-pin and
+modified-manifest rejection checks. This is a corrective companion packaging
+pass; no player release URL/hash exists yet.
+
 Root packaging allocation: R1/RR-11 standalone standard Runner NSIS source,
 separate from Planner's NSIS. The existing `affect-runner` Cargo binary and
 `tauri.runner.conf.json` already define Runner identity and frontend, but the
