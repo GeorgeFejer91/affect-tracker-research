@@ -6946,3 +6946,33 @@ decoded Playing/Ended diagnostics, but the native worker did not record them.
 This pass adds that accepted-event diagnostic and its focused check only.
 Integration and a fresh installer belong to root. Physical video, input, timing,
 LSL/XDF, questionnaire completion, and research qualification remain open.
+
+## 20261006 VLC selected-sequence same-PC control handoff
+
+R1 RR-04/RR-09 Backend Verification on isolated
+`codex/segment-vlc-sequence-control`, based on `e304c41`. The player now
+accepts an exclusive typed `masterSequence` Arm (saved master path,
+participant ID, exact selector), then generation-fenced Start, Stop, and
+correlated Status over the existing `flubber-vlc-control/v1` stdio channel.
+Legacy one-video messages retain their shape. Stop while armed returns idle
+without a run receipt. Stop after Start reports `stop-requested` until the
+sequence worker and its owned VLC child have ended; Status then returns idle
+and a bounded `{status,path,sha256}` reference to the full durable receipt.
+Terminal statuses are `ended`, `failed`, and `stopped`; there are no unsolicited
+terminal frames. Sequence Pause/Resume fail closed.
+
+The selected chronology remains the one strict `PreparedMaster` plan. Its video
+wait checks cancellation and kills/reaps the VLC child; ISI waits check every
+20 ms. Shutdown also signals and joins the worker. No new unsafe boundary,
+recipe schema, or LSL/XDF writer was added. The selected sequence is still
+unqualified for shared Runner recording, and research Start stays closed.
+FFmpeg preparation and verified asset copying remain synchronous, so a Stop
+received there is honored immediately afterward. Recorder's old two-second
+force-kill fallback remains a separate process-tree risk if applied to a
+sequence; the active Stop path must use cooperative Status polling.
+
+`cargo check --locked --jobs 2` passed for the launcher. Its locked native test
+binary passed 20/20 tests, including generation fencing, strict Arm fields,
+pre-start Stop, receipt persistence/hash, interruptible ISI, and reaping an
+owned process on cancellation. This is source-level evidence; installed VLC
+playback, timing, LSL/XDF, and package qualification are still open.

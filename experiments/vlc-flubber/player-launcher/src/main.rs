@@ -7,7 +7,9 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, ExitStatus, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
@@ -524,6 +526,46 @@ fn run() -> Result<()> {
 }
 
 fn run_with_args(args: Args) -> Result<()> {
+    run_with_args_cancellable(args, None)
+}
+
+fn wait_for_selected_child(
+    child: &mut Child,
+    duration_ms: u64,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<ExitStatus> {
+    let Some(deadline) = Instant::now()
+        .checked_add(Duration::from_millis(duration_ms).saturating_add(Duration::from_secs(120)))
+    else {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err("Selected video deadline is not representable".into());
+    };
+    loop {
+        if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err("Selected sequence stopped; VLC child reaped".into());
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => return Ok(status),
+            Ok(None) => {}
+            Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(error.into());
+            }
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err("Selected video did not reach a terminal state before its deadline".into());
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+}
+
+fn run_with_args_cancellable(args: Args, cancel: Option<&Arc<AtomicBool>>) -> Result<()> {
     if args.control_stdio {
         return control::run(args.data_dir);
     }
@@ -607,8 +649,14 @@ fn run_with_args(args: Args) -> Result<()> {
         }
         let ffmpeg = required_file(install.join("ffmpeg").join("ffmpeg.exe"))?;
         let ffprobe = required_file(install.join("ffmpeg").join("ffprobe.exe"))?;
+        if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
+            return Err("Selected sequence stopped before video preparation".into());
+        }
         let (prepared, geometry) =
             prepare_video(&ffmpeg, &ffprobe, &video, &data_dir.join("media"), panel)?;
+        if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
+            return Err("Selected sequence stopped before VLC launch".into());
+        }
         let recordings = data_dir.join("recordings");
         fs::create_dir_all(&recordings)?;
         let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
@@ -692,33 +740,7 @@ fn run_with_args(args: Args) -> Result<()> {
         }
         if args.wait {
             let status = if let Some(duration_ms) = args.master_duration_ms {
-                let Some(deadline) = Instant::now().checked_add(
-                    Duration::from_millis(duration_ms).saturating_add(Duration::from_secs(120)),
-                ) else {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Err("Selected video deadline is not representable".into());
-                };
-                loop {
-                    match child.try_wait() {
-                        Ok(Some(status)) => break status,
-                        Ok(None) => {}
-                        Err(error) => {
-                            let _ = child.kill();
-                            let _ = child.wait();
-                            return Err(error.into());
-                        }
-                    }
-                    if Instant::now() >= deadline {
-                        let _ = child.kill();
-                        let _ = child.wait();
-                        return Err(
-                            "Selected video did not reach a terminal state before its deadline"
-                                .into(),
-                        );
-                    }
-                    thread::sleep(Duration::from_millis(100));
-                }
+                wait_for_selected_child(&mut child, duration_ms, cancel)?
             } else {
                 child.wait()?
             };
@@ -783,6 +805,31 @@ mod tests {
     use std::ffi::OsString;
     use std::fs;
     use std::path::PathBuf;
+    use std::process::{Command, Stdio};
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn selected_child_is_reaped_when_stop_is_signalled() {
+        let mut child = Command::new("powershell")
+            .args(["-NoProfile", "-Command", "Start-Sleep -Seconds 5"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let cancel = Arc::new(AtomicBool::new(false));
+        let signal = Arc::clone(&cancel);
+        let stopper = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(30));
+            signal.store(true, Ordering::Release);
+        });
+        assert!(super::wait_for_selected_child(&mut child, 5_000, Some(&cancel)).is_err());
+        stopper.join().unwrap();
+        assert!(child.try_wait().unwrap().is_some());
+    }
 
     #[test]
     fn converts_fractional_rate_and_preserves_even_layout() {

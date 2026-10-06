@@ -1,5 +1,5 @@
 //! One explicit Planner-master video occurrence, without claiming a Runner session.
-use super::{run_with_args, Args, Result};
+use super::{run_with_args_cancellable, Args, Result};
 use affect_research::research_runner_master::{
     MasterSelector, MasterStep, MasterStepKind, PreparedMaster,
 };
@@ -10,6 +10,8 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::windows::fs::MetadataExt;
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -114,6 +116,20 @@ pub(super) fn run(
     entry_id: &str,
     data_dir: Option<PathBuf>,
 ) -> Result<Value> {
+    run_cancellable(master, participant, selector_json, entry_id, data_dir, None)
+}
+
+fn run_cancellable(
+    master: &Path,
+    participant: &str,
+    selector_json: &str,
+    entry_id: &str,
+    data_dir: Option<PathBuf>,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<Value> {
+    if cancelled(cancel) {
+        return Err("Selected sequence stopped before video binding".into());
+    }
     let selector: MasterSelector = serde_json::from_str(selector_json)?;
     let master_sha = file_sha256(master)?;
     let prepared = PreparedMaster::read_file(master, participant, selector)?;
@@ -156,14 +172,17 @@ pub(super) fn run(
         let _ = fs::remove_file(&copy);
         return Err("Saved master or selected video changed during binding".into());
     }
-    let playback = run_with_args(Args {
-        video: Some(copy.clone()),
-        data_dir: Some(run_dir.clone()),
-        wait: true,
-        selected_master_video: true,
-        master_duration_ms: Some(duration_ms),
-        ..Args::default()
-    });
+    let playback = run_with_args_cancellable(
+        Args {
+            video: Some(copy.clone()),
+            data_dir: Some(run_dir.clone()),
+            wait: true,
+            selected_master_video: true,
+            master_duration_ms: Some(duration_ms),
+            ..Args::default()
+        },
+        cancel,
+    );
     let _ = fs::remove_file(copy);
     playback?;
     Ok(json!({
@@ -183,6 +202,25 @@ pub(super) fn run(
         "evidenceDirectory":run_dir,
         "sharedRunnerRecordingQualified":false
     }))
+}
+
+fn cancelled(cancel: Option<&Arc<AtomicBool>>) -> bool {
+    cancel.is_some_and(|flag| flag.load(Ordering::Acquire))
+}
+
+fn wait_interval(duration: Duration, cancel: Option<&Arc<AtomicBool>>) -> Result<bool> {
+    let deadline = Instant::now()
+        .checked_add(duration)
+        .ok_or("ISI deadline is not representable")?;
+    loop {
+        if cancelled(cancel) {
+            return Ok(false);
+        }
+        let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+            return Ok(true);
+        };
+        thread::sleep(remaining.min(Duration::from_millis(20)));
+    }
 }
 
 #[derive(Debug)]
@@ -224,6 +262,16 @@ fn sequence_occurrences(steps: &[MasterStep]) -> Result<Vec<SequenceOccurrence<'
             Ok(SequenceOccurrence { generation, step })
         })
         .collect()
+}
+
+pub(super) fn preflight_sequence(
+    master: &Path,
+    participant: &str,
+    selector: MasterSelector,
+) -> Result<()> {
+    let prepared = PreparedMaster::read_file(master, participant, selector)?;
+    sequence_occurrences(&prepared.plan.steps)?;
+    Ok(())
 }
 
 fn unix_ms() -> Result<u64> {
@@ -311,6 +359,19 @@ pub(super) fn run_sequence(
     selector_json: &str,
     data_dir: Option<PathBuf>,
 ) -> Result<Value> {
+    run_sequence_cancellable(master, participant, selector_json, data_dir, None)
+}
+
+pub(super) fn run_sequence_cancellable(
+    master: &Path,
+    participant: &str,
+    selector_json: &str,
+    data_dir: Option<PathBuf>,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<Value> {
+    if cancelled(cancel) {
+        return Err("Selected sequence stopped before preflight".into());
+    }
     let selector: MasterSelector = serde_json::from_str(selector_json)?;
     let master_sha = file_sha256(master)?;
     let prepared = PreparedMaster::read_file(master, participant, selector)?;
@@ -332,6 +393,16 @@ pub(super) fn run_sequence(
     for occurrence in occurrences {
         let step = occurrence.step;
         let generation = occurrence.generation;
+        if cancelled(cancel) {
+            events.push(json!({"event":"stopped","position":step.position,"entryId":step.entry_id,"generation":generation,"observedAtUnixMs":unix_ms()?}));
+            return Ok(sequence_receipt(
+                &prepared,
+                &master_sha,
+                &run_dir,
+                &events,
+                "stopped",
+            ));
+        }
         let executed = (|| -> Result<Vec<Value>> {
             if file_sha256(master)? != master_sha {
                 return Err("Saved master changed after sequence selection".into());
@@ -339,12 +410,13 @@ pub(super) fn run_sequence(
             let result = match step.kind {
                 MasterStepKind::Video => {
                     let step_dir = run_dir.join(format!("step-{}-{generation}", step.position));
-                    let receipt = run(
+                    let receipt = run_cancellable(
                         master,
                         participant,
                         selector_json,
                         &step.entry_id,
                         Some(step_dir),
+                        cancel,
                     )?;
                     if receipt["masterFileByteSha256"].as_str() != Some(master_sha.as_str())
                         || receipt["planIdentitySha256"].as_str()
@@ -365,9 +437,12 @@ pub(super) fn run_sequence(
                 MasterStepKind::Interval => {
                     let started = unix_ms()?;
                     let clock = Instant::now();
-                    thread::sleep(Duration::from_millis(
-                        step.duration_ms.ok_or("ISI has no duration")?,
-                    ));
+                    if !wait_interval(
+                        Duration::from_millis(step.duration_ms.ok_or("ISI has no duration")?),
+                        cancel,
+                    )? {
+                        return Err("Selected sequence stopped during ISI".into());
+                    }
                     let ended = unix_ms()?;
                     vec![
                         json!({"event":"isiStart","position":step.position,"entryId":step.entry_id,"generation":generation,"sourceCode":step.source_code,"observedAtUnixMs":started,"observationSource":"launcher-clock"}),
@@ -381,6 +456,16 @@ pub(super) fn run_sequence(
         match executed {
             Ok(step_events) => events.extend(step_events),
             Err(error) => {
+                if cancelled(cancel) {
+                    events.push(json!({"event":"stopped","position":step.position,"entryId":step.entry_id,"generation":generation,"kind":step.kind,"observedAtUnixMs":unix_ms()?,"reason":error.to_string()}));
+                    return Ok(sequence_receipt(
+                        &prepared,
+                        &master_sha,
+                        &run_dir,
+                        &events,
+                        "stopped",
+                    ));
+                }
                 events.push(json!({"event":"failure","position":step.position,"entryId":step.entry_id,"generation":generation,"kind":step.kind,"observedAtUnixMs":unix_ms()?,"reason":error.to_string()}));
                 return Ok(sequence_receipt(
                     &prepared,
@@ -390,6 +475,16 @@ pub(super) fn run_sequence(
                     "failed",
                 ));
             }
+        }
+        if cancelled(cancel) {
+            events.push(json!({"event":"stopped","position":step.position,"entryId":step.entry_id,"generation":generation,"kind":step.kind,"observedAtUnixMs":unix_ms()?}));
+            return Ok(sequence_receipt(
+                &prepared,
+                &master_sha,
+                &run_dir,
+                &events,
+                "stopped",
+            ));
         }
         if !matches!(file_sha256(master), Ok(current) if current == master_sha) {
             events.push(json!({"event":"failure","position":step.position,"entryId":step.entry_id,"generation":generation,"kind":step.kind,"observedAtUnixMs":unix_ms()?,"reason":"Saved master changed during sequence execution"}));
@@ -414,6 +509,20 @@ pub(super) fn run_sequence(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn interval_wait_observes_cooperative_stop_before_duration() {
+        let cancel = Arc::new(AtomicBool::new(false));
+        let signal = Arc::clone(&cancel);
+        let stopper = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(30));
+            signal.store(true, Ordering::Release);
+        });
+        let started = Instant::now();
+        assert!(!wait_interval(Duration::from_secs(2), Some(&cancel)).unwrap());
+        stopper.join().unwrap();
+        assert!(started.elapsed() < Duration::from_secs(1));
+    }
 
     #[test]
     fn selected_occurrence_requires_exact_video_entry() {
