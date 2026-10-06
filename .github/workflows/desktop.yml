@@ -72,7 +72,7 @@ jobs:
       - name: Check FlubberRecorder formatting and shell contract
         run: |
           cargo fmt --manifest-path experiments/vlc-flubber/flubbercorder-tauri/src-tauri/Cargo.toml -- --check
-          node --test experiments/vlc-flubber/flubbercorder-tauri/test/local-shell.test.js
+          node --test experiments/vlc-flubber/flubbercorder-tauri/test/*.test.js
       - name: Test FlubberRecorder native shell
         shell: cmd
         run: |
