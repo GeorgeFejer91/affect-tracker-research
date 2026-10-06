@@ -3,8 +3,6 @@ import { createRunnerHtmlVideoPlayer } from "./html-video-player.js";
 import { plannerRecipeTransportText } from "../../site/src/research/planner-recipe-transport.js";
 import { readRunnerRecipe, resolveRunnerSelection, resolveLanguageSelectionTraversalStepV1, runnerFeedbackState, runnerLanguageTree, runnerInput, runnerMasterFeedbackState } from "./recipe.js";
 import { NativePackageProtocolAdapter } from "../../site/src/research/native-package-protocol.js";
-import { NativeMediaController } from "../../site/src/research/native-media-controller.js";
-import { attestNativeGstCatalogue } from "../../site/src/research/native-media-catalogue.js";
 import { nativeInputRegionRequest } from "../../site/src/research/input-region.js";
 import { createResearchPreview } from "../../site/src/research/preview.js";
 import { deriveParticipantRecord } from "../../site/src/research/identity.js";
@@ -51,7 +49,7 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   const listen = (element, event, fn, options) => { element.addEventListener(event, fn, options); listeners.push(() => element.removeEventListener(event, fn, options)); };
   let recipe = null, workspace = null, selection = null, path = [], inputReceipt = null;
   let preflight = null, revision = 0, regionEpoch = 0, destroyed = false, busy = false;
-  let capability = null, mediaCapability = null, discovery = null, recorder = null, questionnaire = null;
+  let capability = null, discovery = null, recorder = null, questionnaire = null;
   let recentExperiments = null, participantManual = false;
   let focusAfterAction = null;
   let setupScrollQuietUntil = 0;
@@ -74,7 +72,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       if (!destroyed && current?.steps[current.index]?.kind === "video") action(() => showValidationPreview(current.index + 1));
     },
   });
-  const media = new NativeMediaController({ invoke });
   const setRegion = (element, purpose) => invoke("research_input_set_region", { region: nativeInputRegionRequest(element, purpose, ++regionEpoch, windowObject) });
   const legacyProtocol = new NativePackageProtocolAdapter(root, {
     invoke, dispatch: project,
@@ -953,19 +950,6 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     try { await refreshParticipantHistory(true); } catch (error) { fail(error); }
     return true;
   }
-  async function requireNativeMediaReady(generation) {
-    const current = await invoke("research_native_media_capability");
-    if (destroyed || generation !== revision) return false;
-    mediaCapability = current;
-    if (!current?.playerActorReady) {
-      const reason = current?.reasonCode ?? "native-capability-unavailable";
-      if (reason === "native-runtime-verification-pending") {
-        throw new Error("Native video support is still starting. Wait a moment, then press Continue again.");
-      }
-      throw new Error(`Native video inspection is not ready (${reason}). The experiment remains loaded.`);
-    }
-    return true;
-  }
   async function checkSession() {
     if (controllerSettings.overridden) throw new Error("Controller override execution is not connected yet. Restore the file settings in Set controller to run this recipe.");
     if (!recipe || !workspace?.selected) throw new Error("Open a recipe and select its project folder.");
@@ -1004,18 +988,8 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
       selection = candidate; preflight = { nativeStartReady: false };
       text("runner-preflight", "Pending output can be finalized without starting acquisition."); return;
     }
-    text("runner-preflight", "Verifying complete video files and native decode…");
-    const scan = await invoke("research_rescan_package_stimuli", { workspaceId: currentWorkspace.workspaceId, sourceText: plannerRecipeTransportText(currentRecipe) });
-    if (destroyed || generation !== revision) return;
-    if (scan.workspaceId !== currentWorkspace.workspaceId) throw new Error("Media scan belongs to a different project folder.");
-    if (!await requireNativeMediaReady(generation)) return;
-    const attested = await attestNativeGstCatalogue({ controller: media, workspaceId: currentWorkspace.workspaceId, stimuli: scan.stimuli,
-      viewportHost: query("runner-settings-dialog").open ? query("runner-settings-dialog") : query("runner-preparation") });
-    if (attested.failures.length) throw new Error(`${attested.failures.length} video files could not be verified by the native decoder.`);
-    const checked = await protocol.preflight(currentWorkspace.workspaceId, currentRecipe.canonicalSourceText, candidate.detail);
-    if (destroyed || generation !== revision) return;
-    selection = candidate; preflight = checked;
-    text("runner-preflight", checked.nativeStartReady ? "Media and protocol verified. Test the configured input before Start." : "Recipe and media verified. Native playback qualification is still incomplete.");
+    selection = null; preflight = null;
+    text("runner-preflight", "Legacy package playback was retired. Open a Planner master recipe to run an experiment; pending output can still be finalized.");
   }
   function project(type, detail) {
     if (destroyed) return;
@@ -1279,6 +1253,9 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
   listen(query("runner-validation"), "change", () => { invalidate(); renderControls(); });
   async function startAttempt() {
     if (abortPending) return;
+    if (recipe && !recipe.recipe && value("runner-attempt") !== "finalize") {
+      throw new Error("Legacy package playback was retired. Open a Planner master recipe to run an experiment.");
+    }
     if (!selection || !preflight) throw new Error("Check the current selection first.");
     if (!presentation.active) throw new Error("Enter fullscreen participant preparation first.");
     if (controllerSettings.overridden) throw new Error("Controller override execution is not connected yet.");
@@ -1393,12 +1370,12 @@ export async function bootRunner(root, { invoke, windowObject = window, pollMs =
     action(async () => { await invoke("research_input_cancel_setup"); text("runner-input-status", "The test region moved. Test the configured input again."); });
   });
   try {
-    [capability, mediaCapability, workspace] = await Promise.all([legacyProtocol.initialize(), invoke("research_native_media_capability"), invoke("research_workspace_status")]);
+    [capability, workspace] = await Promise.all([legacyProtocol.initialize(), invoke("research_workspace_status")]);
   } catch (error) { destroy(); throw error; }
   text("runner-capability", browserMode ? "Browser execution available · CSV download replaces LSL/XDF"
-    : capability.nativeStartReady ? "Native execution available" : `Native playback not qualified · ${capability.reasonCode}`);
+    : "Research Start requires installed WebView, input, LSL, and XDF qualification");
   text("runner-launch-status", browserMode ? "Runs in this browser with local video access and CSV export."
-    : capability.nativeStartReady ? "" : "Participant setup available · playback not yet qualified");
+    : "Planner master local validation is available after exact preflight; research Start remains closed.");
   text("runner-workspace-status", workspace?.selected ? workspace.displayName : "No project folder selected.");
   try { await refreshRecentFiles(); } catch (error) { fail(error); }
   try { recorder = await invoke("research_recorder_status"); renderRecorder(); } catch { text("runner-record-status", "Recorder is not included in this build."); }
