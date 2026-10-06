@@ -11,6 +11,18 @@ checks. Do not rewrite saved master versions, silently alter historical readers,
 or open research Start. Root will allocate a separate owner implementation pass
 after resolving current installed WebView and VLC package barriers.
 
+Root's initial source/package inspection: no `gst`/`gstreamer` filename occurs
+in the installed f19 Runner tree, and active Cargo/package/workflow manifests
+name no GStreamer dependency. `NativeMediaService` publishes `html-video` and
+has no native player actor. The legacy package-protocol capability in
+`research_native_protocol/commands.rs` still reports `rust-gstplay`, although
+its normal Start remains closed; `research_runner_master/runtime.rs` still has
+the guarded old normal Start branch. These active labels need a bounded owner
+cleanup after the WebView evidence pass. Saved geometry and playback enum names
+remain in versioned readers and checked-in historical fixtures; deleting those
+without a compatibility decision would break old masters. Source inspection is
+not an installed playback qualification receipt.
+
 ## 20261006 Real Planner master for installed Runner evidence
 
 Root allocates a P7-09 / R1 RR-10 named integration seam, Final Runtime
