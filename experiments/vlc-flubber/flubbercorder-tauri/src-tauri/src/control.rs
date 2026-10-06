@@ -433,6 +433,9 @@ impl ControlClient {
     }
 
     fn terminate(&mut self) {
+        if self.sequence_armed && self.input.is_none() && self.reader.is_none() {
+            return;
+        }
         self.input.take();
         self.frames.take();
         for _ in 0..40 {
@@ -441,6 +444,12 @@ impl ControlClient {
                 Ok(None) => thread::sleep(Duration::from_millis(50)),
                 Err(_) => break,
             }
+        }
+        if self.child.try_wait().ok().flatten().is_none() && self.sequence_armed {
+            // The launcher owns VLC and reaps it after stdin EOF. Killing only
+            // the launcher here would leave an active VLC child behind.
+            self.reader.take();
+            return;
         }
         if self.child.try_wait().ok().flatten().is_none() {
             let _ = self.child.kill();
@@ -596,7 +605,7 @@ mod tests {
             std::env::temp_dir().join(format!("recorder-master-{}.json", std::process::id()));
         std::fs::write(&master, b"{}").unwrap();
         let mut command = Command::new("powershell");
-        command.args(["-NoProfile", "-Command", "[Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":null,\"ok\":true,\"state\":\"idle\",\"generation\":0,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-1\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"unsolicited\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; Start-Sleep -Seconds 30"]);
+        command.args(["-NoProfile", "-Command", "[Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":null,\"ok\":true,\"state\":\"idle\",\"generation\":0,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-1\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"unsolicited\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; while ($null -ne [Console]::In.ReadLine()) {}"]);
         let mut client = ControlClient::spawn_command(command).unwrap();
         client
             .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
@@ -707,5 +716,60 @@ mod tests {
         assert!(!client.sequence_armed);
         assert!(client.child.try_wait().unwrap().is_some());
         std::fs::remove_file(master).unwrap();
+    }
+
+    #[test]
+    fn active_sequence_cleanup_survives_drop_shutdown_and_protocol_error() {
+        for case in ["drop", "shutdown", "protocol-error"] {
+            let root = std::env::temp_dir();
+            let master = root.join(format!(
+                "recorder-cleanup-{case}-{}.json",
+                std::process::id()
+            ));
+            let marker = root.join(format!(
+                "recorder-cleanup-{case}-{}.txt",
+                std::process::id()
+            ));
+            let _ = std::fs::remove_file(&marker);
+            std::fs::write(&master, b"{}").unwrap();
+            let startup = serde_json::json!({"protocol":PROTOCOL,"requestId":null,"ok":true,"state":"idle","generation":0,"error":null});
+            let armed = serde_json::json!({"protocol":PROTOCOL,"requestId":"recorder-1","ok":true,"state":"armed","generation":1,"error":null});
+            let started = serde_json::json!({"protocol":PROTOCOL,"requestId":if case == "protocol-error" { "wrong" } else { "recorder-2" },"ok":true,"state":"start-requested","generation":1,"error":null});
+            let script = format!(
+                "[Console]::WriteLine('{}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{}'); while ($null -ne [Console]::In.ReadLine()) {{}}; Start-Sleep -Milliseconds 2500; [IO.File]::WriteAllText('{}','cleaned')",
+                startup,
+                armed,
+                started,
+                marker.to_string_lossy().replace('\'', "''")
+            );
+            let mut command = Command::new("powershell");
+            command.args(["-NoProfile", "-Command", &script]);
+            let mut client = ControlClient::spawn_command(command).unwrap();
+            client
+                .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
+                .unwrap();
+            if case == "protocol-error" {
+                assert!(client
+                    .send(Action::Start, None)
+                    .unwrap_err()
+                    .contains("Uncorrelated"));
+            } else {
+                client.send(Action::Start, None).unwrap();
+            }
+            if case == "shutdown" {
+                client.input.take(); // Simulate a broken control pipe before Shutdown.
+                client.shutdown();
+            }
+            drop(client);
+            for _ in 0..200 {
+                if marker.is_file() {
+                    break;
+                }
+                thread::sleep(Duration::from_millis(50));
+            }
+            assert_eq!(std::fs::read(&marker).unwrap(), b"cleaned");
+            std::fs::remove_file(master).unwrap();
+            std::fs::remove_file(marker).unwrap();
+        }
     }
 }

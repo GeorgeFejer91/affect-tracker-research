@@ -1,5 +1,21 @@
 # Agent message board
 
+## 20261006 Recorder selected-sequence teardown follow-up
+
+R1 RR-04/RR-09 Backend Verification, isolated
+`codex/segment-recorder-sequence-lifecycle` from integration `0619b88`:
+FlubberRecorder's active selected-master client closes its stdio pipe and
+waits briefly on Drop, broken-pipe shutdown, or a malformed/uncorrelated
+reply. If the player launcher is still cleaning up, Recorder leaves that
+launcher alive to cancel and reap its owned VLC child; it does not force-kill
+only the parent process. Normal correlated Stop -> Status and successful
+Shutdown behavior retain the v1 wire contract. Eleven focused control tests
+pass, including fake-player cleanup delayed beyond the former two-second kill
+window for Drop, broken-pipe Shutdown and an uncorrelated reply. The launcher
+may continue cleaning up after Recorder releases its process handle;
+installed process-tree, terminal-receipt and research recording gates remain
+with root.
+
 ## 20261006 Installed recording-capable Runner candidate at `d928dcc`
 
 Replacement package run `37415641400` passed its Windows build, provenance,
