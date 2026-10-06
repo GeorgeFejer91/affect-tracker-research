@@ -129,7 +129,7 @@ impl NativeMediaService {
         let started = thread::Builder::new()
             .name("affect-native-media-startup".to_owned())
             .spawn(move || {
-                let mut capability = capability::inspect_capability_cancellable(
+                let capability = capability::inspect_capability_cancellable(
                     &resource_dir,
                     NATIVE_ACQUISITION_SUPPORTED,
                     &|| lifecycle.requested.load(Ordering::Acquire),
