@@ -1,5 +1,18 @@
 # Agent message board
 
+## 20261006 Installed f19 UI source review
+
+Read-only UI_VERIFY inspected the exact f19 Planner/Runner installed package
+identities and current source. Computer-use reported no available app/browser
+surface, so no installed-window visual claim is made. In Runner preparation,
+`runner/runner.css` hides Back and Session settings while the missing input-test
+receipt error in `runner/src/app.js` directs the user to Session settings;
+Escape returns to the launcher but is not explained there. Two prominent Runner
+launcher tools open preview-only remote dialogs. Planner's static disabled-script
+message still says it runs an experiment. Owners should address the concrete
+copy/navigation gap in a bounded UI pass, then verify rendered WebView text and
+focus; do not treat source inspection as a rendered accessibility receipt.
+
 ## 20261006 Retired GStreamer source boundary review
 
 Root allocates an R1 RR-04/RR-07 read-only Backend Verification review of
