@@ -74,7 +74,8 @@ test("the Planner package excludes native media while Runner enables recording a
   assert.match(helper, /--no-default-features/u);
   assert.doesNotMatch(helper, /AFFECT_RESEARCH_REQUIRE_GSTREAMER_RUNTIME|native-gstreamer/iu);
   assert.match(helper, /"windows-x64"[\s\S]*feature: "planner-desktop"/u);
-  assert.match(helper, /"runner-windows-x64"[\s\S]*feature: "runner-desktop,lsl-streaming,native-acquisition-windows"/u);
+  assert.match(helper, /"runner-windows-x64"[\s\S]*feature: "runner-desktop"/u);
+  assert.match(cargoToml, /runner-desktop = \["lsl-streaming", "native-acquisition-windows"\]/u);
   assert.match(cargoToml, /default = \["lsl-streaming", "native-acquisition-windows", "planner-desktop"\]/u);
   assert.match(platform, /feature = "native-acquisition-windows"/u);
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);

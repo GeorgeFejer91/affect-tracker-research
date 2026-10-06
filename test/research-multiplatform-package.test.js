@@ -166,7 +166,8 @@ test("Tauri package features expose only the requested application binary", asyn
     assert.match(manifest, new RegExp(`name = "${name}"\\s+path = "${path.replaceAll(".", "\\.")}"\\s+required-features = \\["${feature}"\\]`, "u"));
   }
   assert.match(helper, /"windows-x64"[\s\S]*binary: "affect-research",\s*feature: "planner-desktop"/u);
-  assert.match(helper, /"runner-windows-x64"[\s\S]*binary: "affect-runner",\s*feature: "runner-desktop,lsl-streaming,native-acquisition-windows"/u);
+  assert.match(helper, /"runner-windows-x64"[\s\S]*binary: "affect-runner",\s*feature: "runner-desktop"/u);
+  assert.match(manifest, /runner-desktop = \["lsl-streaming", "native-acquisition-windows"\]/u);
   assert.match(helper, /"--features",\s*target\.feature,\s*"--",\s*"--locked",\s*"--no-default-features",\s*"--bin",\s*target\.binary/u);
   assert.match(cliBuilder, /tauri\/custom-protocol,planner-cli/u);
   assert.match(runnerBuilder, /tauri\/custom-protocol,runner-desktop/u);

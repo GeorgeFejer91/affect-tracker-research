@@ -67,7 +67,7 @@ gilrs = { version = "0.11.2", default-features = false, features = ["xinput"] }
 [features]
 default = ["lsl-streaming", "native-acquisition-windows", "planner-desktop"]
 planner-desktop = []
-runner-desktop = []
+runner-desktop = ["lsl-streaming", "native-acquisition-windows"]
 planner-cli = []
 lsl-streaming = ["dep:labstream"]
 native-acquisition-windows = []

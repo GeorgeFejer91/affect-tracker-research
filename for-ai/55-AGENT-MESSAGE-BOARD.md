@@ -6,9 +6,12 @@ Read-only audit of installed source `1c74f56` found the package builder passes
 `--no-default-features` but requests only `runner-desktop`. Its provenance
 confirms this feature set, so the installed candidate cannot perform the
 planned LSL/XDF or native input trial. Root told the researcher to hold the
-trial; no playback/XDF observation had been collected. The package helper now
-requests `runner-desktop,lsl-streaming,native-acquisition-windows` and
-provenance names the same set. The 11 focused package tests pass. The new
+trial; no playback/XDF observation had been collected. The first replacement
+requested three separate Tauri CLI features; package run `37415097144`
+rejected that combination before native compilation with a main-binary lookup
+error. `runner-desktop` now directly enables `lsl-streaming` and
+`native-acquisition-windows` in Cargo, while the package requests the one
+application feature. Provenance lists the resolved feature set. The new
 installer must compile, install, and receive its exact hashes before trial
 admission. The still-open `1c74f56` app is for interface inspection only.
 

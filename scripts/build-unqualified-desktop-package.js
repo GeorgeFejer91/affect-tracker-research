@@ -32,7 +32,7 @@ const TARGETS = Object.freeze({
     bundles: "nsis",
     config: "src-tauri/tauri.runner.conf.json",
     binary: "affect-runner",
-    feature: "runner-desktop,lsl-streaming,native-acquisition-windows",
+    feature: "runner-desktop",
   }),
   "macos-arm64": Object.freeze({
     nodePlatform: "darwin",
