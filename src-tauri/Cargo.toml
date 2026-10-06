@@ -38,7 +38,7 @@ crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]
 sha2 = "0.10"
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "=2.6.3", features = [] }
 
 [dependencies]
 base64 = "=0.22.1"

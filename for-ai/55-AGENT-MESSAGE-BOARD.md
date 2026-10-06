@@ -78,12 +78,14 @@ off, yet inherits the output directory in its native library search path.
 symbols unresolved. The same failure with an independent target excludes a
 shared `CARGO_TARGET_DIR` as the necessary cause.
 
-The bounded `src-tauri/build.rs` fix disables that Tauri static VC runtime
-override only when neither Planner nor Runner desktop feature is enabled.
-Tauri build still runs to generate its normal context and resources. A fresh
-local launcher build-script output has no `msvcrt.lib` and no forced static
-CRT link directives; the full native test link and Windows CI/package reruns
-remain pending. This is a source handoff, not a playback or release claim.
+The initial build-script-only repair used a `tauri-build 2.7.1` API absent
+from the separately locked desktop dependency (`2.6.3`), so source CI could
+not compile it. The version-compatible repair restores `tauri_build::build()`
+and pins its build dependency to the already desktop-locked `2.6.3`, including
+the standalone launcher lock. That version activates its CRT override only
+when `STATIC_VCRUNTIME=true`; launcher build jobs do not set it. Fresh locked
+checks and Windows CI/package reruns are required before claiming the link
+barrier closed. This is a source handoff, not a playback or release claim.
 
 ## 20261006 Planner and standard Runner isolated installer receipts
 

@@ -4,15 +4,11 @@ use std::process::Command;
 const BUILD_COMMIT_OVERRIDE: &str = "AFFECT_TRACKER_BUILD_COMMIT";
 const TAURI_CONFIG_ENV: &str = "TAURI_CONFIG";
 const NATIVE_ACQUISITION_WINDOWS_FEATURE: &str = "CARGO_FEATURE_NATIVE_ACQUISITION_WINDOWS";
-const PLANNER_DESKTOP_FEATURE: &str = "CARGO_FEATURE_PLANNER_DESKTOP";
-const RUNNER_DESKTOP_FEATURE: &str = "CARGO_FEATURE_RUNNER_DESKTOP";
 
 fn main() {
     println!("cargo:rerun-if-env-changed={BUILD_COMMIT_OVERRIDE}");
     println!("cargo:rerun-if-env-changed={TAURI_CONFIG_ENV}");
     println!("cargo:rerun-if-env-changed={NATIVE_ACQUISITION_WINDOWS_FEATURE}");
-    println!("cargo:rerun-if-env-changed={PLANNER_DESKTOP_FEATURE}");
-    println!("cargo:rerun-if-env-changed={RUNNER_DESKTOP_FEATURE}");
     println!("cargo:rerun-if-changed=../.git/HEAD");
     println!("cargo:rerun-if-changed=../.git/index");
     println!("cargo:rerun-if-changed=src");
@@ -24,18 +20,7 @@ fn main() {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("Cargo must provide its manifest dir");
     let build_commit = resolve_build_commit(std::path::Path::new(&manifest_dir));
     println!("cargo:rustc-env=AFFECT_TRACKER_BUILD_COMMIT={build_commit}");
-    // Tauri's static VC runtime override places a placeholder msvcrt.lib in
-    // OUT_DIR. A library-only consumer can then inherit that search path and
-    // shadow the real CRT import library when linking its own executable.
-    let library_only = env::var_os(PLANNER_DESKTOP_FEATURE).is_none()
-        && env::var_os(RUNNER_DESKTOP_FEATURE).is_none();
-    let attributes = if library_only {
-        tauri_build::Attributes::new()
-            .windows_attributes(tauri_build::WindowsAttributes::new().static_vc_runtime(false))
-    } else {
-        tauri_build::Attributes::new()
-    };
-    tauri_build::try_build(attributes).expect("failed to run tauri-build")
+    tauri_build::build()
 }
 
 fn resolve_build_commit(manifest_dir: &std::path::Path) -> String {
