@@ -1,4 +1,6 @@
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - source-map-js@1.2.2
 onlyBuiltDependencies:
   - esbuild
