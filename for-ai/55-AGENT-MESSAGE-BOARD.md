@@ -101,6 +101,14 @@ when `STATIC_VCRUNTIME=true`; launcher build jobs do not set it. Fresh locked
 checks and Windows CI/package reruns are required before claiming the link
 barrier closed. This is a source handoff, not a playback or release claim.
 
+Follow-up source CI `37410294675` reached the launcher and exposed a second
+lockfile seam: its selected `tauri 2.11.6` with `tauri-runtime/-wry 2.12.1`
+cannot compile together. The launcher lock is now aligned to the already
+working desktop set: `tauri 2.11.5`, `tauri-runtime 2.11.3`,
+`tauri-runtime-wry 2.11.4`, `tao 0.35.3`, `wry 0.55.1`, and WebView2 COM
+`0.38.2`. This is dependency coherence only; rerun the launcher test and
+package link before claiming the barrier closed.
+
 ## 20261006 Planner and standard Runner isolated installer receipts
 
 Planner Windows package job `37404200312` at `f19b12d` succeeded. Root
