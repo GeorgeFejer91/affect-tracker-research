@@ -7,6 +7,9 @@ video is playing. To play a clip with Flubber below it, drag the clip onto the
 player shortcut or run `FlubberVLC.exe "C:\path\to\video.mp4"`. The Rust
 launcher converts the clip with FFmpeg, preserving its content, audio and
 supported subtitles, then starts VLC with the video and dynamic Flubber.
+VLC retains its normal Qt window, embedded video, menus and playback controls.
+Recorder-driven playback enters fullscreen as the clip starts; Escape returns
+to the ordinary VLC window. The launcher no longer forces WinGDI output.
 The prepared file has a five-second black lead so the LSL outlets exist before
 the original clip starts, plus a short closing tail. CSV time zero remains the
 first frame of the original clip. A recorder that needs the Start marker must
@@ -25,12 +28,21 @@ For a video-specific preset, place `<video stem>.flubber.json` beside the clip:
 {"schema":"vlc-flubber-sidequest/v1","panelPercent":25,"stepPercent":10}
 ```
 
+The player also creates `%LOCALAPPDATA%\VLC_Flubber_Player\presets\default.flubber.json`.
+Put `<video stem>.flubber.json` in that folder for a per-video preset. An
+adjacent preset wins over the shared folder; explicit CLI settings win over
+both. Flubbercorder can open this folder from its HTML window. Its experiment
+JSON supplies panel and step values for controlled runs and overrides these
+presets.
+
 The arrow keys change valence and arousal during playback. VLC saves an event
 CSV and a separate three-variable `time_s,valence,arousal` CSV automatically
 under `%LOCALAPPDATA%\VLC_Flubber_Player\recordings`. It emits
 `<video filename>_Start` and `<video filename>_Stop` LSL markers. The SVG is
-rendered at the video output's pixel size; enlarging a low-resolution VLC
-window beyond that size can soften the graphic.
+rendered at the prepared video's pixel size. Smaller clips are scaled to at
+least 1080 video pixels high with Lanczos before the panel is added. This keeps
+Flubber smooth at the tested 1080p display size; scaling cannot restore detail
+missing from a low-resolution source, and larger displays may resample it.
 
 Opening an unconverted file with VLC's own **Media > Open File** bypasses the
 Flubber preparation step. Use the shortcut drag-and-drop or the launcher CLI.

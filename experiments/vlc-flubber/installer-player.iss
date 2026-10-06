@@ -1,5 +1,5 @@
 #define ProductName "Flubber VLC Player"
-#define ProductVersion "0.1.0"
+#define ProductVersion "0.1.1"
 
 [Setup]
 AppId={{E71D1DC2-4A55-4B8A-86B0-43756610E3CE}
@@ -9,7 +9,7 @@ AppPublisher=George Fejer
 DefaultDirName={localappdata}\Programs\FlubberVLCPlayer
 DefaultGroupName=Flubber VLC Player
 OutputDir=build\player-package\out
-OutputBaseFilename=Flubber_VLC_Player_Setup_0.1.0_x64
+OutputBaseFilename=Flubber_VLC_Player_Setup_0.1.1_x64
 Compression=zip/1
 SolidCompression=no
 PrivilegesRequired=lowest

@@ -1,10 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use flubbercorder_native::{inspect_recipe, Phase, RecipeInfo, Session, Snapshot};
+use flubbercorder_native::{
+    inspect_recipe, validate_variables, Phase, RecipeInfo, Session, Snapshot, Variable,
+};
 use labstream::Query;
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::net::{IpAddr, Ipv4Addr, UdpSocket};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -30,6 +32,7 @@ struct Inner {
     bundled_demo: bool,
     phone: Option<Phone>,
     revision: u64,
+    variables: Vec<Variable>,
 }
 
 #[derive(Clone)]
@@ -111,6 +114,7 @@ fn reply(request: Request, code: u16, mime: &str, body: Vec<u8>) {
 fn apply_session_action(
     authority: &Authority,
     action: &str,
+    value: Option<u32>,
     phone_token: Option<&str>,
 ) -> Result<u64, String> {
     let mut inner = locked(&authority.inner)?;
@@ -132,6 +136,7 @@ fn apply_session_action(
         "pause" => session.pause(),
         "resume" => session.resume(),
         "stop" => session.stop(),
+        "volume" => session.set_volume(value.ok_or("Volume value is missing")?),
         _ => return Err("Unknown experiment command".into()),
     };
     if let Err(error) = result {
@@ -292,10 +297,12 @@ fn serve_phone_request(
         .and_then(|v| v.get("action"))
         .and_then(Value::as_str)
         .unwrap_or("");
-    if fields.is_none_or(|v| v.len() != 2)
+    let value = fields.and_then(|v| v.get("value")).and_then(Value::as_u64);
+    if fields.is_none_or(|v| v.len() != if action == "volume" { 3 } else { 2 })
         || id.len() != 36
         || !id.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-')
-        || !matches!(action, "start" | "pause" | "resume" | "stop")
+        || !matches!(action, "start" | "pause" | "resume" | "stop" | "volume")
+        || (action == "volume" && value.is_none_or(|v| v > 100))
     {
         reply(
             request,
@@ -305,8 +312,9 @@ fn serve_phone_request(
         );
         return;
     }
+    let action_key = format!("{action}:{value:?}");
     if let Some((old_action, response)) = seen.get(id) {
-        if old_action == action {
+        if old_action == &action_key {
             reply(request, 200, "application/json", response.clone());
         } else {
             reply(
@@ -327,12 +335,12 @@ fn serve_phone_request(
         );
         return;
     }
-    match apply_session_action(authority, action, Some(token)) {
+    match apply_session_action(authority, action, value.map(|v| v as u32), Some(token)) {
         Ok(revision) => {
             let response = json!({"applied": true, "revision": revision})
                 .to_string()
                 .into_bytes();
-            seen.insert(id.to_owned(), (action.to_owned(), response.clone()));
+            seen.insert(id.to_owned(), (action_key, response.clone()));
             reply(request, 200, "application/json", response);
         }
         Err(error) => reply(
@@ -395,11 +403,13 @@ fn give_phone(authority: &Authority) -> Result<(), String> {
 async fn dispatch(
     action: String,
     path: Option<String>,
+    value: Option<u32>,
+    variables: Option<Vec<Variable>>,
     state: tauri::State<'_, Authority>,
 ) -> Result<(), String> {
     let authority = (*state).clone();
     if action == "prepare" {
-        let recipe = {
+        let (recipe, variables) = {
             let mut inner = locked(&authority.inner)?;
             if inner.phase != "loaded" {
                 return Err("Load an experiment first".into());
@@ -407,7 +417,7 @@ async fn dispatch(
             let recipe = inner.recipe.clone().ok_or("Recipe path is missing")?;
             inner.phase = "preparing".into();
             inner.error = None;
-            recipe
+            (recipe, inner.variables.clone())
         };
         thread::spawn(move || {
             let result = Session::arm(
@@ -416,7 +426,11 @@ async fn dispatch(
                 &authority.recorder_dir,
                 &authority.data_dir,
                 false,
-            );
+            )
+            .and_then(|mut session| {
+                session.set_variables(variables)?;
+                Ok(session)
+            });
             if let Ok(mut inner) = authority.inner.lock() {
                 match result {
                     Ok(session) => {
@@ -435,6 +449,24 @@ async fn dispatch(
         return Ok(());
     }
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        if action == "open_presets" {
+            let local = std::env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA is unavailable")?;
+            let folder = PathBuf::from(local).join("VLC_Flubber_Player/presets");
+            std::fs::create_dir_all(&folder).map_err(|error| error.to_string())?;
+            let default = folder.join("default.flubber.json");
+            if !default.exists() {
+                match std::fs::OpenOptions::new().write(true).create_new(true).open(default) {
+                    Ok(mut file) => file.write_all(b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":25,\"stepPercent\":10}\n").map_err(|error| error.to_string())?,
+                    Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
+                    Err(error) => return Err(error.to_string()),
+                }
+            }
+            std::process::Command::new("explorer.exe")
+                .arg(folder)
+                .spawn()
+                .map_err(|error| error.to_string())?;
+            return Ok(());
+        }
         if action == "give_phone" {
             let result = give_phone(&authority);
             if let Ok(mut inner) = authority.inner.lock() {
@@ -468,10 +500,22 @@ async fn dispatch(
             inner.phase = "loaded".into();
             inner.error = None;
             inner.bundled_demo = false;
+            inner.variables.clear();
             inner.revision += 1;
             return Ok(());
         }
-        apply_session_action(&authority, &action, None)?;
+        if action == "set_variables" {
+            let variables = variables.ok_or("Custom variables are missing")?;
+            validate_variables(&variables)?;
+            let mut inner = locked(&authority.inner)?;
+            if inner.phase != "loaded" {
+                return Err("Set variables before preparing the player".into());
+            }
+            inner.variables = variables;
+            inner.revision += 1;
+            return Ok(());
+        }
+        apply_session_action(&authority, &action, value, None)?;
         Ok(())
     })
     .await
@@ -487,7 +531,18 @@ async fn snapshot(state: tauri::State<'_, Authority>) -> Result<Value, String> {
 }
 
 fn snapshot_value(authority: &Authority) -> Result<Value, String> {
-    let (phase, error, recipe, info, session, bundled_demo, phone_enabled, phone_url, revision) = {
+    let (
+        phase,
+        error,
+        recipe,
+        info,
+        session,
+        bundled_demo,
+        phone_enabled,
+        phone_url,
+        revision,
+        variables,
+    ) = {
         let mut inner = locked(&authority.inner)?;
         let session = inner.session.as_mut().map(Session::snapshot);
         (
@@ -500,6 +555,7 @@ fn snapshot_value(authority: &Authority) -> Result<Value, String> {
             inner.phone.is_some(),
             inner.phone.as_ref().map(|phone| phone.url.clone()),
             inner.revision,
+            inner.variables.clone(),
         )
     };
     Ok(render_state(
@@ -510,6 +566,7 @@ fn snapshot_value(authority: &Authority) -> Result<Value, String> {
         session,
         bundled_demo,
         (phone_enabled, phone_url, revision),
+        variables,
     ))
 }
 
@@ -543,6 +600,7 @@ fn render_state(
     session: Option<Snapshot>,
     bundled_demo: bool,
     phone: (bool, Option<String>, u64),
+    variables: Vec<Variable>,
 ) -> Value {
     let video = info.as_ref().map(|info| info.video.clone());
     let panel = info.as_ref().map(|info| info.panel_percent);
@@ -610,10 +668,13 @@ fn render_state(
         "recipePath": recipe,
         "csvPath": session.as_ref().map(|s| s.csv_path.clone()),
         "xdfPath": session.as_ref().and_then(|s| s.xdf_path.clone()),
+        "metadataPath": session.as_ref().map(|s| s.metadata_path.clone()),
+        "customVariables": variables,
         "bundledDemo": bundled_demo,
         "phoneEnabled": phone.0,
         "phoneUrl": phone.1,
         "playerPairUrl": null
+        ,"volumePercent": session.as_ref().map(|s| s.volume_percent).unwrap_or(100)
     })
 }
 
@@ -659,11 +720,9 @@ fn main() {
                 web_dir: app.path().resource_dir()?.join("resources/web"),
             };
             let monitor = authority.clone();
-            thread::spawn(move || {
-                loop {
-                    thread::sleep(Duration::from_millis(20));
-                    poll_session(&monitor);
-                }
+            thread::spawn(move || loop {
+                thread::sleep(Duration::from_millis(20));
+                poll_session(&monitor);
             });
             app.manage(authority);
             Ok(())

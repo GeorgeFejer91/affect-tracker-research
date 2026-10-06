@@ -6228,3 +6228,17 @@ the native recorder reported both subscriptions, then recorded a local XDF
 with 180 affect samples and exact Start/Stop markers. The future Rust/Tauri
 Flubbercorder must enforce that same gate. No P1–P7/R1 status changes
 follow from this side-quest work, and no new public package was released.
+
+## VLC image quality and experiment controls — 2026-10-06
+
+The isolated `codex/segment-vlc-quality-controls` pass remains outside
+P1–P7/R1. The Rust launcher removes forced WinGDI output, keeps VLC's normal
+Qt/embedded-video window, and prepares smaller clips at a 1080-pixel video
+height with Lanczos scaling so the native SVG Flubber has enough pixels for a
+1080p display. The Rust/Tauri Recorder gains a shared standalone preset-folder
+button, session label/value metadata beside XDF, and VLC volume control. Its
+transport bar moves above the long recording paths. Installed short-clip
+checks confirmed exact CSV/XDF markers and frame counts; current phone pairing
+needs a private IPv4 route, unavailable on this validation PC. VLC's own
+Media > Open File bypasses FFmpeg preparation and is not an automatic-Flubber
+path. No Planner/Runner contract or main-suite qualification is claimed.

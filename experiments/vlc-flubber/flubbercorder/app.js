@@ -20,6 +20,34 @@ const $ = selector => document.querySelector(selector);
 const set = (selector, value) => { $(selector).textContent = value ?? '—'; };
 let lastState;
 let pending = false;
+let variables = [];
+let variablesInitialized = false;
+
+function renderVariables() {
+  const list = $('#variable-list');
+  list.replaceChildren(...variables.map((row, index) => {
+    const container = document.createElement('div');
+    container.className = 'variable-row';
+    for (const field of ['label', 'value']) {
+      const label = document.createElement('label');
+      label.textContent = field === 'label' ? `Label ${index + 1}` : `Value ${index + 1}`;
+      const input = document.createElement('input');
+      input.maxLength = 128;
+      input.value = row[field];
+      input.addEventListener('input', () => { row[field] = input.value; });
+      label.append(input);
+      container.append(label);
+    }
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Remove';
+    remove.className = 'fit';
+    remove.addEventListener('click', () => { variables.splice(index, 1); renderVariables(); });
+    container.append(remove);
+    return container;
+  }));
+  updateButtons();
+}
 
 function renderPlot(points) {
   const recent = points.filter(p => Number.isFinite(p.lslTime));
@@ -87,7 +115,9 @@ async function send(action, extra = {}) {
   updateButtons();
   try {
     if (native) {
-      await native('dispatch', { action, path: extra.path || null });
+      if (action === 'prepare') await native('dispatch', { action: 'set_variables', variables });
+      await native('dispatch', { action, path: extra.path || null, value: extra.value ?? null });
+      if (action === 'load') { variables = []; renderVariables(); }
       set('#error', '');
       await refresh();
       return;
@@ -127,16 +157,25 @@ function updateButtons() {
       (action === 'stop' && !['running', 'paused'].includes(phase)) ||
       (['up', 'down', 'left', 'right'].includes(action) && phase !== 'running');
   }
+  $('#volume').disabled = pending || !['armed', 'running', 'paused'].includes(phase);
+  $('#add-variable').disabled = pending || phase !== 'loaded' || variables.length >= 6;
+  for (const control of $('#variable-list').querySelectorAll('input, button')) control.disabled = pending || phase !== 'loaded';
 }
 
 function render(state) {
   lastState = state;
+  if (!variablesInitialized) {
+    variables = state.customVariables || [];
+    variablesInitialized = true;
+    renderVariables();
+  }
   const mode = state.mode;
+  const recordsLocally = mode === 'recorder' || mode === 'combined';
   $('#connection').hidden = mode !== 'recorder' || role === 'phone';
   $('#player-pair').hidden = mode !== 'player' || role === 'phone' || !state.playerPairUrl;
   $('#files').hidden = mode === 'player' && role === 'phone';
-  $('#prepare-button').textContent = mode === 'player' ? 'Prepare video in VLC' : 'Prepare player and recorder';
-  set('#role', role === 'phone' ? 'Phone controller' : mode === 'player' ? 'Standalone player' : 'Experimenter recorder');
+  $('#prepare-button').textContent = recordsLocally ? 'Prepare player and recorder' : 'Prepare video in VLC';
+  set('#role', role === 'phone' ? 'Phone controller' : recordsLocally ? 'Experimenter recorder' : 'Standalone player');
   set('#player-status', mode === 'recorder' ? (state.playerConnected ? `Paired with ${state.playerUrl || 'player'}` : 'No player paired') : '');
   const indicator = $('#connection-indicator');
   indicator.dataset.state = state.phase === 'error' ? 'error' :
@@ -145,12 +184,14 @@ function render(state) {
     state.lslReady === false ? 'Waiting for LSL' :
     mode === 'recorder' && !state.playerConnected ? 'Player disconnected' : 'LSL available';
   set('#phase', state.phase);
+  if (document.activeElement !== $('#volume')) $('#volume').value = String(state.volumePercent ?? 100);
+  $('#volume-value').value = `${$('#volume').value}%`;
   set('#video', state.video);
   set('#ratio', state.panelPercent == null ? null : `${state.panelPercent}% of video height`);
   set('#required-streams', state.requiredStreams.length ? state.requiredStreams.join(', ') : 'Flubber affect and markers');
   const value = state.lsl.value;
   set('#affect', value ? `Valence ${value.valence.toFixed(2)} · Arousal ${value.arousal.toFixed(2)}` : 'Waiting for samples');
-  set('#recorder', mode === 'player' ? 'Remote recorder optional' : state.recorder ? state.recorder.alive ? 'Recording process running' : 'Recording process stopped' : 'Not started');
+  set('#recorder', recordsLocally ? state.recorder ? state.recorder.alive ? 'Recording process running' : 'Recording process stopped' : 'Not started' : 'Remote recorder optional');
   set('#error', state.error || '');
   renderStreams(state);
   renderPlot(state.lsl.history || []);
@@ -173,6 +214,7 @@ function render(state) {
       `${state.video || 'Player preset'} is loaded. Prepare the session, then start playback.`;
     if (state.recipePath && !$('#recipe-path').value) $('#recipe-path').value = state.recipePath;
     set('#xdf', state.xdfPath || (state.phase === 'finalizing' ? 'Finalizing' : '—'));
+    set('#metadata', state.metadataPath);
     set('#csv', state.csvPath);
     set('#phone-status', state.phoneEnabled ? 'Phone has control' : 'Phone control off');
     if (state.playerPairUrl) $('#player-pair-link').value = state.playerPairUrl;
@@ -211,6 +253,11 @@ for (const button of document.querySelectorAll('[data-action]')) {
       action === 'connect' ? { link: $('#player-link').value.trim() } : {});
   });
 }
+$('#volume').addEventListener('input', () => { $('#volume-value').value = `${$('#volume').value}%`; });
+$('#volume').addEventListener('change', () => send('volume', { value: Number($('#volume').value) }));
+$('#add-variable').addEventListener('click', () => {
+  if (variables.length < 6) { variables.push({ label: '', value: '' }); renderVariables(); }
+});
 $('#copy-player').addEventListener('click', async () => {
   if (lastState?.playerPairUrl) await navigator.clipboard.writeText(lastState.playerPairUrl);
 });
@@ -227,7 +274,7 @@ function checkText() {
   scheduled = true;
   requestAnimationFrame(() => {
     scheduled = false;
-    for (const element of document.querySelectorAll('button.fit, dd, .stream-name, .stream-state, #affect, .marker-view li')) {
+    for (const element of document.querySelectorAll('button.fit, dd, .stream-name, .stream-state, #affect, .marker-view li, #variables-title, #variables-note, .volume-control span')) {
       const style = getComputedStyle(element);
       const text = element.textContent.trim();
       if (!text) continue;

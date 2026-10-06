@@ -4,7 +4,7 @@ use labstream::Query;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
-use std::fs;
+use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
@@ -128,6 +128,30 @@ pub struct Marker {
     pub label: String,
 }
 
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Variable {
+    pub label: String,
+    pub value: String,
+}
+
+pub fn validate_variables(variables: &[Variable]) -> std::result::Result<(), String> {
+    if variables.len() > 6 {
+        return Err("At most six custom variables are supported".into());
+    }
+    let mut labels = HashSet::new();
+    for variable in variables {
+        let label = variable.label.trim();
+        if label.is_empty()
+            || label.chars().count() > 128
+            || variable.value.chars().count() > 128
+            || !labels.insert(label.to_lowercase())
+        {
+            return Err("Variable labels must be unique and at most 128 characters; values are at most 128 characters".into());
+        }
+    }
+    Ok(())
+}
+
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Summary {
@@ -162,6 +186,8 @@ pub struct Snapshot {
     pub subscribed: HashMap<String, String>,
     pub first_data: Vec<String>,
     pub recorder_alive: bool,
+    pub volume_percent: u32,
+    pub metadata_path: PathBuf,
 }
 
 struct Launched {
@@ -306,6 +332,9 @@ pub struct Session {
     playback_seen: bool,
     stopping: bool,
     last_rc_poll: Instant,
+    volume_percent: u32,
+    variables: Vec<Variable>,
+    metadata_path: PathBuf,
 }
 
 impl Session {
@@ -380,7 +409,8 @@ impl Session {
             let basename = format!("flubbercorder-{stamp}-{}", std::process::id());
             let partial = recordings.join(format!("{basename}.xdf.partial"));
             let final_xdf = recordings.join(format!("{basename}.xdf"));
-            if partial.exists() || final_xdf.exists() {
+            let metadata_path = recordings.join(format!("{basename}.session.json"));
+            if partial.exists() || final_xdf.exists() || metadata_path.exists() {
                 return Err("XDF destination already exists".into());
             }
             let executable = recorder_dir.join("respyrecorder.exe");
@@ -468,6 +498,9 @@ impl Session {
                 playback_seen: false,
                 stopping: false,
                 last_rc_poll: Instant::now() - Duration::from_millis(250),
+                volume_percent: 100,
+                variables: Vec::new(),
+                metadata_path,
             })
         })();
         result.map_err(|error| (port, error))
@@ -498,6 +531,8 @@ impl Session {
             subscribed: self.expected.clone(),
             first_data: self.first_data.iter().cloned().collect(),
             recorder_alive: self.recorder.try_wait().ok().flatten().is_none(),
+            volume_percent: self.volume_percent,
+            metadata_path: self.metadata_path.clone(),
         }
     }
 
@@ -508,10 +543,36 @@ impl Session {
         if self.recorder.try_wait()?.is_some() {
             return Err("Recorder exited before playback".into());
         }
+        let metadata = serde_json::json!({
+            "schema": "flubbercorder-session/v1",
+            "video": self.recipe.filename,
+            "panelPercent": self.recipe.panel_percent,
+            "stepPercent": self.recipe.step_percent,
+            "sourceId": self.source,
+            "xdf": self.final_xdf.file_name().ok_or("XDF filename is unavailable")?.to_string_lossy(),
+            "customVariables": self.variables,
+        });
+        let mut metadata_file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&self.metadata_path)?;
+        serde_json::to_writer_pretty(&mut metadata_file, &metadata)?;
+        metadata_file.write_all(b"\n")?;
+        metadata_file.sync_all()?;
         let uri = url::Url::from_file_path(&self.launched.prepared)
             .map_err(|()| "Prepared video cannot be expressed as a file URI")?;
+        rc(self.launched.port, "f on")?;
         rc(self.launched.port, &format!("add {uri}"))?;
         self.phase = Phase::Running;
+        Ok(())
+    }
+
+    pub fn set_variables(&mut self, variables: Vec<Variable>) -> Result<()> {
+        if self.phase != Phase::Armed {
+            return Err("Custom variables must be set before Start".into());
+        }
+        validate_variables(&variables)?;
+        self.variables = variables;
         Ok(())
     }
 
@@ -548,6 +609,18 @@ impl Session {
         if !self.is_complete() {
             return Err("VLC did not emit a Stop marker".into());
         }
+        Ok(())
+    }
+
+    pub fn set_volume(&mut self, percent: u32) -> Result<()> {
+        if percent > 100 || !matches!(self.phase, Phase::Armed | Phase::Running | Phase::Paused) {
+            return Err("Volume must be 0–100 during an active player session".into());
+        }
+        rc(
+            self.launched.port,
+            &format!("volume {}", (percent * 256 + 50) / 100),
+        )?;
+        self.volume_percent = percent;
         Ok(())
     }
 
@@ -716,5 +789,26 @@ impl Drop for Session {
             let _ = self.recorder.kill();
             let _ = self.recorder.wait();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{validate_variables, Variable};
+
+    #[test]
+    fn variable_labels_are_unique_before_recording() {
+        let rows = [
+            Variable {
+                label: "Age".into(),
+                value: "31".into(),
+            },
+            Variable {
+                label: " age ".into(),
+                value: "32".into(),
+            },
+        ];
+        assert!(validate_variables(&rows).is_err());
+        assert!(validate_variables(&rows[..1]).is_ok());
     }
 }

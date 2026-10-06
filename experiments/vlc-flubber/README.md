@@ -4,9 +4,10 @@ The [Flubbercorder 0.1 runner](flubbercorder/README.md) is a historical
 Python-based prototype. The requested replacement remains two separate
 installers: a standalone native VLC player and a Rust/Tauri HTML recorder and
 controller. This runbook covers the native player plugin and its current
-feasibility evidence. Separate local installer candidates now exist for the
-Rust standalone player and Rust/Tauri Flubbercorder; broader installed and
-release qualification remains open.
+feasibility evidence. The 0.1.1 update uses VLC's normal embedded video
+window, adds shared standalone presets, and places Recorder transport and
+volume controls above the stream display. See the side-quest status for the
+exact installed evidence and remaining qualification limits.
 See [standalone player instructions](PLAYER-README.md) for the new installer
 and Rust launcher. The older `run.ps1` instructions below document the
 development probe.

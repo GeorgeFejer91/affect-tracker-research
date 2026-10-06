@@ -14,13 +14,23 @@ checks that the XDF affect count matches VLC's CSV count before finalizing.
 The app remains an experimental side project, outside the main Affect
 Research Planner and Runner.
 
+The experimenter and paired phone can Start, Pause, Resume, Stop, and set VLC
+volume from 0–100%. Recorder-driven playback requests fullscreen immediately
+before the prepared clip starts. The VLC window keeps its regular controls.
+Before Prepare, the experimenter can add up to six custom label/value fields;
+Start writes these as a `flubbercorder-session/v1` `.session.json` file beside
+the XDF. The HTML **Open VLC Flubber presets folder** button opens the shared
+player preset directory. Recipe panel and step settings override folder presets
+for controlled sessions.
+
 ## Phone control
 
 The experimenter can press **Give control** to start a phone page on a
 detected local IPv4 address, then copy its pairing link to a browser on the
 same trusted network. The phone page mirrors the recorder console's affect
 samples, stream status, and markers; it does not open an LSL inlet. It can
-Start, Pause, Resume, or Stop. **Revoke** closes that session.
+Start, Pause, Resume, Stop, and change volume. **Revoke** closes that session.
+Phone pairing requires an active private IPv4 network route.
 This direct LAN prototype uses HTTP with a random session link, so the link
 can be observed on an untrusted network. It does not change firewall rules;
 Windows may require the user to allow local inbound access. The exact

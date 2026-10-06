@@ -7,6 +7,54 @@ for this as an additional project. Passing its checks does not approve it as
 part of the main suite or change P1–P7/R1 requirements, saved recipe formats,
 LSL contracts, recording policy, or release qualification.
 
+## Embedded VLC quality and Recorder controls, 2026-10-06
+
+The 0.1.1 side-quest update removes the launcher-forced WinGDI output that
+produced a separate window and colorful corruption in the user's screenshots.
+The installed launcher now opens VLC's ordinary Qt window with embedded video,
+menus, and playback controls. A visible check retained the normal VLC window
+after video completion. The original Great Dictator frame and FFmpeg-prepared
+frame were clean; normal VLC output displayed clean video and the SVG Flubber
+in an earlier direct playback comparison. The launcher still converts clips
+through FFmpeg before playback. Smaller clips are scaled with Lanczos to at
+least a 1080-pixel video height, bounded by the existing size limit, before
+the native SVG is rasterized in the added panel. That improves output pixel
+density but cannot restore detail missing from a low-resolution source or
+guarantee native-resolution sharpness on every larger display. VLC's own
+**Media > Open File** bypasses the preparation step; use the launcher or
+Recorder to obtain Flubber for a newly loaded clip.
+
+The standalone player creates a shared `%LOCALAPPDATA%\VLC_Flubber_Player\presets`
+folder with a default JSON; an adjacent or matching named JSON can override
+it for standalone playback. The Recorder HTML opens that folder, while its
+experiment JSON remains authoritative for controlled sessions. The Recorder
+supports up to six validated custom label/value fields, saved as a
+`flubbercorder-session/v1` JSON beside XDF. Start, Pause, Resume, Stop, and
+0–100% volume control reach VLC via local RC. Recorder-driven playback requests
+fullscreen. The control bar now precedes stream plots and long output paths.
+
+The installed 0.1.1 player passed all seven manifest hashes and a 2-second,
+30-fps headless run with 60 time-series CSV rows and a final `video_end`.
+The installed Recorder passed a 10-second, 30-fps run with 300 VLC CSV rows,
+a promoted XDF, exact `quality-long.mp4_Start` and `_Stop` markers, two custom
+session fields, pause/resume, and 35% VLC volume. Its XDF promotion checks
+that recorded affect count matches CSV. A short visible run under concurrent
+build load dropped displayed frames, so frame completeness remains a measured
+property of each run, not an unconditional machine-wide guarantee. Phone
+volume is implemented through the existing typed command broker but was not
+exercised on this PC: it had no private IPv4 route for the phone server.
+The final installed Recorder embedded player passed all seven manifest hashes,
+matched the release-built Tauri executable and pinned demo film, and contained
+no Python files. Its desktop HTML showed the transport bar and volume slider
+at the top without horizontal overflow at 1265 CSS pixels; the volume slider
+began at y=131 rather than below the long recording paths. The final
+standalone installer is 164,558,264 bytes with SHA-256
+`964023CF23E20073ED7BF65485F83345F52072D72D64F613D35ED13BA0BD6483`.
+The final Recorder installer is 256,180,019 bytes with SHA-256
+`62CA40F6A3A14EA25AE793213ADABA1CAF0D8E93EA485D1934703CB297EF61EF`.
+This is a side-project installed check, not research or main-suite
+qualification.
+
 ## Recorder-mirrored phone monitor, 2026-10-06
 
 The phone page now mirrors the Rust experimenter console's state; it never

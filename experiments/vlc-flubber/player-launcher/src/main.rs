@@ -2,8 +2,8 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::env;
 use std::ffi::{OsStr, OsString};
-use std::fs::{self, File};
-use std::io::Read;
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -47,7 +47,10 @@ struct VideoStream {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct FrameRate { num: u32, den: u32 }
+struct FrameRate {
+    num: u32,
+    den: u32,
+}
 
 struct Geometry {
     width: u32,
@@ -114,13 +117,18 @@ fn parse_fps(rate: &str) -> Result<FrameRate> {
     let (num, den) = rate.split_once('/').ok_or("Invalid video frame rate")?;
     let num: u32 = num.parse()?;
     let den: u32 = den.parse()?;
-    if num == 0 || den == 0 || num > 12_000_000 || den > 100_000 ||
-        num as f64 / den as f64 > 120.0 {
+    if num == 0 || den == 0 || num > 12_000_000 || den > 100_000 || num as f64 / den as f64 > 120.0
+    {
         return Err("Video frame rate must be above zero and at most 120 fps".into());
     }
     let (mut a, mut b) = (num, den);
-    while b != 0 { (a, b) = (b, a % b); }
-    Ok(FrameRate { num: num / a, den: den / a })
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    Ok(FrameRate {
+        num: num / a,
+        den: den / a,
+    })
 }
 
 fn geometry(stream: &VideoStream, panel_percent: u32) -> Result<Geometry> {
@@ -132,11 +140,13 @@ fn geometry(stream: &VideoStream, panel_percent: u32) -> Result<Geometry> {
     {
         return Err("Unsupported video size or Flubber panel ratio".into());
     }
-    let width = (stream.width + 1) & !1;
-    let video_height = (stream.height + 1) & !1;
+    let scale = (1080.0 / stream.height as f64)
+        .max(1.0)
+        .min(8192.0 / stream.width as f64);
+    let width = ((stream.width as f64 * scale).ceil() as u32 + 1) & !1;
+    let video_height = ((stream.height as f64 * scale).ceil() as u32 + 1) & !1;
     let panel_height = (video_height * panel_percent).div_ceil(200) * 2;
-    let rate = parse_fps(&stream.avg_frame_rate)
-        .or_else(|_| parse_fps(&stream.r_frame_rate))?;
+    let rate = parse_fps(&stream.avg_frame_rate).or_else(|_| parse_fps(&stream.r_frame_rate))?;
     if (width as u64) * (panel_height as u64) * 4 > 64 * 1024 * 1024
         || video_height + panel_height > 8192
     {
@@ -189,16 +199,46 @@ fn sha256_prefix(path: &Path) -> Result<String> {
     Ok(format!("{:x}", digest.finalize())[..16].to_owned())
 }
 
-fn sidecar_settings(video: &Path) -> Result<(Option<u32>, Option<u32>)> {
-    let sidecar = video.with_extension("flubber.json");
-    if !sidecar.exists() {
-        return Ok((None, None));
-    }
-    let settings: Sidecar = serde_json::from_slice(&fs::read(&sidecar)?)?;
+fn read_settings(path: &Path) -> Result<(Option<u32>, Option<u32>)> {
+    let settings: Sidecar = serde_json::from_slice(&fs::read(path)?)?;
     if settings.schema != "vlc-flubber-sidequest/v1" {
-        return Err(format!("Unsupported Flubber settings: {}", sidecar.display()).into());
+        return Err(format!("Unsupported Flubber settings: {}", path.display()).into());
     }
     Ok((settings.panel_percent, settings.step_percent))
+}
+
+fn ensure_preset_folder(data_dir: &Path) -> Result<PathBuf> {
+    let folder = data_dir.join("presets");
+    fs::create_dir_all(&folder)?;
+    let default = folder.join("default.flubber.json");
+    if !default.exists() {
+        match OpenOptions::new().write(true).create_new(true).open(&default) {
+            Ok(mut file) => file.write_all(b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":25,\"stepPercent\":10}\n")?,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
+            Err(error) => return Err(error.into()),
+        }
+    }
+    Ok(folder)
+}
+
+fn preset_settings(video: &Path, data_dir: &Path) -> Result<(Option<u32>, Option<u32>)> {
+    let folder = ensure_preset_folder(data_dir)?;
+    let default = folder.join("default.flubber.json");
+    let stem = video
+        .file_stem()
+        .and_then(OsStr::to_str)
+        .ok_or("Video stem is unavailable")?;
+    let candidates = [
+        video.with_extension("flubber.json"),
+        folder.join(format!("{stem}.flubber.json")),
+        default,
+    ];
+    for path in candidates {
+        if path.is_file() {
+            return read_settings(&path);
+        }
+    }
+    Ok((None, None))
 }
 
 fn prepare_video(
@@ -216,7 +256,7 @@ fn prepare_video(
         .ok_or("Video filename is unavailable")?;
     let hash = sha256_prefix(source)?;
     let output = media_dir.join(format!(
-        "{stem}-{hash}-p{panel_percent}-f{}-{}-lead5-tail2-v2.mkv",
+        "{stem}-{hash}-p{panel_percent}-f{}-{}-lead5-tail2-v3.mkv",
         geometry.rate.num, geometry.rate.den
     ));
     if output.is_file() {
@@ -233,8 +273,10 @@ fn prepare_video(
     }
     let temporary = media_dir.join(format!("{stem}-{hash}-{}.partial.mkv", std::process::id()));
     let filter = format!(
-        "fps={},pad={}:{}:0:0:black,drawbox=x=0:y={}:w=4:h=4:color=white:t=fill,tpad=start_duration=5:start_mode=add:stop_duration=2:stop_mode=add",
+        "fps={},scale={}:{}:flags=lanczos,pad={}:{}:0:0:black,drawbox=x=0:y={}:w=4:h=4:color=white:t=fill,tpad=start_duration=5:start_mode=add:stop_duration=2:stop_mode=add",
         format!("{}/{}", geometry.rate.num, geometry.rate.den),
+        geometry.width,
+        geometry.video_height,
         geometry.width,
         geometry.video_height + geometry.panel_height,
         geometry.video_height
@@ -353,6 +395,9 @@ fn run() -> Result<()> {
             .join("video_filter")
             .join("libflubber_plugin.dll"),
     )?;
+    let preset_root =
+        PathBuf::from(env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA is unavailable")?)
+            .join("VLC_Flubber_Player");
     let data_dir = if let Some(path) = args.data_dir {
         path
     } else {
@@ -360,6 +405,7 @@ fn run() -> Result<()> {
             .join("VLC_Flubber_Player")
     };
     fs::create_dir_all(&data_dir)?;
+    ensure_preset_folder(&preset_root)?;
     let mut command = Command::new(vlc);
     command
         .stdin(Stdio::null())
@@ -369,8 +415,8 @@ fn run() -> Result<()> {
         "--no-one-instance",
         "--no-plugins-cache",
         "--avcodec-hw=none",
+        "--embedded-video",
         "--no-video-title-show",
-        "--no-osd",
     ]);
     let rc_port = if args.arm {
         let reservation = TcpListener::bind("127.0.0.1:0")?;
@@ -378,7 +424,9 @@ fn run() -> Result<()> {
         drop(reservation);
         command.arg("--extraintf=flubberoutlet:rc");
         command.arg(format!("--rc-host=127.0.0.1:{port}"));
-        command.args(["-I", "dummy"]);
+        if !args.headless {
+            command.arg("--fullscreen");
+        }
         Some(port)
     } else {
         command.arg("--extraintf=flubberoutlet");
@@ -394,7 +442,7 @@ fn run() -> Result<()> {
     command.env("PATH", path);
     if let Some(video) = args.video {
         let video = video.canonicalize()?;
-        let (sidecar_panel, sidecar_step) = sidecar_settings(&video)?;
+        let (sidecar_panel, sidecar_step) = preset_settings(&video, &preset_root)?;
         let panel = args.panel_percent.or(sidecar_panel).unwrap_or(25);
         let step = args.step_percent.or(sidecar_step).unwrap_or(10);
         if !(1..=100).contains(&step) {
@@ -417,7 +465,6 @@ fn run() -> Result<()> {
                 "--video-filter=flubber",
                 "--flubber-lsl",
                 "--flubber-sentinel",
-                "--vout=wingdi",
                 "--key-nav-up=",
                 "--key-nav-down=",
                 "--key-nav-left=",
@@ -432,7 +479,7 @@ fn run() -> Result<()> {
             .arg(format!("--flubber-step-percent={step}"))
             .arg(format!("--flubber-marker-base={filename}"))
             .arg(format!("--flubber-csv={}", csv.display()));
-        if !args.arm {
+        if args.wait {
             command.arg("--play-and-exit");
         }
         if args.headless {
@@ -539,7 +586,15 @@ mod tests {
                 result.panel_height,
                 result.rate
             ),
-            (642, 362, 92, FrameRate { num: 30000, den: 1001 })
+            (
+                1918,
+                1080,
+                270,
+                FrameRate {
+                    num: 30000,
+                    den: 1001
+                }
+            )
         );
         assert!(parse_fps("0/0").is_err());
     }
