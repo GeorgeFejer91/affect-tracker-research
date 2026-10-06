@@ -26,8 +26,11 @@ the plugin's legacy local stepping stays disabled in Runner mode.
 Keep pause unavailable until an observed paused state exists, and keep normal
 research Start closed. Test wrong identities, child loss, no first decoded
 frame, end and stop against the worker before assigning the distinct VLC Runner
-binary/installer pass. This is a dependency brief, not a claim that host wiring
-or installed VLC Runner exists.
+binary/installer pass. That pass should extend the existing independently
+installable Flubber VLC Player package with the Runner host, rather than create
+a fifth installer; Recorder continues to obtain that exact package on demand.
+This is a dependency brief, not a claim that host wiring or installed VLC
+Runner exists.
 
 ## 20261006 Recorder clean-install workflow handoff
 
