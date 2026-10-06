@@ -3,14 +3,21 @@
 ## Four-program WebView pivot — 2026-10-06
 
 The user removed GStreamer and selected Windows WebView video for standard
-Runner. Current source still lacks the run-bound WebView-to-Rust media status
-handoff; `qualifiedStartAvailable` remains false. Planner video catalogue
-attestation also still needs WebView geometry validation. The standalone Planner
-installer and strict VLC recipe intake are source candidates, not installed
-qualification. Flubber VLC execution and FlubberRecorder same-PC control are
-open. Older native-player receipts below describe historical work and cannot
-qualify these four programs. See [16](16-COMPANION-APP-BOUNDARY.md) and
-[30](30-TESTING-AND-RELEASE.md).
+Runner. Current source has the run-bound WebView-to-Rust media observation
+handoff and P1 WebView catalogue geometry validation; normal research Start
+still reports `webview-research-qualification-required` until exact installed
+decoded playback, physical input and independent LSL/XDF evidence passes. The
+Planner installer and production CLI have installed checks, while rendered
+Planner GUI verification remains open. An internal standalone Flubber VLC
+installer passed exact manifest/install/command-line and strict master1
+inspection checks at source `b8c3b0e`; later identity-binding source still
+needs a new package. Its full video/forms/input/Runner LSL/XDF execution is
+open. FlubberRecorder has source-level same-PC single-video controls but lacks
+an installed, reachable-download installer and physical UI check. Older
+native-player receipts below describe historical work and cannot qualify these
+four programs. See [16](16-COMPANION-APP-BOUNDARY.md),
+[30](30-TESTING-AND-RELEASE.md) and
+[the local VLC package check](../docs/flubber-vlc-player-local-package-2026-10-06.md).
 
 ## Web infrastructure — 2026-09-12
 
