@@ -725,10 +725,9 @@ state-anchor provenance for every matched probe, and zero visibility loss.
 
 ## Release boundary
 
-CI may validate the static artifact and optional Windows GStreamer integration
-tree without uploading that tree. Manual workflows may produce explicitly
-unqualified, no-optional-feature Windows/macOS/Linux interface-evaluation
-packages. The internal
+CI may validate the static artifact and Windows WebView/VLC source without
+publishing an installer. Manual workflows may produce explicitly unqualified
+Windows/macOS/Linux interface-evaluation packages. The internal
 `0.4.0-alpha.1` label remains non-stable and non-research-ready until every
 applicable automated, installed-artifact, timing, media, recovery, input, LSL,
 accessibility, and physical workflow gate above passes for one exact candidate.
