@@ -1,5 +1,19 @@
 # Agent message board
 
+## 20261006 Standard Runner installed WebView trial allocation
+
+Root owns the R1 RR-04/RR-07/RR-08/RR-09 Final Runtime Correspondence
+installed trial for the real Planner master5 authored at 1920 × 1080. The
+immutable recipe SHA-256 is
+`3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`;
+strict selection gives `P001/en/variant-1`, video position 2, 15,033 ms.
+Before package run `37410302707` completes or any observed playback, the trial
+declares at least 30 decoded frames and at most 1,000 ms absolute error in
+both media and marker video spans. See
+`docs/runner-installed-webview-qualification.md` for the exact artifact and
+independent XDF reader procedure. This one trial cannot qualify research Start,
+external streams, 30-minute timing, VLC, or Recorder.
+
 ## 20261006 VLC selected-plan chronology — next owner allocation
 
 Root allocates R1 RR-03/RR-04 with RR-07/09 named event seams, Backend

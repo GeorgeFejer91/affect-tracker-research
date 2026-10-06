@@ -2,6 +2,10 @@
 
 This is the R1 RR-04/RR-07/RR-08/RR-09 **Final Runtime Correspondence** source harness. It reads an actual Windows Experiment Runner validation attempt and its real XDF file. It does not launch a browser simulation or enable research Start.
 
+## Predeclared local candidate trial
+
+For package run `37410302707` at source commit `0a17aab90655cd460a1a05d836a287740ffa786c`, use the installed Planner CLI recipe documented in [planner-real-video-master.md](../scripts/qualification/planner-real-video-master.md): master5 SHA-256 `3406b8096e57975101b7aaca3b00a180b2e7f6a4bbcaafb4b7fbbb53471ade44`, `P001` / `en` / `variant-1`, video position **2**, declared video duration **15,033 ms**, and the exact CAAV asset SHA-256 `1719bd67d2ff0691bfc2da126ca539300650c36b003f1633cff288f4cd94356c`. Before observing the run, require at least **30 decoded frames** and no more than **1,000 ms** absolute difference for both observed media span and marker span. A failed bound remains a failed trial; a later trial needs a separately declared threshold and a new receipt. The configured input test, synthetic questionnaire response, and own-stream recording are part of this trial. The candidate's installer and installed executable hashes will be filled from the completed package provenance before execution.
+
 ## Collect one candidate
 
 1. Install the exact Runner installer being evaluated. Record the installer SHA-256, the installed executable SHA-256, and the full source commit from the build provenance. Use the installed executable, not a build-tree copy.
