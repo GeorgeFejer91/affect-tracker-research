@@ -78,5 +78,5 @@ test("the local Windows package is interface-only and excludes the unreviewed GS
   assert.deepEqual(bundleConfig.bundle.targets, ["nsis"]);
   assert.deepEqual(bundleConfig.bundle.resources, []);
   assert.match(bundleConfig.bundle.longDescription, /HTML-compatible video path/iu);
-  assert.match(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
+  assert.doesNotMatch(gitignore, /^src-tauri\/native-media\/runtime\/$/mu);
 });

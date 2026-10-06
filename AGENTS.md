@@ -1,5 +1,11 @@
 # Affect Research agent entrypoint
 
+The 2026-10-06 playback amendment retires GStreamer from active source,
+builds, packaging, and qualification. Standard Runner targets Windows WebView
+video; the separate VLC Runner has its own playback path. Historical
+GStreamer instructions below are evidence only and do not authorize restoring
+its runtime or SDK. See for-ai/15-RESEARCH-V1-CHARTER.md.
+
 The 2026-09-12 user amendment requires two separate companion programs. Read
 [`for-ai/16-COMPANION-APP-BOUNDARY.md`](./for-ai/16-COMPANION-APP-BOUNDARY.md).
 Planner authors JSON and retains Flubber previews. Runner alone executes, plays

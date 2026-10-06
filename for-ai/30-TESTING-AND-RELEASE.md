@@ -1,5 +1,17 @@
 # Testing and release gates
 
+## Standard Runner WebView qualification amendment — 2026-10-06
+
+The user removed GStreamer and selected Windows WebView video for standard
+Runner. The historical native-media gate below is superseded. Qualification
+requires an exact asset hash and decoded-frame/start receipt, run/step/generation
+fenced playback status, observed end, bounded stall/error handling, and Rust
+ownership of schedule, samples, outbound LSL, and XDF. The installed candidate
+must pass video/ISI/input timing and independent XDF readback with its exact
+artifact identity. Existing browser CSV or unqualified WebView preview receipts
+cannot satisfy these gates. The VLC Runner requires separate installed evidence
+against the same Runner data contract.
+
 ## SurveyJS validation — 2026-09-13
 
 Run `pnpm surveyjs:check` before tests/builds. Generated full browser assets,

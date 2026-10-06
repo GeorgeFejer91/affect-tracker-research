@@ -1,5 +1,14 @@
 # Research v1 roadmap
 
+## Playback pivot — 2026-10-06
+
+The user retired GStreamer. Standard Runner targets Windows WebView video;
+the separate VLC Runner has its own playback path. The default-branch asset
+cleanup removes the old runtime notice, diagnostics and staging placeholder.
+Older native-player receipts below are historical and do not qualify either
+Runner. Installed playback, timing, LSL and independently read XDF evidence
+remain open under for-ai/30-TESTING-AND-RELEASE.md.
+
 ## Web infrastructure — 2026-09-12
 
 The public root provides two icon links to separate permanent `planner/` and

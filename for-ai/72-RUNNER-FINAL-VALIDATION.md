@@ -1,5 +1,13 @@
 # Current primary goal and JSON authority — 2026-09-13
 
+## Retired native-player qualification — 2026-10-06
+
+The GStreamer diagnostic reproduction below is historical. Its helper script
+and runtime materials were removed; do not use it as a current qualification
+route. Standard Runner requires the installed WebView playback, timing and
+independently read XDF evidence in for-ai/30-TESTING-AND-RELEASE.md. The
+separate VLC Runner needs its own installed evidence.
+
 ## Parallel-agent amendment — 2026-10-06
 
 The user authorized ChatDev-style Planner and Runner development in parallel,

@@ -1,5 +1,15 @@
 # Affect Tracker Research v1 charter
 
+## Playback amendment — 2026-10-06
+
+The researcher removed GStreamer from this project. Standard Runner now
+targets Windows WebView video; the separate VLC Runner has its own playback
+path. Neither route inherits qualification from the retired native player.
+No active runtime, SDK, package, feature, source, or qualification requirement
+may reintroduce GStreamer. Historical receipts remain dated evidence only.
+This amendment overrides older native-media requirements below where they
+conflict.
+
 ## Questionnaire asset amendment — 2026-09-13
 
 Direct user approval changes fresh Planner saves to a master5 manifest and

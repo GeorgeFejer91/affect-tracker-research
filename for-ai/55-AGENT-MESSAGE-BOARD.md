@@ -1,5 +1,15 @@
 # Agent message board
 
+## 20261006 Retired GStreamer asset cleanup on main
+
+R1 RR-04/RR-10 Repository/Web Synchronization: the current default branch
+still tracked obsolete GStreamer runtime notes, diagnostics and an empty
+runtime placeholder after the WebView pivot. This isolated cleanup removes
+those files, replaces the native-media README with the current playback
+boundary, and removes the obsolete ignore rule. It changes no recipe JSON,
+Runner timing, LSL or XDF authority. The existing Windows build-boundary test
+is the focused regression check; installed playback qualification remains open.
+
 ## 20261005 Runner master plan immutability
 
 Owner: root; branch `codex/segment-r1-plan-immutability`; isolated worktree
