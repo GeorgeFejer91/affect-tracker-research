@@ -41,6 +41,37 @@ test("prior dictionary stream remains readable and rejects comma-colliding profi
   await assert.rejects(inspectMasterStream([{ value: canonicalJson(malformed), timestamp: 0 }]), /profile binding/u);
 });
 
+test("v1 lifecycle and Runner v2 physical-edge/neutral markers reconstruct together", async () => {
+  const fixture = await informationFixture();
+  const records = structuredClone(fixture.records);
+  const start = records.findIndex(record => record.kind === "observation" && record.value.eventType === "videoStart");
+  const video = records[start].value;
+  const end = records.findIndex((record, index) => index > start && record.kind === "observation" && record.value.eventType === "videoEnd" && record.value.entryId === video.entryId);
+  assert.ok(start >= 0 && end > start);
+  const edge = { ...video, version: 2, eventType: "inputEdge", monotonicMs: video.monotonicMs + 1, observedMonotonicMs: video.monotonicMs,
+    input: { direction: "right", applyStep: true, inputActive: true, impulse: false } };
+  const reset = { ...records[end].value, version: 2, eventType: "neutralReset", observedMonotonicMs: records[end].value.monotonicMs };
+  records.splice(end + 1, 0, { kind: "observation", value: reset });
+  records.splice(start + 1, 0, { kind: "observation", value: edge });
+  let sequence = 0;
+  for (const record of records) if (record.kind === "observation") record.value.sequence = ++sequence;
+  const rebuilt = await frameRecords(records, fixture.context);
+  const result = await inspectInformationStream(rebuilt);
+  assert.equal(result.status, "complete", JSON.stringify(result.issues));
+  assert.equal(result.records.filter(record => record.kind === "observation" && record.value.version === 2).length, 2);
+  const recoveredEdge = result.records.find(record => record.kind === "observation" && record.value.eventType === "inputEdge");
+  assert.equal(recoveredEdge.value.observedMonotonicMs, video.monotonicMs);
+  assert.ok(recoveredEdge.value.monotonicMs > recoveredEdge.value.observedMonotonicMs);
+  assert.ok(Number.isFinite(recoveredEdge.firstLslTimeSeconds));
+  assert.notEqual(recoveredEdge.firstLslTimeSeconds * 1000, recoveredEdge.value.observedMonotonicMs);
+  const wrongTime = structuredClone(records);
+  wrongTime[start + 1].value.observedMonotonicMs = wrongTime[start + 1].value.monotonicMs + 1;
+  await assert.rejects(inspectInformationStream(await frameRecords(wrongTime, fixture.context)), /Runner v2 marker/u);
+  const wrongContext = structuredClone(records);
+  wrongContext[start + 1].value.entryId = "other-entry";
+  await assert.rejects(inspectInformationStream(await frameRecords(wrongContext, fixture.context)), /active video/u);
+});
+
 test("bounded multi-chunk Unicode transfer preserves exact values and both observed LSL times", async () => {
   const value = { text: "ü𝄞 test ".repeat(15000) }, samples = await frameRecords([{ kind: "startup", value }, { kind: "outcome", value: {} }]);
   const result = await assemble(samples); assert.equal(result.status.complete, true); assert.deepEqual(result.values[0].value, value);

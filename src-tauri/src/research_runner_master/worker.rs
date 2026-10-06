@@ -4,7 +4,7 @@ use super::{
     forms::FormAnswers,
     information::{ContentKind, PreparedTransfer},
     lsl::MasterLslService,
-    markers::{MarkerEvent, MasterMarkers},
+    markers::{InputEdgeDetail, MarkerEvent, MasterMarkers, MasterObservation},
     response::ResponseState,
     runtime::{
         lock, InputAuthority, MasterAction, MasterPhase, MasterStatus, Message, WebviewGrants,
@@ -627,19 +627,12 @@ impl MasterWorker {
             ));
         }
         if self.state.phase == MasterPhase::Playing {
-            let drained = self.mailbox.drain()?;
-            let mut missed = 0;
-            for input in drained.digital {
-                missed += self.response.digital(input);
-            }
-            if let Some(input) = drained.continuous {
-                missed += self.response.continuous(input);
-            }
+            let (mut missed, coalesced) = self.drain_input()?;
             missed += self.response.advance(now);
-            if missed > 0 || drained.coalesced_count > 0 {
+            if missed > 0 || coalesced > 0 {
                 self.diagnostic(
                     "native-input-observation-gap",
-                    json!({"missedRepeats":missed,"coalescedUpdates":drained.coalesced_count}),
+                    json!({"missedRepeats":missed,"coalescedUpdates":coalesced}),
                 )?;
             }
             self.sample(now)?;
@@ -729,6 +722,7 @@ impl MasterWorker {
                     ));
                 }
                 self.observe(MarkerEvent::VideoEnd, true)?;
+                self.neutralize_video_end()?;
                 self.stop_media()?;
                 self.next()?;
             }
@@ -807,6 +801,9 @@ impl MasterWorker {
         let observation = self
             .markers
             .observe(event, id.as_deref(), execution, self.elapsed())?;
+        self.record_observation(observation)
+    }
+    fn record_observation(&mut self, observation: MasterObservation) -> ResearchResult<()> {
         let lsl = self
             .lsl
             .as_mut()
@@ -816,6 +813,51 @@ impl MasterWorker {
         self.state.event_count += 1;
         Ok(())
     }
+    fn neutralize_video_end(&mut self) -> ResearchResult<()> {
+        self.reset_response();
+        let time = self.elapsed();
+        let entry_id = self.current()?.entry_id.clone();
+        let observation = self
+            .markers
+            .observe_neutral_reset(&entry_id, &self.occurrence, time)?;
+        self.record_observation(observation)
+    }
+    fn drain_input(&mut self) -> ResearchResult<(u64, u64)> {
+        let drained = self.mailbox.drain()?;
+        let mut missed = 0;
+        for input in drained.digital {
+            missed += self.response.digital(input.clone());
+            if input.detail.starts_with("native:") {
+                continue; // Authority-generated releases are not physical input edges.
+            }
+            let observed = input
+                .captured_at
+                .checked_duration_since(self.epoch)
+                .ok_or_else(|| invalid("Physical input preceded the run clock."))?
+                .as_secs_f64()
+                * 1000.;
+            let entry_id = self.current()?.entry_id.clone();
+            let occurrence = self.occurrence.clone();
+            let time = self.elapsed();
+            let observation = self.markers.observe_input_edge(
+                &entry_id,
+                &occurrence,
+                time,
+                observed,
+                InputEdgeDetail {
+                    direction: input.direction,
+                    apply_step: input.apply_step,
+                    input_active: input.input_active,
+                    impulse: input.impulse,
+                },
+            )?;
+            self.record_observation(observation)?;
+        }
+        if let Some(input) = drained.continuous {
+            missed += self.response.continuous(input);
+        }
+        Ok((missed, drained.coalesced_count))
+    }
     fn diagnostic(&mut self, code: &str, detail: Value) -> ResearchResult<()> {
         self.storage.diagnostic(&json!({"schema":"affect-runner-master-diagnostic","version":1,"runId":self.state.run_id,"attemptId":self.state.attempt_id,"position":self.state.position,"monotonicMs":self.elapsed(),"code":code,"detail":detail}))
     }
@@ -824,14 +866,24 @@ impl MasterWorker {
     }
     fn quiesce(&mut self) -> ResearchResult<()> {
         self.clock = None;
-        let result = self
-            .authority
+        let was_playing = self.state.phase == MasterPhase::Playing;
+        self.authority
             .service
-            .set_run_accepting(&self.authority.id, false);
-        self.mailbox.clear();
+            .set_run_accepting(&self.authority.id, false)?;
+        if was_playing {
+            let (missed, coalesced) = self.drain_input()?;
+            if missed > 0 || coalesced > 0 {
+                self.diagnostic(
+                    "native-input-observation-gap",
+                    json!({"missedRepeats":missed,"coalescedUpdates":coalesced}),
+                )?;
+            }
+        } else {
+            self.mailbox.clear();
+        }
         self.response.clear_holds(Instant::now());
         self.state.input_active = false;
-        result
+        Ok(())
     }
     fn stop_media(&mut self) -> ResearchResult<()> {
         self.webview_grants.close(&self.workspace);
@@ -1140,6 +1192,9 @@ mod tests {
         assert!(!accepts(&rewind));
     }
     fn with_neutral_worker(check: impl FnOnce(&mut MasterWorker)) {
+        with_neutral_worker_at(|worker, _| check(worker));
+    }
+    fn with_neutral_worker_at(check: impl FnOnce(&mut MasterWorker, &std::path::Path)) {
         // Exact saved fixture, synthetic worker boundary/input state only; no
         // decoded video, physical input, renderer paint or XDF attestation.
         let root =
@@ -1222,7 +1277,7 @@ mod tests {
                 assert_eq!(pending.coalesced_count, 0);
             }
         });
-        check(&mut worker);
+        check(&mut worker, &root);
         drop(worker);
         drop(legacy);
         drop(input);
@@ -1236,6 +1291,7 @@ mod tests {
             input_active: true,
             impulse: false,
             observed_at: Instant::now(),
+            captured_at: Instant::now(),
         };
         worker.response.digital(edge.clone());
         worker.response.x = 0.8;
@@ -1308,6 +1364,104 @@ mod tests {
             worker.publish();
             assert_eq!(lock(&worker.public).current_valence, 0.);
             present_interval(worker, video_position + 1);
+        });
+    }
+    #[test]
+    fn video_end_records_neutral_only_after_reset() {
+        with_neutral_worker_at(|worker, root| {
+            let video = worker
+                .prepared
+                .plan
+                .steps
+                .iter()
+                .find(|step| step.kind == MasterStepKind::Video)
+                .unwrap();
+            worker.state.position = video.position;
+            worker.occurrence = "execution-test".into();
+            worker.response.x = 0.8;
+            worker.response.y = -0.4;
+            worker.state.current_valence = 0.8;
+            worker.state.current_arousal = -0.4;
+            let prior = worker.state.event_count;
+            worker.observe(MarkerEvent::VideoEnd, true).unwrap();
+            worker.neutralize_video_end().unwrap();
+            assert_eq!(worker.state.event_count, prior + 2);
+            assert_eq!((worker.response.x, worker.response.y), (0., 0.));
+            assert_eq!(
+                (worker.state.current_valence, worker.state.current_arousal),
+                (0., 0.)
+            );
+            let output = root.join(worker.storage.receipt["outputDirectory"].as_str().unwrap());
+            let text = std::fs::read_to_string(output.join("master-events.v1.jsonl")).unwrap();
+            let events: Vec<Value> = text
+                .lines()
+                .map(|line| serde_json::from_str(line).unwrap())
+                .collect();
+            let end = &events[events.len() - 2]["observation"];
+            let reset = &events[events.len() - 1]["observation"];
+            assert_eq!(end["eventType"], "videoEnd");
+            assert_eq!(reset["eventType"], "neutralReset");
+            assert_eq!(
+                reset["sequence"].as_u64().unwrap(),
+                end["sequence"].as_u64().unwrap() + 1
+            );
+            assert!(reset["monotonicMs"].as_f64().unwrap() >= end["monotonicMs"].as_f64().unwrap());
+        });
+    }
+    #[test]
+    fn physical_input_edge_keeps_its_capture_time_in_recorded_marker() {
+        with_neutral_worker_at(|worker, root| {
+            let video = worker
+                .prepared
+                .plan
+                .steps
+                .iter()
+                .find(|step| step.kind == MasterStepKind::Video)
+                .unwrap();
+            worker.state.position = video.position;
+            worker.occurrence = "execution-test".into();
+            let observed_at = Instant::now();
+            let ordered_at = observed_at + Duration::from_millis(1);
+            worker
+                .mailbox
+                .push(crate::research_input::NativeInputUpdate::Digital(
+                    crate::research_input::NativeDigitalInput {
+                        direction: crate::research_contracts::DirectionV1::Right,
+                        detail: "keyboard:test".into(),
+                        apply_step: true,
+                        input_active: true,
+                        impulse: false,
+                        observed_at: ordered_at,
+                        captured_at: observed_at,
+                    },
+                ));
+            std::thread::sleep(Duration::from_millis(2));
+            worker.drain_input().unwrap();
+            worker.storage.checkpoint().unwrap();
+            let output = root.join(worker.storage.receipt["outputDirectory"].as_str().unwrap());
+            let text = std::fs::read_to_string(output.join("master-events.v1.jsonl")).unwrap();
+            let record: Value = serde_json::from_str(text.lines().last().unwrap()).unwrap();
+            let marker = &record["observation"];
+            let original_ms = observed_at.duration_since(worker.epoch).as_secs_f64() * 1000.;
+            assert_eq!(marker["version"], 2);
+            assert_eq!(marker["eventType"], "inputEdge");
+            assert!((marker["observedMonotonicMs"].as_f64().unwrap() - original_ms).abs() < 0.001);
+            assert!(marker["monotonicMs"].as_f64().unwrap() > original_ms);
+            worker
+                .mailbox
+                .push(crate::research_input::NativeInputUpdate::Digital(
+                    crate::research_input::NativeDigitalInput {
+                        direction: crate::research_contracts::DirectionV1::Right,
+                        detail: "native:lifecycle-release".into(),
+                        apply_step: false,
+                        input_active: false,
+                        impulse: false,
+                        observed_at: Instant::now(),
+                        captured_at: Instant::now(),
+                    },
+                ));
+            worker.drain_input().unwrap();
+            assert_eq!(worker.state.event_count, 1);
         });
     }
     #[test]

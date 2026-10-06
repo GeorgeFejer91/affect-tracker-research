@@ -1,7 +1,7 @@
 //! Versioned master marker stream. P3's planned profile remains immutable;
 //! a complete execution profile adds only P2 before/after-session form sources.
 use super::{MasterPlan, MasterStepKind};
-use crate::research_contracts::{canonical_json, canonical_sha256};
+use crate::research_contracts::{canonical_json, canonical_sha256, DirectionV1};
 use crate::research_error::{CommandError, ResearchResult};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -25,6 +25,17 @@ pub(crate) enum MarkerEvent {
     Restart,
     Complete,
     Partial,
+    InputEdge,
+    NeutralReset,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct InputEdgeDetail {
+    pub direction: DirectionV1,
+    pub apply_step: bool,
+    pub input_active: bool,
+    pub impulse: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,6 +54,10 @@ pub(crate) struct MasterObservation {
     pub execution_id: Option<String>,
     pub source_code: Option<String>,
     pub monotonic_ms: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub observed_monotonic_ms: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<InputEdgeDetail>,
 }
 
 pub(crate) fn code(value: &str) -> bool {
@@ -140,10 +155,61 @@ impl MasterMarkers {
         execution_id: Option<&str>,
         monotonic_ms: f64,
     ) -> ResearchResult<MasterObservation> {
+        self.observe_with(event_type, entry_id, execution_id, monotonic_ms, None, None)
+    }
+    pub(crate) fn observe_input_edge(
+        &mut self,
+        entry_id: &str,
+        execution_id: &str,
+        monotonic_ms: f64,
+        observed_monotonic_ms: f64,
+        input: InputEdgeDetail,
+    ) -> ResearchResult<MasterObservation> {
+        self.observe_with(
+            MarkerEvent::InputEdge,
+            Some(entry_id),
+            Some(execution_id),
+            monotonic_ms,
+            Some(observed_monotonic_ms),
+            Some(input),
+        )
+    }
+    pub(crate) fn observe_neutral_reset(
+        &mut self,
+        entry_id: &str,
+        execution_id: &str,
+        monotonic_ms: f64,
+    ) -> ResearchResult<MasterObservation> {
+        self.observe_with(
+            MarkerEvent::NeutralReset,
+            Some(entry_id),
+            Some(execution_id),
+            monotonic_ms,
+            Some(monotonic_ms),
+            None,
+        )
+    }
+    fn observe_with(
+        &mut self,
+        event_type: MarkerEvent,
+        entry_id: Option<&str>,
+        execution_id: Option<&str>,
+        monotonic_ms: f64,
+        observed_monotonic_ms: Option<f64>,
+        input: Option<InputEdgeDetail>,
+    ) -> ResearchResult<MasterObservation> {
+        let supplemental = matches!(
+            event_type,
+            MarkerEvent::InputEdge | MarkerEvent::NeutralReset
+        );
         if !monotonic_ms.is_finite()
             || monotonic_ms < self.last_ms
             || monotonic_ms > 9_007_199_254_740_991.
             || execution_id.is_some_and(|s| !code(s))
+            || supplemental != observed_monotonic_ms.is_some()
+            || (event_type == MarkerEvent::InputEdge) != input.is_some()
+            || observed_monotonic_ms
+                .is_some_and(|time| !time.is_finite() || time < 0. || time > monotonic_ms)
         {
             return Err(CommandError::invalid_contract(
                 "Master observation time or occurrence is invalid.",
@@ -181,7 +247,7 @@ impl MasterMarkers {
         self.last_ms = monotonic_ms;
         let observation = MasterObservation {
             schema: "affect-research-marker".into(),
-            version: 1,
+            version: if supplemental { 2 } else { 1 },
             recipe_sha256: self.profile["recipeSha256"]
                 .as_str()
                 .ok_or_else(|| CommandError::invalid_contract("Missing marker recipe identity."))?
@@ -202,6 +268,8 @@ impl MasterMarkers {
             execution_id: execution_id.map(str::to_owned),
             source_code,
             monotonic_ms,
+            observed_monotonic_ms,
+            input,
         };
         if canonical_json(&observation, &[])?.len() > MAX_OBSERVATION_BYTES {
             return Err(CommandError::invalid_contract(
@@ -285,5 +353,73 @@ mod tests {
             )
             .is_err());
         assert!(MasterMarkers::new(&prepared.plan, "participant name", "attempt-test").is_err());
+    }
+    #[test]
+    fn runner_v2_input_time_and_neutral_reset_do_not_change_v1_wire() {
+        let prepared = PreparedMaster::read(
+            include_str!(
+                "../../../test/fixtures/planner-recipe-locations-current-v1.canonical.json"
+            ),
+            "P001",
+            MasterSelector {
+                variant_id: "variant-3".into(),
+                language_id: "en".into(),
+                language_selection_path: vec!["both".into(), "en".into()],
+                presentation_target: "desktop-screen".into(),
+            },
+        )
+        .unwrap();
+        let video = prepared
+            .plan
+            .steps
+            .iter()
+            .find(|step| step.kind == crate::research_runner_master::MasterStepKind::Video)
+            .unwrap();
+        let mut markers = MasterMarkers::new(&prepared.plan, "run-test", "attempt-test").unwrap();
+        let v1 = markers
+            .observe(
+                MarkerEvent::VideoStart,
+                Some(&video.entry_id),
+                Some("execution-test"),
+                10.,
+            )
+            .unwrap();
+        let wire = serde_json::to_value(v1).unwrap();
+        assert_eq!(wire["version"], 1);
+        assert!(wire.get("observedMonotonicMs").is_none());
+        assert!(wire.get("input").is_none());
+        let input = InputEdgeDetail {
+            direction: DirectionV1::Right,
+            apply_step: true,
+            input_active: true,
+            impulse: false,
+        };
+        let edge = markers
+            .observe_input_edge(&video.entry_id, "execution-test", 12., 10.5, input.clone())
+            .unwrap();
+        let wire = serde_json::to_value(edge).unwrap();
+        assert_eq!(wire["version"], 2);
+        assert_eq!(wire["eventType"], "inputEdge");
+        assert_eq!(wire["observedMonotonicMs"], 10.5);
+        assert_eq!(wire["input"]["direction"], "right");
+        assert!(markers
+            .observe_input_edge(&video.entry_id, "execution-test", 13., 14., input)
+            .is_err());
+        let end = markers
+            .observe(
+                MarkerEvent::VideoEnd,
+                Some(&video.entry_id),
+                Some("execution-test"),
+                13.,
+            )
+            .unwrap();
+        assert_eq!(end.version, 1);
+        let reset = markers
+            .observe_neutral_reset(&video.entry_id, "execution-test", 14.)
+            .unwrap();
+        let wire = serde_json::to_value(reset).unwrap();
+        assert_eq!(wire["eventType"], "neutralReset");
+        assert_eq!(wire["observedMonotonicMs"], 14.);
+        assert!(wire.get("input").is_none());
     }
 }

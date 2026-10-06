@@ -149,6 +149,7 @@ mod tests {
             input_active: pressed,
             impulse: false,
             observed_at: at,
+            captured_at: at,
         }
     }
     #[test]

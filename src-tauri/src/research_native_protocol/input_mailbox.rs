@@ -140,6 +140,7 @@ mod tests {
             input_active: true,
             impulse: false,
             observed_at: at,
+            captured_at: at,
         })
     }
 

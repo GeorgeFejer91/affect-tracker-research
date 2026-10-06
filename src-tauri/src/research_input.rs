@@ -49,6 +49,8 @@ pub struct NativeDigitalInput {
     pub input_active: bool,
     pub impulse: bool,
     pub observed_at: Instant,
+    /// Native callback capture before ordering for response integration.
+    pub captured_at: Instant,
 }
 
 #[derive(Debug, Clone)]
@@ -1105,6 +1107,7 @@ fn quiesce_run_input_locked(
                     input_active: false,
                     impulse: false,
                     observed_at,
+                    captured_at: observed_at,
                 }),
             ))
         }
@@ -1249,8 +1252,9 @@ fn process_event(
             }
         }
 
-        let observed_at = ordered_observed_at(&mut state, observed_at);
-        sink_and_input = process_digital_locked(&mut state, token, pressed, impulse, observed_at);
+        let ordered_at = ordered_observed_at(&mut state, observed_at);
+        sink_and_input =
+            process_digital_locked(&mut state, token, pressed, impulse, ordered_at, observed_at);
     }
     if let Some((sink, input)) = sink_and_input {
         dispatch_input(&sink, input);
@@ -1427,12 +1431,13 @@ fn process_gamepad_event(
                 if !accepts_button || !claim_gamepad(&mut state, device, pressed) {
                     return;
                 }
-                let observed_at = ordered_observed_at(&mut state, observed_at);
+                let ordered_at = ordered_observed_at(&mut state, observed_at);
                 sink_and_input = process_digital_locked(
                     &mut state,
                     DigitalInputTokenV1::GamepadButton { button },
                     pressed,
                     false,
+                    ordered_at,
                     observed_at,
                 );
             }
@@ -1528,6 +1533,7 @@ fn process_digital_locked(
     pressed: bool,
     impulse: bool,
     observed_at: Instant,
+    captured_at: Instant,
 ) -> Option<(RunInputSink, NativeInputUpdate)> {
     let signature = token.signature();
     if state.phase == NativeInputPhase::Capturing {
@@ -1588,6 +1594,7 @@ fn process_digital_locked(
         input_active,
         impulse,
         observed_at,
+        captured_at,
     };
     state.last_input = Some(NativeInputObservation {
         sequence: state.input_sequence,
@@ -2335,6 +2342,36 @@ mod tests {
         assert_eq!(ordered_observed_at(&mut state, later), later);
         assert_eq!(ordered_observed_at(&mut state, earlier), later);
         assert_eq!(state.last_ordered_observed_at, Some(later));
+    }
+
+    #[test]
+    fn physical_digital_capture_survives_ordering_clamp() {
+        let service = ResearchInputService::for_tests();
+        let binding = arrow_binding();
+        let receipt = service
+            .issue_test_receipt_for_tests(binding.clone())
+            .unwrap();
+        let updates = Arc::new(Mutex::new(Vec::new()));
+        let callback_updates = Arc::clone(&updates);
+        let authority = service
+            .prepare_run_full(binding, &receipt.receipt_id, move |update| {
+                lock(&callback_updates).push(update);
+            })
+            .unwrap();
+        service.set_run_accepting(&authority, true).unwrap();
+        let ordered_at = Instant::now() + Duration::from_secs(1);
+        lock(&service.state).last_ordered_observed_at = Some(ordered_at);
+        process_event(
+            &service.state,
+            &service.dispatch_gate,
+            &Event::key_pressed(Key::ArrowUp, 0),
+        );
+        let received = lock(&updates);
+        let Some(NativeInputUpdate::Digital(input)) = received.first() else {
+            panic!("expected native digital input");
+        };
+        assert_eq!(input.observed_at, ordered_at);
+        assert!(input.captured_at < input.observed_at);
     }
 
     #[test]
