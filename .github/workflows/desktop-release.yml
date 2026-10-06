@@ -4,6 +4,16 @@ run-name: Unqualified internal Windows, macOS, and Linux package candidates
 
 on:
   workflow_dispatch:
+    inputs:
+      package_target:
+        description: Package target to build
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-x64
+          - runner-windows-x64
 
 permissions:
   contents: read
@@ -12,33 +22,35 @@ permissions:
 # Cargo features. This workflow has no publishing, release, updater, signing,
 # notarization, or research-readiness authority.
 jobs:
+  select-targets:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - id: targets
+        shell: pwsh
+        env:
+          PACKAGE_TARGET: ${{ inputs.package_target }}
+        run: |
+          $catalog = @{
+            'windows-x64' = @{ target = 'windows-x64'; runner = 'windows-latest'; platform = 'windows'; architecture = 'x64' }
+            'runner-windows-x64' = @{ target = 'runner-windows-x64'; runner = 'windows-latest'; platform = 'windows'; architecture = 'x64' }
+            'macos-arm64' = @{ target = 'macos-arm64'; runner = 'macos-15'; platform = 'macos'; architecture = 'arm64' }
+            'macos-x64' = @{ target = 'macos-x64'; runner = 'macos-15-intel'; platform = 'macos'; architecture = 'x64' }
+            'linux-x64' = @{ target = 'linux-x64'; runner = 'ubuntu-22.04'; platform = 'linux'; architecture = 'x64' }
+          }
+          $names = if ($env:PACKAGE_TARGET -eq 'all') { @($catalog.Keys | Sort-Object) } else { @($env:PACKAGE_TARGET) }
+          $include = @($names | ForEach-Object { $catalog[$_] })
+          if ($include.Count -eq 0 -or $include -contains $null) { throw 'Invalid package target.' }
+          $matrix = ConvertTo-Json -InputObject @{ include = $include } -Compress -Depth 5
+          "matrix=$matrix" >> $env:GITHUB_OUTPUT
   package-unqualified-internal-alpha:
     name: ${{ matrix.target }} (unqualified internal alpha)
+    needs: select-targets
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - target: windows-x64
-            runner: windows-latest
-            platform: windows
-            architecture: x64
-          - target: runner-windows-x64
-            runner: windows-latest
-            platform: windows
-            architecture: x64
-          - target: macos-arm64
-            runner: macos-15
-            platform: macos
-            architecture: arm64
-          - target: macos-x64
-            runner: macos-15-intel
-            platform: macos
-            architecture: x64
-          - target: linux-x64
-            runner: ubuntu-22.04
-            platform: linux
-            architecture: x64
+      matrix: ${{ fromJSON(needs.select-targets.outputs.matrix) }}
     steps:
       - name: Check out exact repository state
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
