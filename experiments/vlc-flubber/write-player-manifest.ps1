@@ -28,7 +28,7 @@ function Write-Manifest([string]$name, [string[]]$paths) {
 
 Write-Manifest 'manifest.json' $components
 $allFiles = [string[]]@(Get-ChildItem -LiteralPath $stage -Recurse -File -Force | ForEach-Object {
-    $_.FullName.Substring($stage.Length + 1).Replace('\', '/')
+    [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\', '/')
 } | Where-Object { $_ -ne 'payload-manifest.json' })
 [Array]::Sort($allFiles, [StringComparer]::Ordinal)
 Write-Manifest 'payload-manifest.json' $allFiles
