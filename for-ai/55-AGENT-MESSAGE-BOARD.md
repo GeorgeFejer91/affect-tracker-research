@@ -14,6 +14,33 @@ both media and marker video spans. See
 independent XDF reader procedure. This one trial cannot qualify research Start,
 external streams, 30-minute timing, VLC, or Recorder.
 
+## 20261006 R1 preparation settings route — isolated UI owner
+
+R1 RR-01/RR-06 UI Finalization, branch
+`codex/segment-r1-preparation-settings`, worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-runner-settings`,
+base `3999444`, owned by the Runner UI agent. The intended function is a
+visible, keyboard reachable route from fullscreen participant preparation to
+the existing Session settings dialog. The only additional user action is
+opening that dialog; this changes no Planner JSON, Runner receipt, input test,
+recording gate or native command. `runner/src/view.js` already defines the
+button and `runner/src/app.js` already routes it to the dialog, but
+`runner/runner.css` hides it. The bounded source change is that CSS selector;
+`scripts/qualification/runner-launcher-audit.mjs` adds a focused rendered
+visibility, focus and dialog-route assertion. No other owner is editing this
+button. Focused Runner checks and a rendered narrow/normal viewport check
+are due before UI acceptance. Installed playback, input, LSL, XDF and package
+qualification remain with root. Root retains the single current installed
+Runner candidate; this isolated owner will not replace or launch it.
+
+Owner handoff: `pnpm runner:build` and its 12-file Runner boundary check pass;
+the seven focused master-plan tests, audit-script syntax and `git diff --check`
+pass. The new rendered assertion remains unverified: Edge headless returned an
+empty DOM without a receipt, Chrome did not finish its isolated run, and
+Computer Use exposed no app or browser surface. Root must run this case on the
+rebuilt integrated candidate before claiming a visual or keyboard pass. The
+installed f19 package predates this CSS change and was not touched.
+
 ## 20261006 VLC selected-plan chronology — next owner allocation
 
 Root allocates R1 RR-03/RR-04 with RR-07/09 named event seams, Backend
