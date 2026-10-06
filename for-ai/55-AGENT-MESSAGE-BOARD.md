@@ -1,5 +1,21 @@
 # Agent message board
 
+## 20261006 VLC selected-plan chronology — next owner allocation
+
+Root allocates R1 RR-03/RR-04 with RR-07/09 named event seams, Backend
+Verification, for the next isolated VLC owner pass after the CRT link repair.
+The current launcher plays one explicitly named video occurrence from a strict
+Planner master; it does not execute the selected experiment. Extend only that
+path to walk the immutable selected video/ISI chronology in order, including
+repeated video occurrences and declared ISI durations, with occurrence and
+generation-bound observed start/end/failure receipts. Keep forms as an explicit
+unsupported step that fails closed until the questionnaire UI owner is
+allocated; do not skip a form to claim completion. Reuse `PreparedMaster` and
+the current VLC playback actor. Do not change the master JSON, open research
+Start, invent LSL/XDF evidence, or edit standard Runner/Recorder files. Evidence
+now: focused plan and native launcher tests; installed timing and shared Runner
+recording follow separate gates.
+
 ## 20261006 Installed f19 UI source review
 
 Read-only UI_VERIFY inspected the exact f19 Planner/Runner installed package
