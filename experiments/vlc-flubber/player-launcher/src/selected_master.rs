@@ -116,6 +116,70 @@ fn file_sha256(path: &Path, cancel: Option<&Arc<AtomicBool>>) -> Result<String> 
     Ok(format!("{:x}", digest.finalize()))
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct SequenceBinding {
+    pub(super) master_file_byte_sha256: String,
+    pub(super) recipe_source_byte_sha256: String,
+    pub(super) plan_identity_sha256: String,
+    pub(super) participant_id: String,
+    pub(super) selector: Value,
+}
+
+impl SequenceBinding {
+    pub(super) fn terminal_error(&self, status: &str, error: &str) -> Value {
+        json!({
+            "schema":"flubber-vlc-selected-sequence-status",
+            "version":1,
+            "status":status,
+            "error":error,
+            "recipeSourceByteSha256":self.recipe_source_byte_sha256,
+            "masterFileByteSha256":self.master_file_byte_sha256,
+            "planIdentitySha256":self.plan_identity_sha256,
+            "participantId":self.participant_id,
+            "selector":self.selector,
+            "sharedRunnerRecordingQualified":false
+        })
+    }
+}
+
+fn read_sequence(
+    master: &Path,
+    participant: &str,
+    selector: MasterSelector,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<(PreparedMaster, SequenceBinding)> {
+    let before = file_sha256(master, cancel)?;
+    let prepared = PreparedMaster::read_file(master, participant, selector)?;
+    sequence_occurrences(&prepared.plan.steps)?;
+    if file_sha256(master, cancel)? != before {
+        return Err("Saved master changed during sequence selection".into());
+    }
+    let binding = SequenceBinding {
+        master_file_byte_sha256: before,
+        recipe_source_byte_sha256: prepared.plan.recipe_source_byte_sha256.clone(),
+        plan_identity_sha256: prepared.plan.plan_identity_sha256.clone(),
+        participant_id: prepared.plan.participant_id.clone(),
+        selector: serde_json::to_value(&prepared.plan.selector)?,
+    };
+    Ok((prepared, binding))
+}
+
+pub(super) fn verify_sequence_binding(
+    master: &Path,
+    participant: &str,
+    selector: MasterSelector,
+    expected: &SequenceBinding,
+) -> Result<()> {
+    if file_sha256(master, None)? != expected.master_file_byte_sha256 {
+        return Err("Saved master changed after Arm".into());
+    }
+    let (_, current) = read_sequence(master, participant, selector, None)?;
+    if &current != expected {
+        return Err("Selected plan changed after Arm".into());
+    }
+    Ok(())
+}
+
 pub(super) fn run(
     master: &Path,
     participant: &str,
@@ -275,10 +339,8 @@ pub(super) fn preflight_sequence(
     master: &Path,
     participant: &str,
     selector: MasterSelector,
-) -> Result<()> {
-    let prepared = PreparedMaster::read_file(master, participant, selector)?;
-    sequence_occurrences(&prepared.plan.steps)?;
-    Ok(())
+) -> Result<SequenceBinding> {
+    read_sequence(master, participant, selector, None).map(|(_, binding)| binding)
 }
 
 fn unix_ms() -> Result<u64> {
@@ -366,7 +428,7 @@ pub(super) fn run_sequence(
     selector_json: &str,
     data_dir: Option<PathBuf>,
 ) -> Result<Value> {
-    run_sequence_cancellable(master, participant, selector_json, data_dir, None)
+    run_sequence_cancellable(master, participant, selector_json, data_dir, None, None)
 }
 
 pub(super) fn run_sequence_cancellable(
@@ -375,15 +437,19 @@ pub(super) fn run_sequence_cancellable(
     selector_json: &str,
     data_dir: Option<PathBuf>,
     cancel: Option<&Arc<AtomicBool>>,
+    expected: Option<&SequenceBinding>,
 ) -> Result<Value> {
     if cancelled(cancel) {
         return Err("Selected sequence stopped before preflight".into());
     }
     let selector: MasterSelector = serde_json::from_str(selector_json)?;
-    let master_sha = file_sha256(master, cancel)?;
-    let prepared = PreparedMaster::read_file(master, participant, selector)?;
     // Preflight the entire selected chronology before opening any media. A form
     // requires its own participant UI; skipping it would change the experiment.
+    let (prepared, binding) = read_sequence(master, participant, selector, cancel)?;
+    if expected.is_some_and(|armed| armed != &binding) {
+        return Err("Arm-bound master or selected plan changed before playback".into());
+    }
+    let master_sha = binding.master_file_byte_sha256;
     let occurrences = sequence_occurrences(&prepared.plan.steps)?;
     let root = match data_dir {
         Some(path) => path,

@@ -45,6 +45,11 @@ struct SequenceArm {
     selector: MasterSelector,
 }
 
+struct ArmedSequence {
+    request: SequenceArm,
+    binding: selected_master::SequenceBinding,
+}
+
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum Action {
@@ -279,6 +284,9 @@ impl<P: Player> Controller<P> {
                 self.reply(id, true, None)
             }
             Err(_) => {
+                if self.mode == Some(Mode::Sequence) {
+                    self.terminal_receipt = self.player.poll_sequence().ok().flatten();
+                }
                 self.player.shutdown();
                 self.phase = Phase::Idle;
                 self.mode = None;
@@ -305,7 +313,7 @@ struct VlcPlayer {
     child: Option<Child>,
     rc_port: Option<u16>,
     prepared: Option<PathBuf>,
-    sequence_arm: Option<SequenceArm>,
+    sequence_arm: Option<ArmedSequence>,
     sequence_worker: Option<SequenceWorker>,
     sequence_completed: Option<Value>,
 }
@@ -313,6 +321,7 @@ struct VlcPlayer {
 struct SequenceWorker {
     cancel: Arc<AtomicBool>,
     handle: thread::JoinHandle<Value>,
+    binding: selected_master::SequenceBinding,
 }
 
 fn persist_sequence_receipt(root: &Path, receipt: &Value) -> Result<SequenceReceipt> {
@@ -482,26 +491,46 @@ impl Player for VlcPlayer {
             return Err("Participant ID is required".into());
         }
         let master_path = request.master_path.canonicalize()?;
-        selected_master::preflight_sequence(
+        let binding = selected_master::preflight_sequence(
             &master_path,
             &request.participant_id,
             request.selector.clone(),
         )?;
         fs::create_dir_all(&self.data_dir)?;
         self.data_dir = self.data_dir.canonicalize()?;
-        self.sequence_arm = Some(SequenceArm {
-            master_path,
-            ..request.clone()
+        self.sequence_arm = Some(ArmedSequence {
+            request: SequenceArm {
+                master_path,
+                ..request.clone()
+            },
+            binding,
         });
         Ok(())
     }
 
     fn start(&mut self) -> Result<()> {
-        if let Some(request) = self.sequence_arm.take() {
+        if let Some(ArmedSequence { request, binding }) = self.sequence_arm.take() {
             let data_dir = self.data_dir.clone();
-            let selector_json = serde_json::to_string(&request.selector)?;
+            let start_check = (|| -> Result<String> {
+                selected_master::verify_sequence_binding(
+                    &request.master_path,
+                    &request.participant_id,
+                    request.selector.clone(),
+                    &binding,
+                )?;
+                Ok(serde_json::to_string(&request.selector)?)
+            })();
+            let selector_json = match start_check {
+                Ok(value) => value,
+                Err(error) => {
+                    self.sequence_completed =
+                        Some(binding.terminal_error("failed", &error.to_string()));
+                    return Err(error);
+                }
+            };
             let cancel = Arc::new(AtomicBool::new(false));
             let worker_cancel = Arc::clone(&cancel);
+            let panic_binding = binding.clone();
             let handle = thread::spawn(move || {
                 match selected_master::run_sequence_cancellable(
                     &request.master_path,
@@ -509,6 +538,7 @@ impl Player for VlcPlayer {
                     &selector_json,
                     Some(data_dir),
                     Some(&worker_cancel),
+                    Some(&binding),
                 ) {
                     Ok(receipt) => receipt,
                     Err(error) => {
@@ -517,11 +547,15 @@ impl Player for VlcPlayer {
                         } else {
                             "failed"
                         };
-                        json!({"schema":"flubber-vlc-selected-sequence-status","version":1,"status":status,"error":error.to_string(),"sharedRunnerRecordingQualified":false})
+                        binding.terminal_error(status, &error.to_string())
                     }
                 }
             });
-            self.sequence_worker = Some(SequenceWorker { cancel, handle });
+            self.sequence_worker = Some(SequenceWorker {
+                cancel,
+                handle,
+                binding: panic_binding,
+            });
             return Ok(());
         }
         let prepared = self
@@ -569,7 +603,9 @@ impl Player for VlcPlayer {
                 .take()
                 .ok_or("Sequence worker disappeared")?;
             self.sequence_completed = Some(worker.handle.join().unwrap_or_else(|_| {
-                json!({"schema":"flubber-vlc-selected-sequence-status","version":1,"status":"failed","error":"Sequence worker panicked","sharedRunnerRecordingQualified":false})
+                worker
+                    .binding
+                    .terminal_error("failed", "Sequence worker panicked")
             }));
         }
         let receipt = persist_sequence_receipt(
@@ -585,9 +621,12 @@ impl Player for VlcPlayer {
     fn shutdown(&mut self) {
         if let Some(worker) = self.sequence_worker.take() {
             worker.cancel.store(true, Ordering::Release);
-            if let Ok(receipt) = worker.handle.join() {
-                let _ = persist_sequence_receipt(&self.data_dir, &receipt);
-            }
+            let receipt = worker.handle.join().unwrap_or_else(|_| {
+                worker
+                    .binding
+                    .terminal_error("failed", "Sequence worker panicked")
+            });
+            let _ = persist_sequence_receipt(&self.data_dir, &receipt);
         }
         self.sequence_arm = None;
         if let Some(receipt) = self.sequence_completed.take() {
@@ -746,6 +785,111 @@ mod tests {
             panel_percent: None,
             step_percent: None,
         }
+    }
+
+    fn test_binding(master_bytes: &[u8]) -> selected_master::SequenceBinding {
+        selected_master::SequenceBinding {
+            master_file_byte_sha256: format!("{:x}", Sha256::digest(master_bytes)),
+            recipe_source_byte_sha256: "a".repeat(64),
+            plan_identity_sha256: "b".repeat(64),
+            participant_id: "P001".into(),
+            selector: json!({"variantId":"v1","languageId":"en","languageSelectionPath":[],"presentationTarget":"desktop"}),
+        }
+    }
+
+    #[test]
+    fn changed_master_at_armed_path_rejects_start_and_keeps_arm_identity() {
+        let root = env::temp_dir().join(format!(
+            "flubber-control-arm-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        let master = root.join("master.json");
+        let armed_bytes = br#"{"version":1}"#;
+        fs::write(&master, armed_bytes).unwrap();
+        let binding = test_binding(armed_bytes);
+        let mut controller = Controller::new(VlcPlayer::new(Some(root.clone())).unwrap());
+        controller.phase = Phase::Armed;
+        controller.mode = Some(Mode::Sequence);
+        controller.generation = 1;
+        controller.player.sequence_arm = Some(ArmedSequence {
+            request: SequenceArm {
+                master_path: master.clone(),
+                participant_id: "P001".into(),
+                selector: MasterSelector {
+                    variant_id: "v1".into(),
+                    language_id: "en".into(),
+                    language_selection_path: vec![],
+                    presentation_target: "desktop".into(),
+                },
+            },
+            binding: binding.clone(),
+        });
+        fs::write(&master, br#"{"version":2}"#).unwrap();
+        let start_request = request(Action::Start, Some(1));
+        let start = controller.handle(&start_request);
+        assert_eq!(start.error, Some("player_command_failed"));
+        assert_eq!(start.state, "idle");
+        assert!(controller.player.sequence_worker.is_none());
+        let status_request = request(Action::Status, Some(1));
+        let status = controller.handle(&status_request);
+        let reference = status.sequence_receipt.unwrap();
+        assert_eq!(reference.status, "failed");
+        let receipt: Value = serde_json::from_slice(&fs::read(reference.path).unwrap()).unwrap();
+        assert_eq!(
+            receipt["masterFileByteSha256"],
+            binding.master_file_byte_sha256
+        );
+        assert_eq!(receipt["planIdentitySha256"], binding.plan_identity_sha256);
+        assert_eq!(
+            receipt["recipeSourceByteSha256"],
+            binding.recipe_source_byte_sha256
+        );
+        assert_eq!(receipt["participantId"], "P001");
+        assert_eq!(receipt["selector"], binding.selector);
+        assert!(receipt["error"].as_str().unwrap().contains("after Arm"));
+        drop(controller);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn panic_and_cancel_receipts_keep_the_arm_identity() {
+        let root = env::temp_dir().join(format!(
+            "flubber-control-panic-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        let binding = test_binding(b"armed master");
+        let mut player = VlcPlayer::new(Some(root.clone())).unwrap();
+        let handle = thread::spawn(|| -> Value { panic!("worker failure") });
+        while !handle.is_finished() {
+            thread::yield_now();
+        }
+        player.sequence_worker = Some(SequenceWorker {
+            cancel: Arc::new(AtomicBool::new(false)),
+            handle,
+            binding: binding.clone(),
+        });
+        let reference = player.poll_sequence().unwrap().unwrap();
+        let receipt: Value = serde_json::from_slice(&fs::read(reference.path).unwrap()).unwrap();
+        assert_eq!(receipt["status"], "failed");
+        assert_eq!(receipt["planIdentitySha256"], binding.plan_identity_sha256);
+        let stopped = binding.terminal_error("stopped", "Stopped before preflight");
+        assert_eq!(
+            stopped["masterFileByteSha256"],
+            binding.master_file_byte_sha256
+        );
+        assert_eq!(stopped["planIdentitySha256"], binding.plan_identity_sha256);
+        player.shutdown();
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
