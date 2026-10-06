@@ -117,8 +117,10 @@ async fn master_preflight(
         if !viewport_matches { reasons.push("master-exact-fullscreen-viewport-required".to_owned()); }
         if validation {
             if !matches!(prepared.plan.version, 3 | 4 | 5) { reasons.push("validation-requires-master3-4-or-5".into()); }
-            if super::runtime::require_validation_media(&capability).is_err() { reasons.push(capability.reason_code.clone()); }
-        } else if !capability.qualified_start_available { reasons.push(capability.reason_code.clone()); }
+        }
+        if super::runtime::require_start_media(&capability, validation).is_err() {
+            reasons.push(if validation { capability.reason_code.clone() } else { super::runtime::WEBVIEW_RESEARCH_QUALIFICATION_REQUIRED.to_owned() });
+        }
         if !crate::research_platform::NATIVE_ACQUISITION_SUPPORTED { reasons.push("native-acquisition-platform-unsupported".into()); }
         super::markers::MasterMarkers::new(&prepared.plan,"run-preflight","attempt-preflight")?;
         let result = serde_json::json!({"schema":"affect-runner-master-preflight","version":prepared.plan.version,

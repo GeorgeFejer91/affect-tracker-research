@@ -6,8 +6,7 @@ use super::{
 use crate::research_error::{CommandError, ResearchResult};
 use crate::research_input::ResearchInputService;
 use crate::research_native_media::{
-    NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1, PlaybackMode,
-    PlaybackQualification,
+    NativeMediaCapability, NativeMediaService, NativeMediaViewportCssV1, NativeMediaViewportPxV1,
 };
 use crate::research_native_protocol::{
     input_mailbox::ProtocolInputMailbox, runtime::PackageProtocolRuntime,
@@ -595,15 +594,7 @@ impl MasterRuntime {
             crate::research_platform::require_native_acquisition(
                 crate::research_platform::NATIVE_ACQUISITION_SUPPORTED,
             )?;
-            if request.validation {
-                require_validation_media(&self.media.capability())?;
-            } else if self.media.authorize_playback(PlaybackMode::NativeGstPlay)?
-                != PlaybackQualification::QualifiedNative
-            {
-                return Err(CommandError::native_media_unavailable(
-                    "native-gstplay-qualification-required",
-                ));
-            }
+            require_start_media(&self.media.capability(), request.validation)?;
             let prepared = PreparedMaster::read(
                 &request.source_text,
                 &request.participant_id,
@@ -959,10 +950,26 @@ mod v3_ingress_tests {
     }
 }
 
-/// Validation admits a functioning verified player, never a qualified claim.
-pub(crate) fn require_validation_media(
-    capability: &crate::research_native_media::NativeMediaCapability,
+pub(crate) const WEBVIEW_RESEARCH_QUALIFICATION_REQUIRED: &str =
+    "webview-research-qualification-required";
+
+pub(crate) fn require_start_media(
+    capability: &NativeMediaCapability,
+    validation: bool,
 ) -> ResearchResult<()> {
+    if validation {
+        return require_validation_media(capability);
+    }
+    Err(CommandError::new(
+        "native_media_unavailable",
+        format!(
+            "WebView video is not yet qualified for research Start ({WEBVIEW_RESEARCH_QUALIFICATION_REQUIRED}). Complete installed playback, physical input, and LSL/XDF qualification first."
+        ),
+    ))
+}
+
+/// Validation admits a functioning verified player, never a qualified claim.
+pub(crate) fn require_validation_media(capability: &NativeMediaCapability) -> ResearchResult<()> {
     if capability.backend == "html-video"
         && capability.api == "webview-video"
         && !capability.runtime_integrity_verified
@@ -999,5 +1006,17 @@ mod validation_tests {
         assert!(!capability.qualified_start_available);
         capability.runtime_integrity_verified = false;
         assert!(require_validation_media(&capability).is_err());
+    }
+
+    #[test]
+    fn research_start_stays_closed_even_if_media_capability_claims_ready() {
+        let mut capability = NativeMediaService::unavailable_for_tests().capability();
+        assert!(require_start_media(&capability, true).is_ok());
+        capability.qualified_start_available = true;
+        let error = require_start_media(&capability, false).unwrap_err();
+        assert_eq!(error.code, "native_media_unavailable");
+        assert!(error
+            .message
+            .contains(WEBVIEW_RESEARCH_QUALIFICATION_REQUIRED));
     }
 }
