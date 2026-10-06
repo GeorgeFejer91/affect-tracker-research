@@ -6976,3 +6976,23 @@ binary passed 20/20 tests, including generation fencing, strict Arm fields,
 pre-start Stop, receipt persistence/hash, interruptible ISI, and reaping an
 owned process on cancellation. This is source-level evidence; installed VLC
 playback, timing, LSL/XDF, and package qualification are still open.
+
+## 20261006 VLC launcher cancellation through preparation
+
+R1 RR-04/RR-09 Backend Verification on isolated
+`codex/segment-vlc-lifecycle`, based on integrated `0619b88`. The launcher
+now observes sequence Stop during verified asset copying and hashing. It
+supervises FFprobe and FFmpeg as owned child processes during selected-video
+preparation, polls cancellation, and kills/reaps either child before returning.
+It removes incomplete prepared output on cancellation or validation failure.
+The control protocol, existing VLC child wait, selected chronology, and
+terminal receipt schema are unchanged. The legacy single-video route still
+uses its original blocking behavior.
+
+Launcher `cargo check --locked --jobs 2` passed; all 21 locked native tests
+passed, including a new preparation-child reap test and a canceled verified
+copy check. No installed candidate was exercised. A supervisor hard kill of
+the launcher alone can still orphan an active VLC child because cleanup code
+cannot run after that kill; the Recorder owner is removing the two-second
+force-kill fallback from selected-sequence teardown in its own pass. Research
+Start and LSL/XDF qualification remain closed.

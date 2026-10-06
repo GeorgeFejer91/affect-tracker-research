@@ -54,11 +54,12 @@ fn asset_path(master: &Path, asset: &Value) -> Result<PathBuf> {
     Ok(resolved)
 }
 
-fn copy_verified(
+fn copy_verified_cancellable(
     source: &Path,
     destination: &Path,
     expected_bytes: u64,
     expected_sha: &str,
+    cancel: Option<&Arc<AtomicBool>>,
 ) -> Result<()> {
     let result = (|| {
         let mut input = File::open(source)?;
@@ -70,6 +71,9 @@ fn copy_verified(
         let mut total = 0_u64;
         let mut buffer = [0_u8; 64 * 1024];
         loop {
+            if cancelled(cancel) {
+                return Err("Selected sequence stopped while copying video".into());
+            }
             let read = input.read(&mut buffer)?;
             if read == 0 {
                 break;
@@ -95,11 +99,14 @@ fn copy_verified(
     result
 }
 
-fn file_sha256(path: &Path) -> Result<String> {
+fn file_sha256(path: &Path, cancel: Option<&Arc<AtomicBool>>) -> Result<String> {
     let mut file = File::open(path)?;
     let mut digest = Sha256::new();
     let mut buffer = [0_u8; 64 * 1024];
     loop {
+        if cancelled(cancel) {
+            return Err("Selected sequence stopped while hashing master".into());
+        }
         let read = file.read(&mut buffer)?;
         if read == 0 {
             break;
@@ -131,7 +138,7 @@ fn run_cancellable(
         return Err("Selected sequence stopped before video binding".into());
     }
     let selector: MasterSelector = serde_json::from_str(selector_json)?;
-    let master_sha = file_sha256(master)?;
+    let master_sha = file_sha256(master, cancel)?;
     let prepared = PreparedMaster::read_file(master, participant, selector)?;
     let asset = selected_asset(&prepared.plan.steps, entry_id)?;
     let expected_sha = asset["sha256"]
@@ -165,9 +172,9 @@ fn run_cancellable(
         })
         .ok_or("Selected video has no usable extension")?;
     let copy = run_dir.join(format!("selected.{extension}"));
-    copy_verified(&source, &copy, expected_bytes, expected_sha)?;
+    copy_verified_cancellable(&source, &copy, expected_bytes, expected_sha, cancel)?;
     if !matches!(asset_path(master, asset), Ok(current) if current == source)
-        || !matches!(file_sha256(master), Ok(current) if current == master_sha)
+        || !matches!(file_sha256(master, cancel), Ok(current) if current == master_sha)
     {
         let _ = fs::remove_file(&copy);
         return Err("Saved master or selected video changed during binding".into());
@@ -373,7 +380,7 @@ pub(super) fn run_sequence_cancellable(
         return Err("Selected sequence stopped before preflight".into());
     }
     let selector: MasterSelector = serde_json::from_str(selector_json)?;
-    let master_sha = file_sha256(master)?;
+    let master_sha = file_sha256(master, cancel)?;
     let prepared = PreparedMaster::read_file(master, participant, selector)?;
     // Preflight the entire selected chronology before opening any media. A form
     // requires its own participant UI; skipping it would change the experiment.
@@ -404,7 +411,7 @@ pub(super) fn run_sequence_cancellable(
             ));
         }
         let executed = (|| -> Result<Vec<Value>> {
-            if file_sha256(master)? != master_sha {
+            if file_sha256(master, cancel)? != master_sha {
                 return Err("Saved master changed after sequence selection".into());
             }
             let result = match step.kind {
@@ -486,7 +493,7 @@ pub(super) fn run_sequence_cancellable(
                 "stopped",
             ));
         }
-        if !matches!(file_sha256(master), Ok(current) if current == master_sha) {
+        if !matches!(file_sha256(master, cancel), Ok(current) if current == master_sha) {
             events.push(json!({"event":"failure","position":step.position,"entryId":step.entry_id,"generation":generation,"kind":step.kind,"observedAtUnixMs":unix_ms()?,"reason":"Saved master changed during sequence execution"}));
             return Ok(sequence_receipt(
                 &prepared,
@@ -637,14 +644,18 @@ mod tests {
         let copy = root.join("copy.mp4");
         fs::write(&source, b"selected video").unwrap();
         let hash = format!("{:x}", Sha256::digest(b"selected video"));
-        copy_verified(&source, &copy, 14, &hash).unwrap();
+        copy_verified_cancellable(&source, &copy, 14, &hash, None).unwrap();
         assert_eq!(fs::read(&copy).unwrap(), b"selected video");
         let changed = root.join("changed.mp4");
-        assert!(copy_verified(&source, &changed, 14, &"0".repeat(64)).is_err());
+        assert!(copy_verified_cancellable(&source, &changed, 14, &"0".repeat(64), None).is_err());
         assert!(!changed.exists());
         let short = root.join("short.mp4");
-        assert!(copy_verified(&source, &short, 13, &hash).is_err());
+        assert!(copy_verified_cancellable(&source, &short, 13, &hash, None).is_err());
         assert!(!short.exists());
+        let cancelled = root.join("cancelled.mp4");
+        let stop = Arc::new(AtomicBool::new(true));
+        assert!(copy_verified_cancellable(&source, &cancelled, 14, &hash, Some(&stop)).is_err());
+        assert!(!cancelled.exists());
         fs::remove_dir_all(root).unwrap();
     }
 

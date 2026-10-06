@@ -290,8 +290,11 @@ fn geometry(stream: &VideoStream, panel_percent: u32) -> Result<Geometry> {
     })
 }
 
-fn probe(ffprobe: &Path, video: &Path) -> Result<VideoStream> {
-    let output = Command::new(ffprobe)
+fn probe(ffprobe: &Path, video: &Path, cancel: Option<&Arc<AtomicBool>>) -> Result<VideoStream> {
+    if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
+        return Err("Selected sequence stopped before FFprobe".into());
+    }
+    let mut child = Command::new(ffprobe)
         .args([
             "-v",
             "error",
@@ -303,7 +306,28 @@ fn probe(ffprobe: &Path, video: &Path) -> Result<VideoStream> {
             "json",
         ])
         .arg(video)
-        .output()?;
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()?;
+    if let Some(flag) = cancel {
+        loop {
+            if flag.load(Ordering::Acquire) {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err("Selected sequence stopped; FFprobe child reaped".into());
+            }
+            match child.try_wait() {
+                Ok(Some(_)) => break,
+                Ok(None) => thread::sleep(Duration::from_millis(50)),
+                Err(error) => {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(error.into());
+                }
+            }
+        }
+    }
+    let output = child.wait_with_output()?;
     if !output.status.success() {
         return Err(format!("FFprobe could not read {}", video.display()).into());
     }
@@ -315,11 +339,14 @@ fn probe(ffprobe: &Path, video: &Path) -> Result<VideoStream> {
         .ok_or_else(|| "Video has no picture stream".into())
 }
 
-fn sha256_prefix(path: &Path) -> Result<String> {
+fn sha256_prefix(path: &Path, cancel: Option<&Arc<AtomicBool>>) -> Result<String> {
     let mut file = File::open(path)?;
     let mut digest = Sha256::new();
     let mut buffer = [0_u8; 64 * 1024];
     loop {
+        if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
+            return Err("Selected sequence stopped while hashing video".into());
+        }
         let read = file.read(&mut buffer)?;
         if read == 0 {
             break;
@@ -348,19 +375,30 @@ fn prepare_video(
     media_dir: &Path,
     panel_percent: u32,
 ) -> Result<(PathBuf, Geometry)> {
-    let geometry = geometry(&probe(ffprobe, source)?, panel_percent)?;
+    prepare_video_cancellable(ffmpeg, ffprobe, source, media_dir, panel_percent, None)
+}
+
+fn prepare_video_cancellable(
+    ffmpeg: &Path,
+    ffprobe: &Path,
+    source: &Path,
+    media_dir: &Path,
+    panel_percent: u32,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<(PathBuf, Geometry)> {
+    let geometry = geometry(&probe(ffprobe, source, cancel)?, panel_percent)?;
     fs::create_dir_all(media_dir)?;
     let stem = source
         .file_stem()
         .and_then(OsStr::to_str)
         .ok_or("Video filename is unavailable")?;
-    let hash = sha256_prefix(source)?;
+    let hash = sha256_prefix(source, cancel)?;
     let output = media_dir.join(format!(
         "{stem}-{hash}-p{panel_percent}-f{}-{}-lead5-tail2-v2.mkv",
         geometry.rate.num, geometry.rate.den
     ));
     if output.is_file() {
-        let existing = probe(ffprobe, &output)?;
+        let existing = probe(ffprobe, &output, cancel)?;
         if existing.width == geometry.width
             && existing.height == geometry.video_height + geometry.panel_height
             && parse_fps(&existing.r_frame_rate)? == geometry.rate
@@ -379,7 +417,10 @@ fn prepare_video(
         geometry.video_height + geometry.panel_height,
         geometry.video_height
     );
-    let status = Command::new(ffmpeg)
+    if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
+        return Err("Selected sequence stopped before FFmpeg".into());
+    }
+    let mut child = Command::new(ffmpeg)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .args(["-hide_banner", "-loglevel", "error", "-i"])
@@ -418,19 +459,64 @@ fn prepare_video(
             "-y",
         ])
         .arg(&temporary)
-        .status()?;
+        .spawn()?;
+    let status = wait_for_preparation_child(&mut child, cancel);
+    if status.is_err() {
+        let _ = fs::remove_file(&temporary);
+    }
+    let status = status?;
     if !status.success() {
+        let _ = fs::remove_file(&temporary);
         return Err("FFmpeg could not prepare the video".into());
     }
-    let verified = probe(ffprobe, &temporary)?;
+    let verified = match probe(ffprobe, &temporary, cancel) {
+        Ok(verified) => verified,
+        Err(error) => {
+            let _ = fs::remove_file(&temporary);
+            return Err(error);
+        }
+    };
     if verified.width != geometry.width
         || verified.height != geometry.video_height + geometry.panel_height
         || parse_fps(&verified.r_frame_rate)? != geometry.rate
     {
+        let _ = fs::remove_file(&temporary);
         return Err("FFmpeg output did not match the requested Flubber layout".into());
     }
-    fs::rename(&temporary, &output)?;
+    if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
+        let _ = fs::remove_file(&temporary);
+        return Err("Selected sequence stopped before prepared-video commit".into());
+    }
+    if let Err(error) = fs::rename(&temporary, &output) {
+        let _ = fs::remove_file(&temporary);
+        return Err(error.into());
+    }
     Ok((output, geometry))
+}
+
+fn wait_for_preparation_child(
+    child: &mut Child,
+    cancel: Option<&Arc<AtomicBool>>,
+) -> Result<ExitStatus> {
+    let Some(flag) = cancel else {
+        return Ok(child.wait()?);
+    };
+    loop {
+        if flag.load(Ordering::Acquire) {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err("Selected sequence stopped; preparation child reaped".into());
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => return Ok(status),
+            Ok(None) => thread::sleep(Duration::from_millis(50)),
+            Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(error.into());
+            }
+        }
+    }
 }
 
 fn required_file(path: PathBuf) -> Result<PathBuf> {
@@ -652,8 +738,14 @@ fn run_with_args_cancellable(args: Args, cancel: Option<&Arc<AtomicBool>>) -> Re
         if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
             return Err("Selected sequence stopped before video preparation".into());
         }
-        let (prepared, geometry) =
-            prepare_video(&ffmpeg, &ffprobe, &video, &data_dir.join("media"), panel)?;
+        let (prepared, geometry) = prepare_video_cancellable(
+            &ffmpeg,
+            &ffprobe,
+            &video,
+            &data_dir.join("media"),
+            panel,
+            cancel,
+        )?;
         if cancel.is_some_and(|flag| flag.load(Ordering::Acquire)) {
             return Err("Selected sequence stopped before VLC launch".into());
         }
@@ -828,6 +920,20 @@ mod tests {
         });
         assert!(super::wait_for_selected_child(&mut child, 5_000, Some(&cancel)).is_err());
         stopper.join().unwrap();
+        assert!(child.try_wait().unwrap().is_some());
+    }
+
+    #[test]
+    fn preparation_child_is_reaped_when_stop_is_signalled() {
+        let mut child = Command::new("powershell")
+            .args(["-NoProfile", "-Command", "Start-Sleep -Seconds 5"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let cancel = Arc::new(AtomicBool::new(true));
+        assert!(super::wait_for_preparation_child(&mut child, Some(&cancel)).is_err());
         assert!(child.try_wait().unwrap().is_some());
     }
 
