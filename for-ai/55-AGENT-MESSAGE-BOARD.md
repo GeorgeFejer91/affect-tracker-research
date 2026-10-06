@@ -31,6 +31,24 @@ listener, bearer link or player control port is exposed to another program.
 The old single-video sidequest runtime cannot claim Planner recipe execution,
 LSL/XDF correspondence or installed qualification from this control slice.
 
+FlubberRecorder first allocation: companion packaging/local-authority bootstrap
+on a distinct worktree from integration `455f514`. Use only the historical
+Tauri shell metadata needed for a separate Recorder program; write a small
+same-PC UI/Rust adapter that can inspect a selected Planner master through the
+strict Flubber VLC launcher and verify a separately installed player's
+manifest/components. The Recorder installer must not bundle a second VLC/FFmpeg
+tree. Exclude the historical LAN phone server, Python prototype, old
+`flubbercorder-experiment/v1` runtime, and bundled demonstration film. Keep
+research Start disabled while selected-plan execution and Runner LSL/XDF are
+open. The user requires Recorder setup to download the separate player, but no
+qualified, published player setup URL/hash exists yet; design the dependency
+boundary to fail closed and report this as an open packaging gate. The next
+release pass must use a fixed player asset URL and SHA-256, verify it before
+installing, and check the installed seven-component manifest. Evidence now is
+source tests for local-only control, strict plan inspection, missing/tampered
+player rejection, and no duplicate player resources. Installed and research
+claims remain open.
+
 Direct user decision: remove GStreamer from the active project and use Windows
 WebView video for standard Runner. Root reverted the restored Gst actor and JS
 bridge, removed its active CI/config/runtime staging, and preserved the separate
