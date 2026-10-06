@@ -1,0 +1,12 @@
+[package]
+name = "flubber-svg-renderer"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "flubber_svg"
+crate-type = ["cdylib"]
+
+[dependencies]
+resvg = { version = "=0.48.1", default-features = false }
