@@ -22,7 +22,7 @@ fn run() -> Result<(), Box<dyn Error>> {
                 .into(),
         );
     }
-    let mut session = Session::arm(&recipe, &player, &recorder, &data, true)?;
+    let mut session = Session::arm(&recipe, &player, &recorder, &data, false)?;
     println!(
         "Recorder subscribed before playback; VLC PID {}",
         session.vlc_pid()

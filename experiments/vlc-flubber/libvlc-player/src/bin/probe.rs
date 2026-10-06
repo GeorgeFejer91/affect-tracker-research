@@ -14,8 +14,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     let markers = labstream::resolve_first(&Query::name("VLC_Flubber_Markers"), timeout)?
         .ok_or("Flubber marker LSL outlet not discovered")?
         .fetch(timeout)?;
-    if !affect.source_id().starts_with("vlc-flubber-libvlc-")
-        || !markers.source_id().starts_with("vlc-flubber-libvlc-")
+    if !affect.source_id().starts_with("vlc-flubber-")
+        || !markers.source_id().starts_with("vlc-flubber-")
     {
         return Err("Unexpected Flubber LSL source".into());
     }
@@ -47,8 +47,19 @@ fn run() -> Result<(), Box<dyn Error>> {
         return Err(format!("Only {} affect samples received", stamps.len()).into());
     }
     let span = stamps.last().unwrap() - stamps.first().unwrap();
+    let mut intervals: Vec<_> = stamps.windows(2).map(|pair| pair[1] - pair[0]).collect();
+    if intervals.iter().any(|interval| *interval <= 0.0) {
+        return Err("Affect timestamps are not strictly increasing".into());
+    }
+    intervals.sort_by(f64::total_cmp);
+    let p95_ms = intervals[intervals.len() * 95 / 100] * 1000.0;
+    let worst_ms = intervals.last().copied().unwrap() * 1000.0;
+    let gaps = intervals
+        .iter()
+        .filter(|interval| **interval > 0.05)
+        .count();
     println!(
-        "samples={} span_s={span:.3} rate_hz={:.3} markers={labels:?}",
+        "samples={} span_s={span:.3} rate_hz={:.3} p95_interval_ms={p95_ms:.2} worst_interval_ms={worst_ms:.2} gaps_over_50ms={gaps} markers={labels:?}",
         stamps.len(),
         (stamps.len() - 1) as f64 / span
     );

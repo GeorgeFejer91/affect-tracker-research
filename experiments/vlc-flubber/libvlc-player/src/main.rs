@@ -7,7 +7,8 @@ use std::collections::VecDeque;
 use std::env;
 use std::ffi::{c_char, c_int, c_void, CString, OsStr};
 use std::fs::{self, File};
-use std::io::{BufWriter, Write};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::net::TcpListener;
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::ptr::{null, null_mut};
@@ -15,12 +16,23 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
-use windows_sys::Win32::Graphics::Gdi::{
-    BeginPaint, EndPaint, InvalidateRect, PatBlt, StretchDIBits, BITMAPINFO, BITMAPINFOHEADER,
-    BI_RGB, BLACKNESS, DIB_RGB_COLORS, PAINTSTRUCT, SRCCOPY,
+use windows_sys::Win32::Foundation::{
+    CloseHandle, HANDLE, HWND, LPARAM, LRESULT, RECT, WAIT_OBJECT_0, WPARAM,
 };
+use windows_sys::Win32::Graphics::Gdi::{
+    BeginPaint, EndPaint, GetMonitorInfoW, InvalidateRect, MonitorFromWindow, PatBlt,
+    StretchDIBits, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, BLACKNESS, DIB_RGB_COLORS, MONITORINFO,
+    MONITOR_DEFAULTTONEAREST, PAINTSTRUCT, SRCCOPY,
+};
+use windows_sys::Win32::Media::{timeBeginPeriod, timeEndPeriod};
 use windows_sys::Win32::System::LibraryLoader::{GetModuleHandleW, SetDllDirectoryW};
+use windows_sys::Win32::System::Threading::{
+    CreateWaitableTimerExW, GetCurrentProcess, ProcessPowerThrottling, SetProcessInformation,
+    SetWaitableTimer, WaitForSingleObject, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+    PROCESS_POWER_THROTTLING_CURRENT_VERSION, PROCESS_POWER_THROTTLING_EXECUTION_SPEED,
+    PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION, PROCESS_POWER_THROTTLING_STATE,
+    TIMER_ALL_ACCESS,
+};
 use windows_sys::Win32::UI::HiDpi::{
     SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
 };
@@ -30,9 +42,10 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect, GetMessageW,
     GetWindowLongPtrW, MoveWindow, PostMessageW, PostQuitMessage, RegisterClassW,
-    SetWindowLongPtrW, ShowWindow, TranslateMessage, CW_USEDEFAULT, GWLP_USERDATA, MSG, SW_HIDE,
-    SW_SHOW, WM_APP, WM_CLOSE, WM_DESTROY, WM_KEYDOWN, WM_PAINT, WM_SIZE, WNDCLASSW, WS_CHILD,
-    WS_CLIPCHILDREN, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+    SetWindowLongPtrW, SetWindowPos, ShowWindow, TranslateMessage, CW_USEDEFAULT, GWLP_USERDATA,
+    GWL_STYLE, MSG, SWP_FRAMECHANGED, SWP_NOZORDER, SWP_SHOWWINDOW, SW_HIDE, SW_SHOW, WM_APP,
+    WM_CLOSE, WM_DESTROY, WM_KEYDOWN, WM_PAINT, WM_SIZE, WNDCLASSW, WS_CHILD, WS_CLIPCHILDREN,
+    WS_OVERLAPPEDWINDOW, WS_POPUP, WS_VISIBLE,
 };
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -40,6 +53,108 @@ const RATE: Duration = Duration::from_nanos(33_333_333);
 const POINTS: usize = 192;
 const WAVES: usize = 16;
 const WM_FLUBBER_TICK: u32 = WM_APP + 1;
+
+struct TimerResolution {
+    policy_changed: bool,
+}
+
+impl TimerResolution {
+    fn one_millisecond() -> Result<Self> {
+        // SAFETY: This process requests the period for its two 30 Hz workers.
+        if unsafe { timeBeginPeriod(1) } != 0 {
+            return Err("Windows could not enable the 1 ms timer period".into());
+        }
+        // Windows 11 may ignore this request for an occluded window. Explicitly
+        // keep the timer resolution while the always-on LSL outlet is live.
+        let policy = PROCESS_POWER_THROTTLING_STATE {
+            Version: PROCESS_POWER_THROTTLING_CURRENT_VERSION,
+            ControlMask: PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION
+                | PROCESS_POWER_THROTTLING_EXECUTION_SPEED,
+            StateMask: 0,
+        };
+        // SAFETY: This process owns the policy change and passes a fully
+        // initialized structure of the documented size.
+        let policy_changed = unsafe {
+            SetProcessInformation(
+                GetCurrentProcess(),
+                ProcessPowerThrottling,
+                (&policy as *const PROCESS_POWER_THROTTLING_STATE).cast(),
+                std::mem::size_of::<PROCESS_POWER_THROTTLING_STATE>() as u32,
+            ) != 0
+        };
+        if !policy_changed {
+            eprintln!("Windows did not accept the timer resolution policy");
+        }
+        Ok(Self { policy_changed })
+    }
+}
+
+impl Drop for TimerResolution {
+    fn drop(&mut self) {
+        if self.policy_changed {
+            let reset = PROCESS_POWER_THROTTLING_STATE {
+                Version: PROCESS_POWER_THROTTLING_CURRENT_VERSION,
+                ControlMask: 0,
+                StateMask: 0,
+            };
+            // SAFETY: Restore the system-managed process policy before exit.
+            unsafe {
+                SetProcessInformation(
+                    GetCurrentProcess(),
+                    ProcessPowerThrottling,
+                    (&reset as *const PROCESS_POWER_THROTTLING_STATE).cast(),
+                    std::mem::size_of::<PROCESS_POWER_THROTTLING_STATE>() as u32,
+                )
+            };
+        }
+        // SAFETY: Pairs the successful request above on normal shutdown.
+        unsafe { timeEndPeriod(1) };
+    }
+}
+
+struct HighResTimer(HANDLE);
+
+impl HighResTimer {
+    fn new() -> Result<Self> {
+        // SAFETY: The timer is unnamed, non-inheritable, and owned by this worker.
+        let handle = unsafe {
+            CreateWaitableTimerExW(
+                null(),
+                null(),
+                CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                TIMER_ALL_ACCESS,
+            )
+        };
+        if handle.is_null() {
+            return Err("Could not create a high-resolution worker timer".into());
+        }
+        Ok(Self(handle))
+    }
+
+    fn wait_until(&self, target: Instant) -> Result<()> {
+        let remaining = target.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Ok(());
+        }
+        let ticks = (remaining.as_nanos() / 100).max(1).min(i64::MAX as u128) as i64;
+        let relative_due_time = -ticks;
+        // SAFETY: The handle remains live during the wait; negative due time
+        // is relative and expressed in 100 ns units.
+        if unsafe { SetWaitableTimer(self.0, &relative_due_time, 0, None, null(), 0) } == 0
+            || unsafe { WaitForSingleObject(self.0, u32::MAX) } != WAIT_OBJECT_0
+        {
+            return Err("High-resolution worker timer failed".into());
+        }
+        Ok(())
+    }
+}
+
+impl Drop for HighResTimer {
+    fn drop(&mut self) {
+        // SAFETY: Each worker owns exactly one timer handle.
+        unsafe { CloseHandle(self.0) };
+    }
+}
 
 fn wide(value: &OsStr) -> Vec<u16> {
     value.encode_wide().chain(std::iter::once(0)).collect()
@@ -68,6 +183,7 @@ type PlayerStop = unsafe extern "C" fn(*mut c_void);
 type PlayerPause = unsafe extern "C" fn(*mut c_void, c_int);
 type PlayerState = unsafe extern "C" fn(*mut c_void) -> c_int;
 type PlayerTime = unsafe extern "C" fn(*mut c_void) -> i64;
+type SetVolume = unsafe extern "C" fn(*mut c_void, c_int) -> c_int;
 type Release = unsafe extern "C" fn(*mut c_void);
 
 struct Vlc {
@@ -83,6 +199,7 @@ struct Vlc {
     set_pause: PlayerPause,
     state: PlayerState,
     time: PlayerTime,
+    set_volume: SetVolume,
     release_player: Release,
     release_media: Release,
     release_instance: Release,
@@ -112,6 +229,7 @@ impl Vlc {
         let set_pause = dll_function(&library, b"libvlc_media_player_set_pause\0")?;
         let state = dll_function(&library, b"libvlc_media_player_get_state\0")?;
         let time = dll_function(&library, b"libvlc_media_player_get_time\0")?;
+        let set_volume = dll_function(&library, b"libvlc_audio_set_volume\0")?;
         let release_player = dll_function(&library, b"libvlc_media_player_release\0")?;
         let release_media = dll_function(&library, b"libvlc_media_release\0")?;
         let release_instance = dll_function(&library, b"libvlc_release\0")?;
@@ -141,6 +259,7 @@ impl Vlc {
             set_pause,
             state,
             time,
+            set_volume,
             release_player,
             release_media,
             release_instance,
@@ -148,6 +267,7 @@ impl Vlc {
     }
 
     fn open(&mut self, path: &Path, video_hwnd: HWND) -> Result<()> {
+        self.close();
         let path = win32_path(&fs::canonicalize(path)?);
         let path = path.to_string_lossy();
         eprintln!("LibVLC media path: {path}");
@@ -201,6 +321,16 @@ impl Vlc {
             // SAFETY: The player is owned by this UI-thread Vlc object.
             unsafe { (self.stop)(self.player) };
         }
+    }
+
+    fn volume(&self, percent: u32) -> Result<()> {
+        if !self.player.is_null() {
+            // SAFETY: The player is live and the bounded volume is in LibVLC's range.
+            if unsafe { (self.set_volume)(self.player, percent.min(100) as c_int) } != 0 {
+                return Err("LibVLC rejected the volume change".into());
+            }
+        }
+        Ok(())
     }
 
     fn close(&mut self) {
@@ -281,18 +411,133 @@ enum SampleCommand {
     Quit,
 }
 
+enum CsvCommand {
+    Open {
+        path: PathBuf,
+        rows: Vec<(f64, [f32; 2])>,
+    },
+    Row(f64, [f32; 2]),
+    Close,
+    Quit,
+}
+
+enum RemoteCommand {
+    Play,
+    Pause,
+    Stop,
+    Volume(u32),
+    Fullscreen,
+    Quit,
+}
+
+fn remote_client(
+    mut stream: std::net::TcpStream,
+    commands: &mpsc::Sender<RemoteCommand>,
+    shared: &Arc<Mutex<Shared>>,
+) -> Result<()> {
+    stream.set_nonblocking(false)?;
+    stream.set_read_timeout(Some(Duration::from_millis(500)))?;
+    stream.set_write_timeout(Some(Duration::from_millis(500)))?;
+    let mut line = String::new();
+    BufReader::new(&mut stream)
+        .take(1024)
+        .read_line(&mut line)?;
+    match line.trim() {
+        "is_playing" => {
+            let playing = shared
+                .lock()
+                .map_err(|_| "Affect state lock poisoned")?
+                .playing;
+            stream.write_all(if playing { b"1\n" } else { b"0\n" })?;
+        }
+        "play" => commands.send(RemoteCommand::Play)?,
+        "pause" => commands.send(RemoteCommand::Pause)?,
+        "stop" => commands.send(RemoteCommand::Stop)?,
+        "f on" => commands.send(RemoteCommand::Fullscreen)?,
+        "quit" => commands.send(RemoteCommand::Quit)?,
+        value if value.starts_with("volume ") => {
+            let volume = value[7..].parse::<u32>()?;
+            if volume > 256 {
+                return Err("Volume is outside the RC range".into());
+            }
+            commands.send(RemoteCommand::Volume((volume * 100 + 128) / 256))?;
+        }
+        _ => return Err("Unknown local player command".into()),
+    }
+    Ok(())
+}
+
+fn remote_server(
+    listener: TcpListener,
+    commands: mpsc::Sender<RemoteCommand>,
+    shared: Arc<Mutex<Shared>>,
+    stop: Arc<AtomicBool>,
+) -> Result<()> {
+    listener.set_nonblocking(true)?;
+    while !stop.load(Ordering::Acquire) {
+        match listener.accept() {
+            Ok((stream, _)) => {
+                if let Err(error) = remote_client(stream, &commands, &shared) {
+                    eprintln!("Ignored local player command: {error}");
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                thread::sleep(Duration::from_millis(10))
+            }
+            Err(error) => return Err(error.into()),
+        }
+    }
+    Ok(())
+}
+
+fn csv_writer(commands: mpsc::Receiver<CsvCommand>) -> Result<()> {
+    let mut recording: Option<BufWriter<File>> = None;
+    for command in commands {
+        match command {
+            CsvCommand::Open { path, rows } => {
+                if recording.is_some() {
+                    return Err("CSV recording is already open".into());
+                }
+                if let Some(parent) = path.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                let mut file = BufWriter::new(File::create_new(path)?);
+                file.write_all(b"time_s,valence,arousal\n")?;
+                for (time, values) in rows {
+                    writeln!(file, "{time:.6},{:.6},{:.6}", values[0], values[1])?;
+                }
+                file.flush()?;
+                recording = Some(file);
+            }
+            CsvCommand::Row(time, values) => {
+                if let Some(file) = &mut recording {
+                    writeln!(file, "{time:.6},{:.6},{:.6}", values[0], values[1])?;
+                    file.flush()?;
+                }
+            }
+            CsvCommand::Close => {
+                if let Some(mut file) = recording.take() {
+                    file.flush()?;
+                }
+            }
+            CsvCommand::Quit => break,
+        }
+    }
+    if let Some(mut file) = recording {
+        file.flush()?;
+    }
+    Ok(())
+}
+
 fn sampler(
     shared: Arc<Mutex<Shared>>,
     commands: mpsc::Receiver<SampleCommand>,
+    csv_commands: mpsc::SyncSender<CsvCommand>,
     ready: mpsc::Sender<std::result::Result<(), String>>,
     name: String,
     csv_path: Option<PathBuf>,
 ) -> Result<()> {
-    let source = format!(
-        "vlc-flubber-libvlc-{}-{}",
-        std::process::id(),
-        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
-    );
+    let source = format!("vlc-flubber-{}", std::process::id());
     let state_info = StreamInfo::builder("VLC_Flubber_Affect", "Affect", Format::Float32)
         .rate(30.0)
         .source_id(&format!("{source}-affect"))
@@ -309,12 +554,13 @@ fn sampler(
     let affect = Outlet::new(state_info)?;
     let markers = Outlet::new(marker_info)?;
     ready.send(Ok(())).ok();
-    let mut recording: Option<BufWriter<File>> = None;
     let mut started = false;
+    let mut recording_index = 0_u64;
     let mut samples = 0_u64;
     let mut recent = VecDeque::<(f64, [f32; 2])>::new();
     let mut origin = 0.0_f64;
     let mut pause_started = None::<f64>;
+    let timer = HighResTimer::new()?;
     let mut next = Instant::now();
     loop {
         while let Ok(command) = commands.try_recv() {
@@ -325,24 +571,18 @@ fn sampler(
                 } if !started => {
                     origin = observed_at - media_ms as f64 / 1000.0;
                     if let Some(path) = &csv_path {
-                        if let Some(parent) = path.parent() {
-                            fs::create_dir_all(parent)?;
-                        }
-                        let mut file = BufWriter::new(File::create(path)?);
-                        file.write_all(b"time_s,valence,arousal\n")?;
-                        for &(stamp, values) in &recent {
-                            if stamp >= origin && stamp <= observed_at {
-                                writeln!(
-                                    file,
-                                    "{:.6},{:.6},{:.6}",
-                                    stamp - origin,
-                                    values[0],
-                                    values[1]
-                                )?;
-                            }
-                        }
-                        file.flush()?;
-                        recording = Some(file);
+                        recording_index += 1;
+                        let path = if recording_index == 1 {
+                            path.clone()
+                        } else {
+                            path.with_extension(format!("repeat{recording_index}.csv"))
+                        };
+                        let rows = recent
+                            .iter()
+                            .filter(|(stamp, _)| *stamp >= origin && *stamp <= observed_at)
+                            .map(|(stamp, values)| (stamp - origin, *values))
+                            .collect();
+                        csv_commands.try_send(CsvCommand::Open { path, rows })?;
                     }
                     markers.push_text_at(&format!("{name}_Start"), origin)?;
                     recent.clear();
@@ -350,18 +590,14 @@ fn sampler(
                 }
                 SampleCommand::Stop if started => {
                     markers.push_text_at(&format!("{name}_Stop"), labstream::clock())?;
-                    if let Some(mut file) = recording.take() {
-                        file.flush()?;
-                    }
+                    csv_commands.try_send(CsvCommand::Close)?;
                     started = false;
                 }
                 SampleCommand::Quit => {
                     if started {
                         markers.push_text_at(&format!("{name}_Stop"), labstream::clock())?;
                     }
-                    if let Some(mut file) = recording.take() {
-                        file.flush()?;
-                    }
+                    csv_commands.try_send(CsvCommand::Quit)?;
                     println!("Flubber LSL affect samples sent: {samples}");
                     return Ok(());
                 }
@@ -373,8 +609,6 @@ fn sampler(
         let playing = snapshot.playing;
         drop(snapshot);
         let stamp = labstream::clock();
-        affect.push_at(&values, stamp)?;
-        samples += 1;
         if !started && playing {
             recent.push_back((stamp, values));
             while recent.front().is_some_and(|(old, _)| stamp - old > 5.0) {
@@ -386,21 +620,16 @@ fn sampler(
             if let Some(paused_at) = pause_started.take() {
                 origin += stamp - paused_at;
             }
-            if let Some(file) = &mut recording {
-                writeln!(
-                    file,
-                    "{:.6},{:.6},{:.6}",
-                    (stamp - origin).max(0.0),
-                    values[0],
-                    values[1]
-                )?;
-                file.flush()?;
+            if csv_path.is_some() {
+                csv_commands.try_send(CsvCommand::Row((stamp - origin).max(0.0), values))?;
             }
         }
+        affect.push_at(&values, stamp)?;
+        samples += 1;
         next += RATE;
         let now = Instant::now();
         if next > now {
-            thread::sleep(next - now);
+            timer.wait_until(next)?;
         } else {
             next = now;
         }
@@ -537,6 +766,7 @@ fn animate(
     stop: Arc<AtomicBool>,
     window_address: usize,
 ) -> Result<()> {
+    let timer = HighResTimer::new()?;
     let mut next = Instant::now();
     let mut previous = next;
     let mut phase = 0.0;
@@ -599,7 +829,7 @@ fn animate(
         next += RATE;
         let now = Instant::now();
         if next > now {
-            thread::sleep(next - now);
+            timer.wait_until(next)?;
         } else {
             next = now;
         }
@@ -610,6 +840,11 @@ fn animate(
 
 struct App {
     vlc: Vlc,
+    armed_video: Option<PathBuf>,
+    remote_commands: mpsc::Receiver<RemoteCommand>,
+    volume_percent: u32,
+    fullscreen: bool,
+    exit_on_end: bool,
     shared: Arc<Mutex<Shared>>,
     frame: Arc<Mutex<Frame>>,
     panel_size: Arc<Mutex<(i32, i32)>>,
@@ -626,7 +861,7 @@ struct App {
     ticks: u64,
     tick_pending: Arc<AtomicBool>,
     tick_stop: Arc<AtomicBool>,
-    sampler_failed: Arc<AtomicBool>,
+    worker_failed: Arc<AtomicBool>,
 }
 
 impl App {
@@ -650,7 +885,7 @@ impl App {
     }
 
     fn tick(&mut self, hwnd: HWND) {
-        if self.sampler_failed.load(Ordering::Acquire) {
+        if self.worker_failed.load(Ordering::Acquire) {
             self.vlc.stop();
             // SAFETY: A failed LSL/CSV writer must stop this experiment window.
             unsafe { PostMessageW(hwnd, WM_CLOSE, 0, 0) };
@@ -661,6 +896,64 @@ impl App {
             .is_some_and(|deadline| Instant::now() >= deadline)
         {
             // SAFETY: Exit is posted to this window's own message loop.
+            unsafe { PostMessageW(hwnd, WM_CLOSE, 0, 0) };
+            return;
+        }
+        // LibVLC and SetWindowPos may synchronously send window messages. Hide
+        // the non-owning callback pointer while this mutable UI state is used.
+        unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
+        let mut quit_requested = false;
+        let mut command_error = None;
+        while let Ok(command) = self.remote_commands.try_recv() {
+            let result = match command {
+                RemoteCommand::Play => {
+                    if let Some(path) = &self.armed_video {
+                        if self.started {
+                            self.commands.send(SampleCommand::Stop).ok();
+                            self.started = false;
+                        }
+                        self.last_state = -1;
+                        self.vlc
+                            .open(path, self.video_hwnd)
+                            .and_then(|()| self.vlc.volume(self.volume_percent))
+                    } else {
+                        Err("No video was armed".into())
+                    }
+                }
+                RemoteCommand::Pause => {
+                    self.vlc.pause(self.vlc.state() == 3);
+                    Ok(())
+                }
+                RemoteCommand::Stop => {
+                    self.vlc.stop();
+                    Ok(())
+                }
+                RemoteCommand::Volume(percent) => {
+                    self.volume_percent = percent;
+                    self.vlc.volume(percent)
+                }
+                RemoteCommand::Fullscreen => {
+                    self.fullscreen(hwnd);
+                    Ok(())
+                }
+                RemoteCommand::Quit => {
+                    quit_requested = true;
+                    break;
+                }
+            };
+            if let Err(error) = result {
+                command_error = Some(error);
+                break;
+            }
+        }
+        unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, self as *mut App as isize) };
+        if let Some(error) = command_error {
+            eprintln!("Player command failed: {error}");
+            self.worker_failed.store(true, Ordering::Release);
+            return;
+        }
+        if quit_requested {
+            // SAFETY: Request shutdown through the owning UI message loop.
             unsafe { PostMessageW(hwnd, WM_CLOSE, 0, 0) };
             return;
         }
@@ -694,8 +987,49 @@ impl App {
         if let Ok(mut shared) = self.shared.lock() {
             shared.playing = playing;
         }
+        if self.exit_on_end && state == 6 {
+            // SAFETY: A waited playback ends after its natural end marker.
+            unsafe { PostMessageW(hwnd, WM_CLOSE, 0, 0) };
+        }
         // SAFETY: The HWND is live; WM_PAINT displays the latest worker frame.
         unsafe { InvalidateRect(hwnd, null(), 0) };
+    }
+
+    fn fullscreen(&mut self, hwnd: HWND) {
+        if self.fullscreen {
+            return;
+        }
+        // SAFETY: The main HWND is live on this UI thread. The monitor bounds
+        // are queried before changing the host window style and position.
+        unsafe {
+            let monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            let mut info = MONITORINFO {
+                cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+                ..Default::default()
+            };
+            if monitor.is_null() || GetMonitorInfoW(monitor, &mut info) == 0 {
+                return;
+            }
+            let rect = info.rcMonitor;
+            SetWindowLongPtrW(
+                hwnd,
+                GWL_STYLE,
+                (WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN) as isize,
+            );
+            if SetWindowPos(
+                hwnd,
+                null_mut(),
+                rect.left,
+                rect.top,
+                rect.right - rect.left,
+                rect.bottom - rect.top,
+                SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW,
+            ) != 0
+            {
+                self.fullscreen = true;
+                self.layout(hwnd);
+            }
+        }
     }
 
     fn paint(&self, hwnd: HWND) {
@@ -787,6 +1121,9 @@ unsafe extern "system" fn window_proc(
         let app = unsafe { &mut *pointer };
         match message {
             WM_CLOSE => {
+                // SAFETY: LibVLC close and window destruction may reenter this
+                // procedure; nested messages must not alias `app`.
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
                 app.tick_stop.store(true, Ordering::Release);
                 if let Ok(mut shared) = app.shared.lock() {
                     shared.playing = false;
@@ -814,14 +1151,16 @@ unsafe extern "system" fn window_proc(
                 return 0;
             }
             WM_KEYDOWN => {
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
                 app.key(wparam as u32);
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, pointer as isize) };
                 return 0;
             }
             WM_DESTROY => {
+                // SAFETY: Stop nested callbacks before releasing native VLC.
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
                 app.tick_stop.store(true, Ordering::Release);
                 app.vlc.close();
-                // SAFETY: Clear the non-owning callback pointer before Box<App> drops.
-                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
             }
             _ => {}
         }
@@ -835,19 +1174,120 @@ unsafe extern "system" fn window_proc(
     unsafe { DefWindowProcW(hwnd, message, wparam, lparam) }
 }
 
-fn run() -> Result<()> {
-    let mut args = env::args_os().skip(1);
-    let video = args.next().map(PathBuf::from);
-    let csv_path = args.next().map(PathBuf::from).or_else(|| {
-        video.as_ref().map(|video| {
-            let mut path = video.to_path_buf();
-            path.set_extension("flubber.csv");
-            path
-        })
-    });
-    if args.next().is_some() {
-        return Err("Usage: flubber-libvlc-prototype.exe [VIDEO] [CSV]".into());
+struct Args {
+    video: Option<PathBuf>,
+    csv: Option<PathBuf>,
+    data_dir: Option<PathBuf>,
+    arm: bool,
+    wait: bool,
+    headless: bool,
+    panel_percent: u32,
+    step_percent: u32,
+}
+
+impl Args {
+    fn parse() -> Result<Self> {
+        let mut args = env::args_os().skip(1);
+        let mut parsed = Self {
+            video: None,
+            csv: None,
+            data_dir: None,
+            arm: false,
+            wait: false,
+            headless: false,
+            panel_percent: 25,
+            step_percent: 10,
+        };
+        while let Some(arg) = args.next() {
+            match arg.to_str() {
+                Some("--arm") => parsed.arm = true,
+                Some("--wait") => parsed.wait = true,
+                Some("--headless") => parsed.headless = true,
+                Some("--data-dir") => {
+                    parsed.data_dir =
+                        Some(PathBuf::from(args.next().ok_or("--data-dir needs a path")?))
+                }
+                Some("--panel-percent") => {
+                    parsed.panel_percent = args
+                        .next()
+                        .ok_or("--panel-percent needs a value")?
+                        .to_string_lossy()
+                        .parse()?
+                }
+                Some("--step-percent") => {
+                    parsed.step_percent = args
+                        .next()
+                        .ok_or("--step-percent needs a value")?
+                        .to_string_lossy()
+                        .parse()?
+                }
+                Some("--help" | "-h") => {
+                    println!("FlubberVLC [VIDEO] [CSV] [--arm] [--wait] [--data-dir DIR] [--panel-percent 25] [--step-percent 10]");
+                    std::process::exit(0);
+                }
+                Some(flag) if flag.starts_with('-') => {
+                    return Err(format!("Unknown option: {flag}").into())
+                }
+                _ if parsed.video.is_none() => parsed.video = Some(PathBuf::from(arg)),
+                _ if parsed.csv.is_none() => parsed.csv = Some(PathBuf::from(arg)),
+                _ => return Err("Too many positional paths".into()),
+            }
+        }
+        if !(10..=100).contains(&parsed.panel_percent) || !(1..=100).contains(&parsed.step_percent)
+        {
+            return Err("Flubber panel must be 10–100%, and step must be 1–100%".into());
+        }
+        if parsed.arm && (parsed.video.is_none() || parsed.wait) {
+            return Err("--arm requires a video and cannot be combined with --wait".into());
+        }
+        if parsed.wait && parsed.video.is_none() {
+            return Err("--wait requires a video".into());
+        }
+        if parsed.headless && parsed.video.is_some() {
+            return Err("Hidden LibVLC video output is unsupported; run the player visibly".into());
+        }
+        if let Some(video) = &parsed.video {
+            parsed.video = Some(fs::canonicalize(video)?);
+        }
+        Ok(parsed)
     }
+}
+
+fn run() -> Result<()> {
+    let args = Args::parse()?;
+    let _timer_resolution = TimerResolution::one_millisecond()?;
+    let video = args.video.clone();
+    let csv_path = if video.is_some() {
+        if let Some(csv) = args.csv.clone() {
+            Some(csv)
+        } else {
+            let root = args
+                .data_dir
+                .clone()
+                .or_else(|| {
+                    env::var_os("LOCALAPPDATA")
+                        .map(|value| PathBuf::from(value).join("VLC_Flubber_Player"))
+                })
+                .ok_or("LOCALAPPDATA is unavailable")?;
+            let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+            Some(
+                root.join("recordings")
+                    .join(format!("flubber-{stamp}-{}.csv", std::process::id())),
+            )
+        }
+    } else {
+        None
+    };
+    let readiness_csv = csv_path.clone();
+    let listener = if args.arm {
+        Some(TcpListener::bind("127.0.0.1:0")?)
+    } else {
+        None
+    };
+    let rc_port = listener
+        .as_ref()
+        .map(|listener| listener.local_addr().map(|address| address.port()))
+        .transpose()?;
     let executable = env::current_exe()?;
     let base = executable.parent().ok_or("Executable has no parent")?;
     let vlc_dir = env::var_os("FLUBBER_VLC_DIR")
@@ -870,22 +1310,34 @@ fn run() -> Result<()> {
     let shared = Arc::new(Mutex::new(Shared::default()));
     let frame = Arc::new(Mutex::new(Frame::default()));
     let panel_size = Arc::new(Mutex::new((0, 0)));
-    let sampler_failed = Arc::new(AtomicBool::new(false));
+    let worker_failed = Arc::new(AtomicBool::new(false));
     let (command_tx, command_rx) = mpsc::channel();
+    let (remote_tx, remote_rx) = mpsc::channel();
     let (ready_tx, ready_rx) = mpsc::channel();
-    let worker_shared = Arc::clone(&shared);
-    let worker_failure = Arc::clone(&sampler_failed);
-    let worker = thread::spawn(move || {
-        let result = sampler(worker_shared, command_rx, ready_tx, name, csv_path);
+    let (csv_tx, csv_rx) = mpsc::sync_channel(64);
+    let csv_failure = Arc::clone(&worker_failed);
+    let csv_worker = thread::spawn(move || {
+        let result = csv_writer(csv_rx);
         if result.is_err() {
-            worker_failure.store(true, Ordering::Release);
+            csv_failure.store(true, Ordering::Release);
+        }
+        result
+    });
+    let worker_shared = Arc::clone(&shared);
+    let lsl_failure = Arc::clone(&worker_failed);
+    let worker = thread::spawn(move || {
+        let result = sampler(worker_shared, command_rx, csv_tx, ready_tx, name, csv_path);
+        if result.is_err() {
+            lsl_failure.store(true, Ordering::Release);
         }
         result
     });
     ready_rx
         .recv_timeout(Duration::from_secs(5))
         .map_err(|_| "LSL outlet startup timed out")??;
-    println!("Flubber LSL outlets online at 30 Hz");
+    if !args.arm {
+        println!("Flubber LSL outlets online at 30 Hz");
+    }
 
     // SAFETY: Set once, before any Win32 window is created, so pixels map to
     // physical display pixels including on high-DPI monitors.
@@ -893,6 +1345,11 @@ fn run() -> Result<()> {
     let svg_renderer = Svg::new(&svg_path)?;
     let mut app = Box::new(App {
         vlc: Vlc::new(&vlc_dir)?,
+        armed_video: video.clone(),
+        remote_commands: remote_rx,
+        volume_percent: 100,
+        fullscreen: false,
+        exit_on_end: args.wait,
         shared: Arc::clone(&shared),
         frame: Arc::clone(&frame),
         panel_size: Arc::clone(&panel_size),
@@ -903,13 +1360,13 @@ fn run() -> Result<()> {
         panel_top: 0,
         started: false,
         last_state: -1,
-        panel_percent: 25,
-        step: 0.1,
+        panel_percent: args.panel_percent,
+        step: args.step_percent as f32 / 100.0,
         close_at: None,
         ticks: 0,
         tick_pending: Arc::new(AtomicBool::new(false)),
         tick_stop: Arc::new(AtomicBool::new(false)),
-        sampler_failed,
+        worker_failed,
     });
     let class = wide(OsStr::new("FlubberLibVlcPrototype"));
     let title = wide(OsStr::new("Flubber VLC prototype"));
@@ -973,8 +1430,17 @@ fn run() -> Result<()> {
     unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, (&mut *app as *mut App) as isize) };
     app.layout(hwnd);
     // The video child must be visible before LibVLC creates its native vout.
-    unsafe { ShowWindow(hwnd, if test_hidden { SW_HIDE } else { SW_SHOW }) };
-    if let Some(video) = video {
+    unsafe {
+        ShowWindow(
+            hwnd,
+            if test_hidden || args.headless {
+                SW_HIDE
+            } else {
+                SW_SHOW
+            },
+        )
+    };
+    if let Some(video) = video.as_ref().filter(|_| !args.arm) {
         if let Err(error) = app.vlc.open(&video, video_hwnd) {
             app.vlc.close();
             // SAFETY: No animation thread exists yet; clear callback ownership
@@ -984,7 +1450,10 @@ fn run() -> Result<()> {
                 DestroyWindow(hwnd);
             }
             command_tx.send(SampleCommand::Quit).ok();
-            worker.join().map_err(|_| "LSL worker panicked")??;
+            let lsl_result = worker.join().map_err(|_| "LSL worker panicked")?;
+            let csv_result = csv_worker.join().map_err(|_| "CSV worker panicked")?;
+            lsl_result?;
+            csv_result?;
             return Err(error);
         }
     }
@@ -993,9 +1462,10 @@ fn run() -> Result<()> {
     unsafe { SetFocus(hwnd) };
     let pending = Arc::clone(&app.tick_pending);
     let stop = Arc::clone(&app.tick_stop);
+    let animation_failure = Arc::clone(&app.worker_failed);
     let window_address = hwnd as usize;
     let animation = thread::spawn(move || {
-        animate(
+        let result = animate(
             svg_renderer,
             Shape::new(),
             shared,
@@ -1004,8 +1474,41 @@ fn run() -> Result<()> {
             pending,
             stop,
             window_address,
-        )
+        );
+        if result.is_err() {
+            animation_failure.store(true, Ordering::Release);
+            // SAFETY: Wake the UI so a failed renderer stops playback even if
+            // it can no longer produce animation ticks.
+            unsafe { PostMessageW(window_address as HWND, WM_FLUBBER_TICK, 0, 0) };
+        }
+        result
     });
+    let server = listener.map(|listener| {
+        let shared = Arc::clone(&app.shared);
+        let stop = Arc::clone(&app.tick_stop);
+        let failed = Arc::clone(&app.worker_failed);
+        thread::spawn(move || {
+            let result = remote_server(listener, remote_tx, shared, stop);
+            if result.is_err() {
+                failed.store(true, Ordering::Release);
+            }
+            result
+        })
+    });
+    if args.arm {
+        let source = video.as_ref().ok_or("Armed video missing")?;
+        let csv = readiness_csv.as_ref().ok_or("Armed CSV missing")?;
+        println!("VLC PID: {}", std::process::id());
+        println!(
+            "VLC RC: 127.0.0.1:{}",
+            rc_port.ok_or("Local control port missing")?
+        );
+        println!("Source video: {}", source.display());
+        println!("Affect CSV: {}", csv.display());
+        println!("Affect time-series CSV: {}", csv.display());
+        println!("Flubber LSL outlets are online; playback is waiting for a play command.");
+        std::io::stdout().flush()?;
+    }
     let mut message = MSG::default();
     // SAFETY: Ordinary single-threaded Win32 message loop for owned window.
     while unsafe { GetMessageW(&mut message, null_mut(), 0, 0) } > 0 {
@@ -1018,8 +1521,16 @@ fn run() -> Result<()> {
     animation
         .join()
         .map_err(|_| "Flubber animation clock panicked")??;
+    if let Some(server) = server {
+        server
+            .join()
+            .map_err(|_| "Local command server panicked")??;
+    }
     command_tx.send(SampleCommand::Quit).ok();
-    worker.join().map_err(|_| "LSL worker panicked")??;
+    let lsl_result = worker.join().map_err(|_| "LSL worker panicked")?;
+    let csv_result = csv_worker.join().map_err(|_| "CSV worker panicked")?;
+    lsl_result?;
+    csv_result?;
     // Normal WM_CLOSE released the player before destroying its child HWND.
     drop(app);
     Ok(())

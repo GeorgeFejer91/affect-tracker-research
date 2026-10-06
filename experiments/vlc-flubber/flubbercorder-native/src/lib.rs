@@ -193,8 +193,24 @@ pub struct Snapshot {
 struct Launched {
     pid: u32,
     port: u16,
-    prepared: PathBuf,
     csv: PathBuf,
+    child: Child,
+    _output: thread::JoinHandle<()>,
+    _errors: thread::JoinHandle<()>,
+}
+
+impl Drop for Launched {
+    fn drop(&mut self) {
+        let _ = rc(self.port, "quit");
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while self.child.try_wait().ok().flatten().is_none() && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(20));
+        }
+        if self.child.try_wait().ok().flatten().is_none() {
+            let _ = self.child.kill();
+            let _ = self.child.wait();
+        }
+    }
 }
 
 fn line_value<'a>(lines: &'a [String], prefix: &str) -> Result<&'a str> {
@@ -227,8 +243,7 @@ fn launch(recipe: &Recipe, player_dir: &Path, data_dir: &Path, headless: bool) -
     }
     let mut child = command.spawn()?;
     let mut reader = BufReader::new(child.stdout.take().ok_or("Player output unavailable")?);
-    // The spawned VLC keeps a Windows pipe handle open; read the six known
-    // receipt lines rather than waiting for stdout EOF.
+    // Read the six readiness lines, then keep draining the long-lived player.
     let mut lines = Vec::with_capacity(6);
     for _ in 0..6 {
         let mut line = String::new();
@@ -250,21 +265,30 @@ fn launch(recipe: &Recipe, player_dir: &Path, data_dir: &Path, headless: bool) -
         }
         lines.push(line.trim_end().to_owned());
     }
-    if !child.wait()?.success() {
-        return Err("Player launcher failed".into());
-    }
     let pid = line_value(&lines, "VLC PID: ")?.parse()?;
     let port = line_value(&lines, "VLC RC: 127.0.0.1:")?.parse()?;
-    let prepared = PathBuf::from(line_value(&lines, "Prepared video: ")?);
+    let source = PathBuf::from(line_value(&lines, "Source video: ")?);
     let csv = PathBuf::from(line_value(&lines, "Affect CSV: ")?);
-    if !prepared.is_file() || !csv.starts_with(data_dir.join("recordings")) {
+    if pid != child.id() || !source.is_file() || !csv.starts_with(data_dir.join("recordings")) {
         return Err("Player returned invalid media or recording paths".into());
     }
+    let output = thread::spawn(move || {
+        let _ = std::io::copy(&mut reader, &mut std::io::sink());
+    });
+    let mut stderr = child
+        .stderr
+        .take()
+        .ok_or("Player diagnostics unavailable")?;
+    let errors = thread::spawn(move || {
+        let _ = std::io::copy(&mut stderr, &mut std::io::sink());
+    });
     Ok(Launched {
         pid,
         port,
-        prepared,
         csv,
+        child,
+        _output: output,
+        _errors: errors,
     })
 }
 
@@ -559,10 +583,8 @@ impl Session {
         serde_json::to_writer_pretty(&mut metadata_file, &metadata)?;
         metadata_file.write_all(b"\n")?;
         metadata_file.sync_all()?;
-        let uri = url::Url::from_file_path(&self.launched.prepared)
-            .map_err(|()| "Prepared video cannot be expressed as a file URI")?;
         rc(self.launched.port, "f on")?;
-        rc(self.launched.port, &format!("add {uri}"))?;
+        rc(self.launched.port, "play")?;
         self.phase = Phase::Running;
         Ok(())
     }
@@ -752,20 +774,15 @@ impl Session {
             &self.recipe.filename,
             &self.expected,
         )?;
-        let series = self.launched.csv.with_file_name(format!(
-            "{}-timeseries.csv",
-            self.launched
-                .csv
-                .file_stem()
-                .ok_or("CSV path has no stem")?
-                .to_string_lossy()
-        ));
+        let series = self.launched.csv.clone();
         let rows = fs::read_to_string(&series)?
             .lines()
             .count()
             .saturating_sub(1) as u64;
-        if rows == 0 || rows != result.affect_samples {
-            return Err("VLC CSV and XDF affect counts differ; partial XDF preserved".into());
+        if rows == 0 || result.affect_samples < rows {
+            return Err(
+                "XDF has fewer affect samples than the video CSV; partial XDF preserved".into(),
+            );
         }
         if self.final_xdf.exists() {
             return Err("Final XDF destination already exists".into());
@@ -784,7 +801,6 @@ impl Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        let _ = rc(self.launched.port, "quit");
         if self.recorder.try_wait().ok().flatten().is_none() {
             let _ = self.recorder.kill();
             let _ = self.recorder.wait();
