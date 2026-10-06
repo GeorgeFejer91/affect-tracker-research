@@ -22,7 +22,23 @@ VLC RC write succeeded; they do not attest to a presented frame or recording.
 The launcher emits an uncorrelated `child_lost` error and exits if VLC exits.
 It kills VLC on stdin EOF, stdout failure, shutdown, and other session exits.
 
-This mode accepts a single video only. Saved Planner master JSON remains
-inspection-only through `--inspect-master`; master execution, Runner recording
-gates, shared LSL/XDF evidence, and installed timing qualification are still
-open.
+An exclusive `arm` alternative accepts a selected Planner master:
+
+```json
+{"protocol":"flubber-vlc-control/v1","requestId":"master-1","command":"arm","masterSequence":{"masterPath":"C:\\study\\experiment.json","participantId":"P001","selector":{"variantId":"variant-3","languageId":"en","languageSelectionPath":["both","en"],"presentationTarget":"desktop-screen"}}}
+```
+
+It freezes the exact master and selected plan at Arm. `start` rechecks that
+identity before a diagnostic video/ISI sequence. `status` uses the current
+generation and returns the current phase; after a terminal result, it includes
+a bounded `sequenceReceipt` with `status`, `path` and `sha256`. `stop` may
+report `stop-requested` while the owned child is being cancelled and reaped;
+poll `status` for the terminal reference. Master-sequence pause/resume are
+rejected. The launcher sends no unsolicited status frames. A failed early
+Start or cancellation retains the Arm identity in its terminal receipt.
+
+This selected-sequence path still rejects questionnaires and does not use the
+standard Runner's live input, timing, LSL or XDF authority. It is diagnostic
+playback, not a qualified research attempt. The separate Flubber VLC Runner
+must consume the shared Runner worker and installed qualification gates before
+research execution is available.
