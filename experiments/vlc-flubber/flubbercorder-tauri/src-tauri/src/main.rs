@@ -21,6 +21,7 @@ const COMPONENTS: [&str; 7] = [
     "lsl.dll",
 ];
 const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+const TRUSTED_MANIFEST_SHA256: Option<&str> = option_env!("FLUBBERVLC_MANIFEST_SHA256");
 
 #[derive(Default)]
 struct Selection {
@@ -52,7 +53,13 @@ fn player_directory(selection: &Selection) -> Result<PathBuf, String> {
         .unwrap_or_else(default_player_directory)
 }
 
-fn verify_player(directory: &Path) -> Result<PathBuf, String> {
+fn verify_player(
+    directory: &Path,
+    trusted_manifest_sha256: Option<&str>,
+) -> Result<PathBuf, String> {
+    let trusted = trusted_manifest_sha256
+        .filter(|hash| hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        .ok_or("No trusted FlubberVLC Player package is configured for this Recorder build")?;
     let root = directory.canonicalize().map_err(|_| {
         "Install FlubberVLC Player separately, then select its installation folder".to_string()
     })?;
@@ -71,10 +78,13 @@ fn verify_player(directory: &Path) -> Result<PathBuf, String> {
     {
         return Err("Player manifest cannot be a link".into());
     }
-    let manifest: BTreeMap<String, String> = serde_json::from_slice(
-        &fs::read(manifest_path).map_err(|_| "Player manifest cannot be read".to_string())?,
-    )
-    .map_err(|_| "Player manifest is invalid".to_string())?;
+    let manifest_bytes =
+        fs::read(manifest_path).map_err(|_| "Player manifest cannot be read".to_string())?;
+    if format!("{:x}", Sha256::digest(&manifest_bytes)) != trusted.to_ascii_lowercase() {
+        return Err("Installed player manifest does not match the trusted package".into());
+    }
+    let manifest: BTreeMap<String, String> = serde_json::from_slice(&manifest_bytes)
+        .map_err(|_| "Player manifest is invalid".to_string())?;
     if manifest.len() != COMPONENTS.len()
         || COMPONENTS.iter().any(|name| !manifest.contains_key(*name))
     {
@@ -128,7 +138,9 @@ fn verify_player(directory: &Path) -> Result<PathBuf, String> {
 
 #[tauri::command]
 fn player_status(selection: State<'_, Selection>) -> PlayerStatus {
-    match player_directory(&selection).and_then(|directory| verify_player(&directory)) {
+    match player_directory(&selection)
+        .and_then(|directory| verify_player(&directory, TRUSTED_MANIFEST_SHA256))
+    {
         Ok(_) => PlayerStatus {
             ready: true,
             detail: "Installed player components verified".into(),
@@ -151,7 +163,7 @@ async fn choose_player(
     let directory = folder
         .into_path()
         .map_err(|_| "Select a local installation folder".to_string())?;
-    verify_player(&directory)?;
+    verify_player(&directory, TRUSTED_MANIFEST_SHA256)?;
     *selection
         .player_directory
         .lock()
@@ -210,7 +222,7 @@ fn inspect_master(
     }
     let _: serde_json::Value =
         serde_json::from_str(&selector_json).map_err(|_| "Invalid selector JSON".to_string())?;
-    let player = verify_player(&player_directory(&selection)?)?;
+    let player = verify_player(&player_directory(&selection)?, TRUSTED_MANIFEST_SHA256)?;
     let output = Command::new(player)
         .arg("--inspect-master")
         .arg(master)
@@ -267,15 +279,49 @@ mod tests {
         root
     }
 
+    fn manifest_pin(root: &Path) -> String {
+        format!(
+            "{:x}",
+            Sha256::digest(fs::read(root.join("manifest.json")).unwrap())
+        )
+    }
+
+    #[test]
+    fn rejects_missing_or_invalid_package_pin() {
+        let root = fixture();
+        assert!(verify_player(&root, None)
+            .unwrap_err()
+            .contains("No trusted"));
+        assert!(verify_player(&root, Some("bad"))
+            .unwrap_err()
+            .contains("No trusted"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rejects_changed_manifest_even_when_component_hashes_still_match() {
+        let root = fixture();
+        let pin = manifest_pin(&root);
+        let manifest_path = root.join("manifest.json");
+        let mut bytes = fs::read(&manifest_path).unwrap();
+        bytes.push(b' ');
+        fs::write(manifest_path, bytes).unwrap();
+        assert!(verify_player(&root, Some(&pin))
+            .unwrap_err()
+            .contains("does not match the trusted package"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn verifies_exact_player_components_and_rejects_tampering() {
         let root = fixture();
+        let pin = manifest_pin(&root);
         assert_eq!(
-            verify_player(&root).unwrap(),
+            verify_player(&root, Some(&pin)).unwrap(),
             root.canonicalize().unwrap().join("FlubberVLC.exe")
         );
         fs::write(root.join("lsl.dll"), b"tampered").unwrap();
-        assert!(verify_player(&root)
+        assert!(verify_player(&root, Some(&pin))
             .unwrap_err()
             .contains("digest mismatch"));
         fs::remove_dir_all(root).unwrap();
@@ -284,8 +330,9 @@ mod tests {
     #[test]
     fn rejects_missing_manifest_or_component() {
         let root = fixture();
+        let pin = manifest_pin(&root);
         fs::remove_file(root.join("ffmpeg/ffprobe.exe")).unwrap();
-        assert!(verify_player(&root)
+        assert!(verify_player(&root, Some(&pin))
             .unwrap_err()
             .contains("Missing player component"));
         fs::remove_dir_all(root).unwrap();
@@ -299,7 +346,8 @@ mod tests {
             serde_json::from_slice(&fs::read(&manifest_path).unwrap()).unwrap();
         manifest.insert("../escape.exe".into(), "0".repeat(64));
         fs::write(manifest_path, serde_json::to_vec(&manifest).unwrap()).unwrap();
-        assert!(verify_player(&root)
+        let pin = manifest_pin(&root);
+        assert!(verify_player(&root, Some(&pin))
             .unwrap_err()
             .contains("unexpected component list"));
         fs::remove_dir_all(root).unwrap();
