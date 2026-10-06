@@ -1443,6 +1443,11 @@ async function preparedBridgeFixture() {
     decodeBackend: "webviewVideoFrameCallback",
     decodeAttestation: "representativeFramesV1",
     decodedPositionsMs: [20, 500, 980],
+    webviewDisplayGeometry: {
+      status: "verified", source: "browser-decoder", displayWidthPx: 1_920, displayHeightPx: 1_080,
+      displayAspect: { numerator: 16, denominator: 9 }, rotationDegrees: null,
+      pixelAspectRatio: null, metadataInterpretation: "decoder-oriented-display",
+    },
     source: {
       kind: "workspaceFile",
       relativePath: `stimuli/${summary.displayName}`,
@@ -1522,6 +1527,11 @@ test("prepared catalogue uses existing sequential authority without early state/
   assert.equal(f.events.length, 0); assert.equal(f.progress.textContent, "unchanged");
   assert.deepEqual(f.calls.slice(-2).map(({ command }) => command), ["research_workspace_media_url", "research_attest_workspace_decode"]);
   const projection = prepared.projection;
+  assert.deepEqual(projection.items[0].displayGeometry, {
+    status: "verified", source: "browser-decoder", displayWidthPx: 1_920, displayHeightPx: 1_080,
+    displayAspect: { numerator: 16, denominator: 9 }, rotationDegrees: null,
+    pixelAspectRatio: null, metadataInterpretation: "decoder-oriented-display",
+  });
   projection.items[0].stimulus.title = "Mutated copy";
   assert.equal(prepared.projection.items[0].stimulus.title, "one.mp4");
   prepared.commit();

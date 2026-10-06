@@ -976,7 +976,7 @@ export async function probeAndAttestNativeVideo({
   if (summary.decodeStatus === "attestedUnqualified"
     && summary.decodeBackend === "webviewVideoFrameCallback"
     && summary.decodeAttestation === "representativeFramesV1"
-    && summary.source) return summary;
+    && summary.source && summary.webviewDisplayGeometry) return summary;
   const receipt = await invoke("research_workspace_media_url", {
     workspaceId,
     workspaceFileId: summary.workspaceFileId,
@@ -1892,6 +1892,9 @@ export class NativeResearchRuntimeBridge {
         if (!(playbackMode === "nativeGstPlay" ? validNative : validFallback) || !summary.source) {
           throw new Error(`${summary.displayName} did not produce the selected playback mode's decode contract.`);
         }
+        if (validFallback && !summary.webviewDisplayGeometry) {
+          throw new Error(`${summary.displayName} did not return WebView display geometry.`);
+        }
         const existing = selectedSettings?.stimuli?.items?.find(({ source }) => (
           source.kind === "workspaceFile" && source.relativePath === summary.source.relativePath
         ));
@@ -1908,7 +1911,7 @@ export class NativeResearchRuntimeBridge {
           verified: true,
           decodeQualification,
           workspaceFileId: summary.workspaceFileId,
-          displayGeometry: validNative ? summary.displayGeometry : null,
+          displayGeometry: validNative ? summary.displayGeometry : summary.webviewDisplayGeometry,
         }));
       } catch (error) {
         check();

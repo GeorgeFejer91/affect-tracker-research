@@ -31,6 +31,90 @@ mod tests {
     }
 
     #[test]
+    fn planner_v3_accepts_exact_webview_probe_but_runner_still_requires_its_own_binding() {
+        let base = std::env::temp_dir().join(format!("affect-p1-webview-{}", Uuid::new_v4()));
+        let service = WorkspaceService::new(base.join("app-data")).unwrap();
+        let root = base.join("workspace");
+        fs::create_dir_all(&root).unwrap();
+        let workspace_id = service.select(root.clone()).unwrap().workspace_id.unwrap();
+        let path = root.join("assets/stimuli/clip.mp4");
+        fs::write(&path, b"webview-probe-video").unwrap();
+        let item = service
+            .rescan_planner_videos(&workspace_id)
+            .unwrap()
+            .stimuli
+            .remove(0);
+        let grant = service
+            .issue_media_url(
+                &workspace_id,
+                &item.workspace_file_id,
+                &item.sha256,
+                item.byte_length,
+                &item.mime_type,
+            )
+            .unwrap();
+        let summary = service
+            .attest_workspace_decode(DecodeAttestationRequest {
+                attestation_kind: DecodeAttestationKind::AttestRepresentativeFramesV1,
+                decode_backend: DecodeBackend::WebviewVideoFrameCallback,
+                workspace_id: workspace_id.clone(),
+                media_grant_id: grant.media_grant_id,
+                workspace_file_id: item.workspace_file_id,
+                sha256: item.sha256.clone(),
+                byte_length: item.byte_length,
+                mime_type: item.mime_type,
+                observed_duration_ms: Some(1_000.25),
+                video_width: Some(1_920),
+                video_height: Some(1_080),
+                muted_playback_ms: Some(100.0),
+                decoded_positions_ms: vec![100.0, 500.0, 900.0],
+            })
+            .unwrap();
+        let geometry = summary.webview_display_geometry.unwrap();
+        assert_eq!(geometry.source, "browser-decoder");
+        assert_eq!(
+            (
+                geometry.display_aspect.numerator,
+                geometry.display_aspect.denominator
+            ),
+            (16, 9)
+        );
+        let mut catalogue = serde_json::json!({
+            "schema": "affect-research-video-catalogue-contribution", "version": 3,
+            "revision": 1, "annotationPolicy": "relative-path-reversible-v1",
+            "entries": [{ "assetId": format!("asset-{}", item.sha256), "annotationId": "clip.mp4",
+                "sourceRelativePath": "stimuli/clip.mp4", "packageRelativePath": "assets/stimuli/clip.mp4",
+                "sha256": item.sha256, "byteLength": item.byte_length, "durationMs": 1_000,
+                "geometry": geometry }]
+        });
+        rehash(&mut catalogue);
+        assert!(service
+            .validate_planner_video_catalogue_v3(&workspace_id, &catalogue)
+            .is_ok());
+        assert!(service
+            .validate_runner_video_catalogue_v3(&workspace_id, &catalogue)
+            .is_err());
+        let mut catalogue_v2 = catalogue.clone();
+        catalogue_v2["version"] = 2.into();
+        rehash(&mut catalogue_v2);
+        assert!(service
+            .validate_planner_video_catalogue(&workspace_id, &catalogue_v2)
+            .is_ok());
+        let exact = catalogue.clone();
+        catalogue["entries"][0]["geometry"]["displayWidthPx"] = 1_280.into();
+        catalogue["entries"][0]["geometry"]["displayHeightPx"] = 720.into();
+        rehash(&mut catalogue);
+        assert!(service
+            .validate_planner_video_catalogue_v3(&workspace_id, &catalogue)
+            .is_err());
+        fs::write(&path, b"changed-video").unwrap();
+        assert!(service
+            .validate_planner_video_catalogue_v3(&workspace_id, &exact)
+            .is_err());
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
     fn mixed_native_catalogue_requires_each_exact_attestation_version() {
         use crate::research_native_media::NativeMediaDecodeReceiptV1;
         use crate::research_video_geometry::{
@@ -385,7 +469,7 @@ impl WorkspaceService {
         value: &serde_json::Value,
     ) -> ResearchResult<crate::research_workspace_contribution::v3::VideoCatalogueContributionV3>
     {
-        self.validate_runner_video_catalogue_v3(workspace_id, value)?;
+        self.validate_live_video_catalogue_v3(workspace_id, value, true)?;
         validate_video_catalogue_contribution_v3(value)
     }
 
@@ -427,6 +511,7 @@ impl WorkspaceService {
         candidate.decode_attestation = Some(DecodeEvidence::NativeDecodedSnapshotsV2);
         candidate.decoded_positions_ms = receipt.decoded_positions_ms.clone();
         candidate.display_geometry = None;
+        candidate.webview_display_geometry = None;
         candidate.native_decode_receipt_v2 = Some(receipt.clone());
         let old = scanned_summary(candidate);
         Ok(ScannedStimulusSummary {
@@ -441,6 +526,7 @@ impl WorkspaceService {
             decode_attestation: old.decode_attestation,
             decoded_positions_ms: old.decoded_positions_ms,
             display_geometry: Some(geometry),
+            webview_display_geometry: None,
             source: Some(WorkspaceSourceContract {
                 kind: "workspaceFile",
                 relative_path: candidate.logical_relative_path.clone(),
@@ -456,6 +542,15 @@ impl WorkspaceService {
         &self,
         workspace_id: &str,
         value: &serde_json::Value,
+    ) -> ResearchResult<Vec<RunnerVideoBindingV3>> {
+        self.validate_live_video_catalogue_v3(workspace_id, value, false)
+    }
+
+    fn validate_live_video_catalogue_v3(
+        &self,
+        workspace_id: &str,
+        value: &serde_json::Value,
+        allow_webview: bool,
     ) -> ResearchResult<Vec<RunnerVideoBindingV3>> {
         let catalogue = validate_video_catalogue_contribution_v3(value)?;
         let guard = self.lock_selected();
@@ -490,7 +585,7 @@ impl WorkspaceService {
                     "Catalogue location is not uniquely bound to a current video.",
                 ));
             };
-            let native_geometry = match &entry.geometry {
+            let (observed_geometry, valid_proof) = match &entry.geometry {
                 VideoDisplayGeometryV3::Controlled(_) => {
                     let receipt = candidate.native_decode_receipt_v2.as_ref().ok_or_else(|| {
                         CommandError::forbidden("Video lacks fresh controlled native proof.")
@@ -505,7 +600,38 @@ impl WorkspaceService {
                             "Controlled native proof cache is inconsistent.",
                         ));
                     }
-                    VideoDisplayGeometryV3::Controlled(validate_receipt(receipt)?)
+                    (
+                        VideoDisplayGeometryV3::Controlled(validate_receipt(receipt)?),
+                        candidate.decode_status == DecodeStatus::AttestedQualified
+                            && candidate.decode_backend == Some(DecodeBackend::NativeGstPlay)
+                            && validate_native_positions(
+                                entry.duration_ms as f64,
+                                &candidate.decoded_positions_ms,
+                            )
+                            .is_ok(),
+                    )
+                }
+                VideoDisplayGeometryV3::Historical(geometry)
+                    if allow_webview && geometry.source == "browser-decoder" =>
+                {
+                    let cached = candidate.webview_display_geometry.as_ref().ok_or_else(|| {
+                        CommandError::forbidden("WebView display geometry is missing.")
+                    })?;
+                    (
+                        VideoDisplayGeometryV3::Historical(cached.clone()),
+                        candidate.decode_status == DecodeStatus::AttestedUnqualified
+                            && candidate.decode_backend
+                                == Some(DecodeBackend::WebviewVideoFrameCallback)
+                            && candidate.decode_attestation
+                                == Some(DecodeEvidence::RepresentativeFramesV1)
+                            && candidate.duration_ms.is_some_and(|duration| {
+                                validate_representative_positions(
+                                    duration,
+                                    &candidate.decoded_positions_ms,
+                                )
+                                .is_ok()
+                            }),
+                    )
                 }
                 VideoDisplayGeometryV3::Historical(_) => {
                     if candidate.decode_attestation
@@ -518,18 +644,26 @@ impl WorkspaceService {
                     let geometry = candidate.display_geometry.as_ref().ok_or_else(|| {
                         CommandError::forbidden("Historical native geometry is missing.")
                     })?;
-                    VideoDisplayGeometryV3::Historical(
-                        serde_json::from_value(serde_json::to_value(geometry).map_err(|_| {
-                            CommandError::invalid_contract("Invalid historical geometry.")
-                        })?)
-                        .map_err(|_| {
-                            CommandError::invalid_contract("Invalid historical geometry.")
-                        })?,
+                    (
+                        VideoDisplayGeometryV3::Historical(
+                            serde_json::from_value(serde_json::to_value(geometry).map_err(
+                                |_| CommandError::invalid_contract("Invalid historical geometry."),
+                            )?)
+                            .map_err(|_| {
+                                CommandError::invalid_contract("Invalid historical geometry.")
+                            })?,
+                        ),
+                        candidate.decode_status == DecodeStatus::AttestedQualified
+                            && candidate.decode_backend == Some(DecodeBackend::NativeGstPlay)
+                            && validate_native_positions(
+                                entry.duration_ms as f64,
+                                &candidate.decoded_positions_ms,
+                            )
+                            .is_ok(),
                     )
                 }
             };
-            if candidate.decode_status != DecodeStatus::AttestedQualified
-                || candidate.decode_backend != Some(DecodeBackend::NativeGstPlay)
+            if !valid_proof
                 || observed.id != candidate.id
                 || observed.path != candidate.path
                 || observed.sha256 != candidate.sha256
@@ -539,12 +673,7 @@ impl WorkspaceService {
                 || entry.sha256 != observed.sha256
                 || entry.byte_length != observed.byte_length
                 || candidate.duration_ms != Some(entry.duration_ms as f64)
-                || validate_native_positions(
-                    entry.duration_ms as f64,
-                    &candidate.decoded_positions_ms,
-                )
-                .is_err()
-                || entry.geometry != native_geometry
+                || entry.geometry != observed_geometry
             {
                 return Err(CommandError::forbidden(
                     "Current native video does not exactly match the saved catalogue proof.",
@@ -559,7 +688,7 @@ impl WorkspaceService {
                 byte_length: candidate.byte_length,
                 mime_type: candidate.mime_type.clone(),
                 duration_ms: entry.duration_ms,
-                display_geometry: native_geometry,
+                display_geometry: observed_geometry,
             });
         }
         Ok(bindings)
