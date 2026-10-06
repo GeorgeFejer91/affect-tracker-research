@@ -13,6 +13,7 @@ button { font: inherit; padding: 8px 12px; border: 1px solid #666b69; border-rad
 button:hover:not(:disabled) { background: #e9edeb; }
 button:focus-visible, input:focus-visible { outline: 2px solid #185c78; outline-offset: 2px; }
 button:disabled { color: #6e7370; border-color: #b8bab7; background: #e8e9e7; cursor: not-allowed; }
+.control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
 dl { display: grid; gap: 8px; margin: 14px 0 24px; }
 dl div { display: grid; grid-template-columns: 130px minmax(0, 1fr); }
 dt { color: #5a5f5b; }

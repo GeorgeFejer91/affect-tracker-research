@@ -1,3 +1,5 @@
+mod control;
+
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -28,6 +30,9 @@ struct Selection {
     master: Mutex<Option<PathBuf>>,
     player_directory: Mutex<Option<PathBuf>>,
 }
+
+#[derive(Default)]
+struct ControlState(Mutex<Option<control::ControlClient>>);
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -156,6 +161,7 @@ fn player_status(selection: State<'_, Selection>) -> PlayerStatus {
 async fn choose_player(
     app: tauri::AppHandle,
     selection: State<'_, Selection>,
+    control: State<'_, ControlState>,
 ) -> Result<Option<String>, String> {
     let Some(folder) = app.dialog().file().blocking_pick_folder() else {
         return Ok(None);
@@ -164,11 +170,63 @@ async fn choose_player(
         .into_path()
         .map_err(|_| "Select a local installation folder".to_string())?;
     verify_player(&directory, TRUSTED_MANIFEST_SHA256)?;
+    let previous = control
+        .0
+        .lock()
+        .map_err(|_| "Player control is unavailable".to_string())?
+        .take();
+    if let Some(mut previous) = previous {
+        previous.shutdown();
+    }
     *selection
         .player_directory
         .lock()
         .map_err(|_| "Player selection is unavailable".to_string())? = Some(directory.clone());
     Ok(Some(directory.display().to_string()))
+}
+
+#[tauri::command]
+fn connect_player(
+    selection: State<'_, Selection>,
+    control: State<'_, ControlState>,
+) -> Result<String, String> {
+    let mut client = control
+        .0
+        .lock()
+        .map_err(|_| "Player control is unavailable".to_string())?;
+    if client.as_mut().is_some_and(control::ControlClient::alive) {
+        return Ok("Player control is connected".into());
+    }
+    *client = None;
+    let player = verify_player(&player_directory(&selection)?, TRUSTED_MANIFEST_SHA256)?;
+    *client = Some(control::ControlClient::spawn(&player)?);
+    Ok("Player control is connected".into())
+}
+
+#[tauri::command]
+fn disconnect_player(control: State<'_, ControlState>) -> Result<String, String> {
+    let previous = control
+        .0
+        .lock()
+        .map_err(|_| "Player control is unavailable".to_string())?
+        .take();
+    if let Some(mut previous) = previous {
+        previous.shutdown();
+    }
+    Ok("Player control is disconnected".into())
+}
+
+#[tauri::command]
+fn control_status(control: State<'_, ControlState>) -> Result<bool, String> {
+    let mut client = control
+        .0
+        .lock()
+        .map_err(|_| "Player control is unavailable".to_string())?;
+    let connected = client.as_mut().is_some_and(control::ControlClient::alive);
+    if !connected {
+        *client = None;
+    }
+    Ok(connected)
 }
 
 #[tauri::command]
@@ -243,11 +301,15 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(Selection::default())
+        .manage(ControlState::default())
         .invoke_handler(tauri::generate_handler![
             player_status,
             choose_player,
             choose_master,
-            inspect_master
+            inspect_master,
+            connect_player,
+            disconnect_player,
+            control_status
         ])
         .run(tauri::generate_context!())
         .expect("FlubberRecorder could not start");

@@ -5,7 +5,16 @@ VLC, FFmpeg, player launcher, video, Node runtime, LAN listener, or research
 session engine. It verifies the seven files in the independently installed
 FlubberVLC Player's `manifest.json`, then calls its `--inspect-master` command
 to inspect a selected Planner master. The selected master and player location
-remain in memory. Research Start is disabled.
+remain in memory. The local Connect action starts a supervised player child
+through `--control-stdio`; Disconnect sends a correlated shutdown request and
+tears down the child. Replies are bounded, checked for protocol, request ID,
+state and generation, and time out closed. Research Start is disabled; the
+single-video arm/start commands are not exposed to the UI or treated as
+Planner-master execution evidence.
+On disconnect or failure, Recorder closes stdin and gives the player two
+seconds to exit before force-killing a hung launcher. Forced termination of the
+launcher does not yet guarantee its VLC child exits on Windows; this lifecycle
+case needs installed validation and a reviewed process-tree strategy.
 
 By default the player is expected at
 `%LOCALAPPDATA%\Programs\FlubberVLCPlayer`. A different local installation
