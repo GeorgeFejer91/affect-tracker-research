@@ -1,5 +1,30 @@
 # Agent message board
 
+## 20261006 Shared-worker VLC host allocation
+
+Root assigns R1 RR-04/RR-07/RR-08/RR-09/RR-10 Backend Verification to the
+VLC Runner owner in one new isolated branch from the current integration head.
+Wire the opt-in decoded observation adapter to the existing `MasterWorker` for
+one selected video occurrence. The worker must mint and verify attempt,
+position, generation, workspace file ID and asset SHA; the host must launch,
+drain, supervise, stop and reap the VLC child, fail on missing first frame or
+child loss, and route only accepted decoded observations through the shared
+playback path. Preserve the worker as sole form/ISI/input/sample/marker/LSL/XDF
+and attempt authority. Keep pause/resume unavailable until observed states
+exist, and keep normal research Start closed. Project the worker's current
+affect/feedback state into the live VLC display from its existing source of
+truth; no plugin-owned arrow-key stepping or LSL in Runner mode.
+
+Own the minimal R1 Rust worker/runtime/playback seam and the explicitly named
+VLC live adapter/feedback seam. The workspace file resolution seam may be
+changed only to provide the exact validated asset path; do not alter Planner
+master1–5 JSON or create a second scheduler/recorder. Test wrong identity,
+missing/first/ended frames, child failure, stop, and no duplicate LSL/XDF
+authority with focused synthetic checks. Return a committed patch and exact
+remaining Tauri program identity, package and installed/physical gates. The
+third installer packaging and interactive qualification are separate later
+passes; current standard Runner behavior is preserved.
+
 ## 20261006 GStreamer asset removal allocation
 
 The user explicitly reaffirmed removal of GStreamer assets. Root owns a
