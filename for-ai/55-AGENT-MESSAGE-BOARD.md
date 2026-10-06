@@ -1,5 +1,80 @@
 # Agent message board
 
+## 20261006 Retired GStreamer active-source cleanup allocation
+
+R1 RR-04/RR-10 Backend Verification, isolated after the `1950100` WebView
+Start-gate patch. Root assigns the active package/native-media capability
+seam: stop advertising `rust-gstplay`, remove any reachable GstPlay Start or
+qualified-success branch, and fail closed under the selected WebView backend.
+Preserve versioned persisted recipe/manifest readers and explicit rejection of
+old modes; no GStreamer crate, runtime or resource is to return. Own
+`research_native_protocol/{commands,runtime}.rs`, `research_native_media.rs`
+and focused tests only, plus a narrow dormant frontend branch if independently
+shown active. Do not change Planner JSON, authorize normal research Start, add
+unsafe FFI, or claim installed qualification. Report any compatibility token
+that must remain for reading/rejecting old receipts rather than silently
+deleting it.
+
+## 20261006 FlubberRecorder same-PC player UI allocation
+
+FlubberRecorder Backend Verification/UI Finalization, isolated from integrated
+`b8c3b0e`. Root assigns its owner a minimal participant-safe same-PC control
+surface for the already supported legacy one-video player protocol: choose a
+local video, Arm, Play, Pause/Resume and Stop with visible correlated state,
+errors and safe rearm. Reuse the existing Tauri `ControlClient`, verified
+player installation and current dependency boundary; do not duplicate a VLC
+player, add network transport, or expose incomplete master research Start.
+Apply the project Uncodixfy Pretext skill to text-bearing frontend controls
+and verify keyboard and bounded layout in source/rendered checks where
+available. Own only Recorder Tauri command/UI files and focused tests; do not
+edit the launcher, Planner, standard Runner or shared recipe contract. Root
+owns installed Recorder package, player download, UI observation and release.
+
+## 20261006 Runner input-edge and neutral marker allocation
+
+R1 RR-07/RR-09 Backend Verification from integrated `b8c3b0e`. Root assigns
+one isolated standard-Runner worker pass for the explicitly requested
+controller-recording seam in `for-ai/65`: preserve original observed physical
+input timestamps in input-edge LSL/XDF markers, and emit a neutral-reset marker
+when video ends after applying the reset. The neutral hotkey remains blocked
+during active video; session-draft capture/override UI stays fail-closed until
+its own native receipt/recovery binding exists. Own the R1 worker, marker and
+input reducer seam plus focused tests; coordinate only if the standard Runner
+Start-gate owner needs a shared file. An additive Runner-only v2 marker
+observation and its independent XDF reconstruction reader are included only
+if the closed v1/P3 marker vocabulary cannot express the requested events.
+Preserve strict v1 readers, keep P3 authored markers unchanged, and test
+v1/v2 reconstruction together. Do not change Planner JSON, VLC plugin, or
+research qualification.
+Installed physical input and independently read XDF remain separate gates.
+
+## 20261006 Standard Runner WebView Start gate allocation
+
+R1 RR-04/RR-10 Backend Verification. Root assigns one isolated standard-Runner
+pass from `b8c3b0e` to remove the active normal-Start dependency on retired
+`PlaybackMode::NativeGstPlay` at `research_runner_master/runtime.rs`. Keep
+research Start fail-closed until exact installed WebView playback, physical
+input and LSL/XDF qualification exists; expose an accurate WebView-specific
+reason and preserve the separately authorized unqualified local-validation
+path. Own only the R1 Start/media capability seam and focused regression tests.
+Do not reintroduce GStreamer, relax the recording gate, change Planner JSON, or
+claim physical qualification. Full removal of historical Gst references and
+versioned receipt readers is a separate compatibility audit.
+
+## 20261006 VLC Arm-bound master identity allocation
+
+R1 RR-02/RR-04/RR-09 Backend Verification. Root assigns the VLC launcher owner
+one isolated pass from integrated `b8c3b0e`: Arm must freeze the validated
+master byte hash and selected-plan identity, then Start must reject a changed
+master before launching work. An early failure, cancellation, or panic receipt
+must retain that Arm identity; terminal references remain correlated and
+generation-fenced. Existing verified asset closure stays authoritative. Own
+only `experiments/vlc-flubber/player-launcher/src/{control,selected_master}.rs`
+and focused source tests; do not change Planner JSON, Recorder wire fields, or
+open research Start. The standard Runner's obsolete NativeGstPlay Start gate is
+a separate R1 follow-up. Installed VLC playback, forms, LSL/XDF, physical
+input, and timing remain release gates.
+
 ## 20261006 Recorder selected-sequence teardown follow-up
 
 R1 RR-04/RR-09 Backend Verification, isolated
