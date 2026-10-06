@@ -21,17 +21,27 @@ pub(crate) enum Action {
     Pause,
     Resume,
     Stop,
+    Status,
     Shutdown,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-enum Phase {
+pub(crate) enum Phase {
     Idle,
     Armed,
     StartRequested,
     PauseRequested,
+    StopRequested,
     Shutdown,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MasterSequence<'a> {
+    master_path: &'a Path,
+    participant_id: &'a str,
+    selector: &'a serde_json::Value,
 }
 
 #[derive(Serialize)]
@@ -48,6 +58,30 @@ struct Request<'a> {
     panel_percent: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     step_percent: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    master_sequence: Option<MasterSequence<'a>>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum SequenceOutcome {
+    Ended,
+    Failed,
+    Stopped,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SequenceReceipt {
+    pub(crate) status: SequenceOutcome,
+    pub(crate) path: std::path::PathBuf,
+    pub(crate) sha256: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct ControlStatus {
+    pub(crate) state: Phase,
+    pub(crate) receipt: Option<SequenceReceipt>,
 }
 
 #[derive(Deserialize)]
@@ -59,6 +93,7 @@ struct Reply {
     state: Phase,
     generation: u64,
     error: Option<String>,
+    sequence_receipt: Option<SequenceReceipt>,
 }
 
 enum Frame {
@@ -84,12 +119,11 @@ fn read_frame(reader: &mut impl Read) -> io::Result<Frame> {
     }
 }
 
-fn validate_reply(
+fn parse_reply(
     bytes: &[u8],
     request_id: Option<&str>,
-    expected_state: Phase,
     expected_generation: u64,
-) -> Result<(), String> {
+) -> Result<Reply, String> {
     let reply: Reply = serde_json::from_slice(bytes).map_err(|_| "Invalid player reply")?;
     if reply.protocol != PROTOCOL || reply.request_id.as_deref() != request_id {
         return Err("Uncorrelated player reply".into());
@@ -100,10 +134,33 @@ fn validate_reply(
             reply.error.as_deref().unwrap_or("unknown")
         ));
     }
-    if reply.error.is_some()
-        || reply.state != expected_state
-        || reply.generation != expected_generation
-    {
+    if reply.error.is_some() || reply.generation != expected_generation {
+        return Err("Unexpected player state or generation".into());
+    }
+    if let Some(receipt) = &reply.sequence_receipt {
+        if reply.state != Phase::Idle
+            || !receipt.path.is_absolute()
+            || receipt.path.to_string_lossy().len() > 4096
+            || receipt.sha256.len() != 64
+            || !receipt
+                .sha256
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err("Invalid terminal sequence receipt reference".into());
+        }
+    }
+    Ok(reply)
+}
+
+fn validate_reply(
+    bytes: &[u8],
+    request_id: Option<&str>,
+    expected_state: Phase,
+    expected_generation: u64,
+) -> Result<(), String> {
+    let reply = parse_reply(bytes, request_id, expected_generation)?;
+    if reply.state != expected_state || reply.sequence_receipt.is_some() {
         return Err("Unexpected player state or generation".into());
     }
     Ok(())
@@ -117,6 +174,7 @@ pub(crate) struct ControlClient {
     request_number: u64,
     generation: u64,
     phase: Phase,
+    sequence_armed: bool,
 }
 
 impl ControlClient {
@@ -154,6 +212,7 @@ impl ControlClient {
             request_number: 0,
             generation: 0,
             phase: Phase::Idle,
+            sequence_armed: false,
         };
         let result = session
             .receive(RESPONSE_TIMEOUT)
@@ -188,6 +247,10 @@ impl ControlClient {
                 (Phase::StartRequested, self.generation)
             }
             (Phase::StartRequested, Action::Pause) => (Phase::PauseRequested, self.generation),
+            (Phase::Armed, Action::Stop) if self.sequence_armed => (Phase::Idle, self.generation),
+            (Phase::StartRequested, Action::Stop) if self.sequence_armed => {
+                (Phase::StopRequested, self.generation)
+            }
             (Phase::Armed | Phase::StartRequested | Phase::PauseRequested, Action::Stop) => {
                 (Phase::Idle, self.generation)
             }
@@ -197,8 +260,11 @@ impl ControlClient {
         Ok(next)
     }
 
-    #[allow(dead_code)] // Protocol verbs are reserved for the future research execution pass.
+    #[allow(dead_code)] // The Recorder UI still does not expose research execution.
     pub(crate) fn send(&mut self, action: Action, video_path: Option<&Path>) -> Result<(), String> {
+        if self.sequence_armed && matches!(action, Action::Pause | Action::Resume) {
+            return Err("Sequence pause and resume are unsupported".into());
+        }
         let (expected_phase, expected_generation) = self.expected(action)?;
         if (action == Action::Arm) != video_path.is_some() {
             return Err("Arm requires one video; other commands cannot carry a video".into());
@@ -209,6 +275,95 @@ impl ControlClient {
         }) {
             return Err("Planner masters cannot be armed as a single video".into());
         }
+        self.exchange(
+            action,
+            video_path,
+            None,
+            expected_phase,
+            expected_generation,
+        )?;
+        self.phase = expected_phase;
+        self.generation = expected_generation;
+        if action == Action::Shutdown || (action == Action::Stop && expected_phase == Phase::Idle) {
+            self.sequence_armed = false;
+            self.terminate();
+        }
+        Ok(())
+    }
+
+    #[allow(dead_code)] // Research Start remains closed in the Recorder UI.
+    pub(crate) fn arm_master_sequence(
+        &mut self,
+        master_path: &Path,
+        participant_id: &str,
+        selector: &serde_json::Value,
+    ) -> Result<(), String> {
+        let (phase, generation) = self.expected(Action::Arm)?;
+        if !master_path.is_file()
+            || !master_path
+                .extension()
+                .is_some_and(|ext| ext.to_string_lossy().eq_ignore_ascii_case("json"))
+            || participant_id.is_empty()
+            || participant_id.len() > 16
+            || !selector.is_object()
+        {
+            return Err("Invalid master sequence selection".into());
+        }
+        self.exchange(
+            Action::Arm,
+            None,
+            Some(MasterSequence {
+                master_path,
+                participant_id,
+                selector,
+            }),
+            phase,
+            generation,
+        )?;
+        self.phase = phase;
+        self.generation = generation;
+        self.sequence_armed = true;
+        Ok(())
+    }
+
+    #[allow(dead_code)] // The UI does not yet initiate a research sequence.
+    pub(crate) fn status(&mut self) -> Result<ControlStatus, String> {
+        if !self.sequence_armed {
+            return Err("No master sequence is armed".into());
+        }
+        let reply = self.exchange(Action::Status, None, None, self.phase, self.generation)?;
+        let valid = match (self.phase, reply.state) {
+            (Phase::Armed, Phase::Armed)
+            | (Phase::StartRequested, Phase::StartRequested)
+            | (Phase::PauseRequested, Phase::PauseRequested)
+            | (Phase::StopRequested, Phase::StopRequested) => reply.sequence_receipt.is_none(),
+            (Phase::StartRequested | Phase::PauseRequested | Phase::StopRequested, Phase::Idle) => {
+                reply.sequence_receipt.is_some()
+            }
+            _ => false,
+        };
+        if !valid {
+            self.terminate();
+            return Err("Unexpected sequence status or terminal receipt".into());
+        }
+        self.phase = reply.state;
+        if self.phase == Phase::Idle {
+            self.sequence_armed = false;
+        }
+        Ok(ControlStatus {
+            state: self.phase,
+            receipt: reply.sequence_receipt,
+        })
+    }
+
+    fn exchange(
+        &mut self,
+        action: Action,
+        video_path: Option<&Path>,
+        master_sequence: Option<MasterSequence<'_>>,
+        expected_phase: Phase,
+        expected_generation: u64,
+    ) -> Result<Reply, String> {
         self.request_number = self
             .request_number
             .checked_add(1)
@@ -226,13 +381,18 @@ impl ControlClient {
             video_path,
             panel_percent: None,
             step_percent: None,
+            master_sequence,
         };
         let result = (|| {
             let input = self.input.as_mut().ok_or("Player connection is closed")?;
-            serde_json::to_writer(&mut *input, &request)
-                .map_err(|_| "Could not encode player command")?;
+            let frame =
+                serde_json::to_vec(&request).map_err(|_| "Could not encode player command")?;
+            if frame.len() > MAX_FRAME {
+                return Err("Player command exceeds the frame limit".into());
+            }
             input
-                .write_all(b"\n")
+                .write_all(&frame)
+                .and_then(|()| input.write_all(b"\n"))
                 .map_err(|_| "Could not send player command")?;
             input
                 .flush()
@@ -243,18 +403,19 @@ impl ControlClient {
                 RESPONSE_TIMEOUT
             };
             let line = self.receive(timeout)?;
-            validate_reply(&line, Some(&id), expected_phase, expected_generation)
+            let reply = parse_reply(&line, Some(&id), expected_generation)?;
+            if action != Action::Status
+                && (reply.state != expected_phase || reply.sequence_receipt.is_some())
+            {
+                return Err("Unexpected player state or generation".into());
+            }
+            Ok(reply)
         })();
         if result.is_err() {
             self.terminate();
             return result;
         }
-        self.phase = expected_phase;
-        self.generation = expected_generation;
-        if action == Action::Shutdown || action == Action::Stop {
-            self.terminate();
-        }
-        Ok(())
+        result
     }
 
     pub(crate) fn alive(&mut self) -> bool {
@@ -318,6 +479,80 @@ mod tests {
     }
 
     #[test]
+    fn master_arm_is_exclusive_and_serializes_the_selector_object() {
+        let selector = serde_json::json!({"language":"en","variantId":"variant-1"});
+        let request = Request {
+            protocol: PROTOCOL,
+            request_id: "recorder-1".into(),
+            command: Action::Arm,
+            generation: None,
+            video_path: None,
+            panel_percent: None,
+            step_percent: None,
+            master_sequence: Some(MasterSequence {
+                master_path: Path::new("C:\\study\\master.json"),
+                participant_id: "P001",
+                selector: &selector,
+            }),
+        };
+        let wire = serde_json::to_value(request).unwrap();
+        assert_eq!(
+            wire["masterSequence"]["masterPath"],
+            "C:\\study\\master.json"
+        );
+        assert_eq!(wire["masterSequence"]["participantId"], "P001");
+        assert_eq!(wire["masterSequence"]["selector"], selector);
+        assert!(wire.get("videoPath").is_none());
+    }
+
+    #[test]
+    fn terminal_reference_is_bounded_and_status_is_generation_fenced() {
+        let valid = serde_json::json!({
+            "protocol": PROTOCOL,
+            "requestId": "recorder-2",
+            "ok": true,
+            "state": "idle",
+            "generation": 1,
+            "error": null,
+            "sequenceReceipt": {
+                "status": "ended",
+                "path": "C:\\study\\receipt.json",
+                "sha256": "a".repeat(64)
+            }
+        });
+        let bytes = serde_json::to_vec(&valid).unwrap();
+        assert!(parse_reply(&bytes, Some("recorder-2"), 1).is_ok());
+        assert!(parse_reply(&bytes, Some("recorder-2"), 2).is_err());
+        assert!(parse_reply(&bytes, Some("recorder-3"), 1).is_err());
+        for (field, value) in [
+            ("status", serde_json::json!("unknown")),
+            ("path", serde_json::json!("relative.json")),
+            (
+                "path",
+                serde_json::json!(format!("C:\\{}", "x".repeat(4096))),
+            ),
+            ("sha256", serde_json::json!("bad")),
+        ] {
+            let mut malformed = valid.clone();
+            malformed["sequenceReceipt"][field] = value;
+            assert!(parse_reply(
+                &serde_json::to_vec(&malformed).unwrap(),
+                Some("recorder-2"),
+                1
+            )
+            .is_err());
+        }
+        let mut premature = valid;
+        premature["state"] = serde_json::json!("start-requested");
+        assert!(parse_reply(
+            &serde_json::to_vec(&premature).unwrap(),
+            Some("recorder-2"),
+            1
+        )
+        .is_err());
+    }
+
+    #[test]
     fn frames_are_bounded_and_partial_replies_are_not_accepted() {
         assert!(
             matches!(read_frame(&mut &b"{}\n"[..]).unwrap(), Frame::Line(line) if line == b"{}")
@@ -353,5 +588,124 @@ mod tests {
             .unwrap_err()
             .contains("Uncorrelated"));
         assert!(client.child.try_wait().unwrap().is_some());
+    }
+
+    #[test]
+    fn extra_status_frame_is_rejected_and_supervised_process_ends() {
+        let master =
+            std::env::temp_dir().join(format!("recorder-master-{}.json", std::process::id()));
+        std::fs::write(&master, b"{}").unwrap();
+        let mut command = Command::new("powershell");
+        command.args(["-NoProfile", "-Command", "[Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":null,\"ok\":true,\"state\":\"idle\",\"generation\":0,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-1\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"unsolicited\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; Start-Sleep -Seconds 30"]);
+        let mut client = ControlClient::spawn_command(command).unwrap();
+        client
+            .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
+            .unwrap();
+        assert!(client.status().unwrap_err().contains("Uncorrelated"));
+        assert!(client.child.try_wait().unwrap().is_some());
+        std::fs::remove_file(master).unwrap();
+    }
+
+    #[test]
+    fn status_polling_reaches_a_correlated_terminal_receipt() {
+        let master = std::env::temp_dir().join(format!(
+            "recorder-status-master-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&master, b"{}").unwrap();
+        let receipt_path = std::env::temp_dir().join("recorder-sequence-receipt.json");
+        let terminal = serde_json::json!({
+            "protocol": PROTOCOL,
+            "requestId": "recorder-4",
+            "ok": true,
+            "state": "idle",
+            "generation": 1,
+            "error": null,
+            "sequenceReceipt": {"status":"ended","path":receipt_path,"sha256":"a".repeat(64)}
+        });
+        let script = format!(
+            "[Console]::WriteLine('{{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":null,\"ok\":true,\"state\":\"idle\",\"generation\":0,\"error\":null}}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-1\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-2\",\"ok\":true,\"state\":\"start-requested\",\"generation\":1,\"error\":null}}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-3\",\"ok\":true,\"state\":\"start-requested\",\"generation\":1,\"error\":null}}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{}')",
+            terminal
+        );
+        let mut command = Command::new("powershell");
+        command.args(["-NoProfile", "-Command", &script]);
+        let mut client = ControlClient::spawn_command(command).unwrap();
+        client
+            .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
+            .unwrap();
+        client.send(Action::Start, None).unwrap();
+        assert!(client.send(Action::Pause, None).is_err());
+        assert!(client.send(Action::Resume, None).is_err());
+        let active = client.status().unwrap();
+        assert_eq!(active.state, Phase::StartRequested);
+        assert!(active.receipt.is_none());
+        let ended = client.status().unwrap();
+        assert_eq!(ended.state, Phase::Idle);
+        assert_eq!(ended.receipt.unwrap().status, SequenceOutcome::Ended);
+        drop(client);
+        std::fs::remove_file(master).unwrap();
+    }
+
+    #[test]
+    fn stop_waits_for_terminal_status_before_rearming() {
+        let master =
+            std::env::temp_dir().join(format!("recorder-stop-master-{}.json", std::process::id()));
+        std::fs::write(&master, b"{}").unwrap();
+        let mut script = format!(
+            "[Console]::WriteLine('{}');",
+            serde_json::json!({"protocol":PROTOCOL,"requestId":null,"ok":true,"state":"idle","generation":0,"error":null})
+        );
+        for (id, state, receipt) in [
+            (1, "armed", None),
+            (2, "start-requested", None),
+            (3, "stop-requested", None),
+            (4, "stop-requested", None),
+            (
+                5,
+                "idle",
+                Some(
+                    serde_json::json!({"status":"stopped","path":std::env::temp_dir().join("recorder-stopped.json"),"sha256":"b".repeat(64)}),
+                ),
+            ),
+        ] {
+            let reply = serde_json::json!({"protocol":PROTOCOL,"requestId":format!("recorder-{id}"),"ok":true,"state":state,"generation":1,"error":null,"sequenceReceipt":receipt});
+            script.push_str(&format!(
+                "[Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{}');",
+                reply.to_string().replace('\'', "''")
+            ));
+        }
+        let mut command = Command::new("powershell");
+        command.args(["-NoProfile", "-Command", &script]);
+        let mut client = ControlClient::spawn_command(command).unwrap();
+        client
+            .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
+            .unwrap();
+        client.send(Action::Start, None).unwrap();
+        client.send(Action::Stop, None).unwrap();
+        assert_eq!(client.phase, Phase::StopRequested);
+        assert_eq!(client.status().unwrap().state, Phase::StopRequested);
+        let terminal = client.status().unwrap();
+        assert_eq!(terminal.state, Phase::Idle);
+        assert_eq!(terminal.receipt.unwrap().status, SequenceOutcome::Stopped);
+        drop(client);
+        std::fs::remove_file(master).unwrap();
+    }
+
+    #[test]
+    fn stop_before_start_returns_idle_without_a_sequence_receipt() {
+        let master =
+            std::env::temp_dir().join(format!("recorder-armed-master-{}.json", std::process::id()));
+        std::fs::write(&master, b"{}").unwrap();
+        let mut command = Command::new("powershell");
+        command.args(["-NoProfile", "-Command", "[Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":null,\"ok\":true,\"state\":\"idle\",\"generation\":0,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-1\",\"ok\":true,\"state\":\"armed\",\"generation\":1,\"error\":null}'); [Console]::In.ReadLine() | Out-Null; [Console]::WriteLine('{\"protocol\":\"flubber-vlc-control/v1\",\"requestId\":\"recorder-2\",\"ok\":true,\"state\":\"idle\",\"generation\":1,\"error\":null}')"]);
+        let mut client = ControlClient::spawn_command(command).unwrap();
+        client
+            .arm_master_sequence(&master, "P001", &serde_json::json!({"language":"en"}))
+            .unwrap();
+        client.send(Action::Stop, None).unwrap();
+        assert_eq!(client.phase, Phase::Idle);
+        assert!(!client.sequence_armed);
+        assert!(client.child.try_wait().unwrap().is_some());
+        std::fs::remove_file(master).unwrap();
     }
 }
