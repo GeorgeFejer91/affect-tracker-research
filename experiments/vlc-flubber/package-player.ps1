@@ -111,8 +111,11 @@ Copy-Item -LiteralPath (Join-Path $root 'PLAYER-THIRD-PARTY.md') -Destination $s
 $manifestWriter = Join-Path $root 'write-player-manifest.ps1'
 & $manifestWriter -StagePath $stageAbsolute
 if ($LASTEXITCODE -ne 0) { throw 'Player manifest generation failed' }
+$manifestSha256 = (Get-FileHash -LiteralPath (Join-Path $stageAbsolute 'manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+$payloadManifestSha256 = (Get-FileHash -LiteralPath (Join-Path $stageAbsolute 'payload-manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Output "Standalone player staging ready: $stageAbsolute"
-Write-Output "Trusted manifest SHA256: $((Get-FileHash -LiteralPath (Join-Path $stageAbsolute 'manifest.json') -Algorithm SHA256).Hash)"
+Write-Output "Trusted manifest SHA256: $manifestSha256"
+Write-Output "Trusted payload manifest SHA256: $payloadManifestSha256"
 
 if ($CompileInstaller) {
     $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source
@@ -121,6 +124,25 @@ if ($CompileInstaller) {
     if ($LASTEXITCODE -ne 0) { throw 'Inno Setup player build failed' }
     $setup = Join-Path $package 'out\Flubber_VLC_Player_Setup_0.1.0_x64.exe'
     if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'Player setup output is missing' }
+    $sourceCommit = (& git -C (Join-Path $root '..\..') rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or $sourceCommit -notmatch '^[0-9a-f]{40}$') {
+        throw 'Player package source commit could not be identified'
+    }
+    $setupFile = Get-Item -LiteralPath $setup
+    $setupSha256 = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+    $provenance = [ordered]@{
+        schema = 'flubber-vlc-player-package-provenance/v1'
+        sourceCommit = $sourceCommit
+        setupFileName = $setupFile.Name
+        setupByteLength = $setupFile.Length
+        setupSha256 = $setupSha256
+        manifestSha256 = $manifestSha256
+        payloadManifestSha256 = $payloadManifestSha256
+        researchQualified = $false
+    }
+    $provenancePath = Join-Path $package 'out\player-package-provenance.json'
+    [IO.File]::WriteAllText($provenancePath, (($provenance | ConvertTo-Json -Depth 3) + "`n"), [Text.UTF8Encoding]::new($false))
     Write-Output "Player installer: $setup"
-    Write-Output "Player installer SHA256: $((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash)"
+    Write-Output "Player installer SHA256: $setupSha256"
+    Write-Output "Player package provenance: $provenancePath"
 }
