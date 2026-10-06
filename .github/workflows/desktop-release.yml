@@ -33,8 +33,8 @@ jobs:
           PACKAGE_TARGET: ${{ inputs.package_target }}
         run: |
           $catalog = @{
-            'windows-x64' = @{ target = 'windows-x64'; runner = 'windows-latest'; platform = 'windows'; architecture = 'x64' }
-            'runner-windows-x64' = @{ target = 'runner-windows-x64'; runner = 'windows-latest'; platform = 'windows'; architecture = 'x64' }
+            'windows-x64' = @{ target = 'windows-x64'; runner = 'windows-2022'; platform = 'windows'; architecture = 'x64' }
+            'runner-windows-x64' = @{ target = 'runner-windows-x64'; runner = 'windows-2022'; platform = 'windows'; architecture = 'x64' }
             'macos-arm64' = @{ target = 'macos-arm64'; runner = 'macos-15'; platform = 'macos'; architecture = 'arm64' }
             'macos-x64' = @{ target = 'macos-x64'; runner = 'macos-15-intel'; platform = 'macos'; architecture = 'x64' }
             'linux-x64' = @{ target = 'linux-x64'; runner = 'ubuntu-22.04'; platform = 'linux'; architecture = 'x64' }
