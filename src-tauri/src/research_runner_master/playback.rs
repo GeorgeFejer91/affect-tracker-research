@@ -220,7 +220,12 @@ mod tests {
         assert!(binding.accepts(&observed, 0, None, 0));
         let mut premature_end = wire.clone();
         premature_end["state"] = json!("ended");
-        assert!(!binding.accepts(&PlaybackObservation::vlc(&premature_end).unwrap(), 0, None, 0));
+        assert!(!binding.accepts(
+            &PlaybackObservation::vlc(&premature_end).unwrap(),
+            0,
+            None,
+            0
+        ));
         for (field, replacement) in [
             ("attemptId", json!("another-attempt")),
             ("position", json!(4)),
