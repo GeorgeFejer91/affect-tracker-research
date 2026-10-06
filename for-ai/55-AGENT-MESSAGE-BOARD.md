@@ -1,5 +1,15 @@
 # Agent message board
 
+## 20261006 Recorder clean-install workflow handoff
+
+Root integrated `ff18466` for P7/R1 RR-04/RR-10. The Recorder workflow stages
+the pinned standalone player only long enough to build, uninstalls it, verifies
+the default player is absent, and then checks Recorder setup downloaded and
+installed the exact pinned player manifests. Six focused Recorder Node checks
+and workflow parse passed in the isolated branch. The live workflow remains
+open until current player bytes have immutable HTTPS setup/provenance URLs and
+matching hashes; no placeholder installer is published.
+
 ## 20261006 Shared playback seam integration and next R1 allocations
 
 Root integrated `8fc8828` from the isolated shared playback pass. Exact
