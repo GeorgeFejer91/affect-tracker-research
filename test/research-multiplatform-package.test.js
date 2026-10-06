@@ -35,8 +35,8 @@ test("workflow uses host-native Windows, macOS ARM, macOS Intel, and Ubuntu 22.0
   const workflow = await source(WORKFLOW_PATH);
 
   for (const [target, runner, platform, architecture] of [
-    ["windows-x64", "windows-latest", "windows", "x64"],
-    ["runner-windows-x64", "windows-latest", "windows", "x64"],
+    ["windows-x64", "windows-2022", "windows", "x64"],
+    ["runner-windows-x64", "windows-2022", "windows", "x64"],
     ["macos-arm64", "macos-15", "macos", "arm64"],
     ["macos-x64", "macos-15-intel", "macos", "x64"],
     ["linux-x64", "ubuntu-22.04", "linux", "x64"],
@@ -147,7 +147,7 @@ test("standard Runner has a separate unsigned NSIS target and no Planner CLI sid
   assert.equal(runnerConfig.productName, "Experiment Runner");
   assert.equal(runnerConfig.mainBinaryName, "affect-runner");
   assert.match(provenance, /"runner-windows-x64"[\s\S]*prefix: "Experiment Runner_"/u);
-  assert.match(await source(".github/workflows/desktop-release.yml"), /'runner-windows-x64' = @\{ target = 'runner-windows-x64'; runner = 'windows-latest'/u);
+  assert.match(await source(".github/workflows/desktop-release.yml"), /'runner-windows-x64' = @\{ target = 'runner-windows-x64'; runner = 'windows-2022'/u);
 });
 
 test("Tauri package features expose only the requested application binary", async () => {

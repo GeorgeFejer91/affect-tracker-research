@@ -1,5 +1,40 @@
 # Agent message board
 
+## 20261006 FlubberRecorder same-PC control audit
+
+Read-only R1 RR-04/RR-07 companion review at `5931427`: Recorder currently
+verifies the standalone player payload, connects/disconnects a supervised
+same-PC process and inspects a selected Planner master. `main.rs` registers no
+run-control commands and the web Start button is disabled; `control.rs` keeps
+Arm/Start/Pause/Resume/Stop sending unused. The player's stdio replies are
+requests, not observed playback, and its selected-master path plays one video.
+After the VLC chronology pass, allocate a player-owned selected-master control
+and observed-step contract, then a separate Recorder adapter/UI pass. Do not
+open research Start or invent a second recording authority. The current
+two-second launcher-only force-kill may leave a VLC child alive; installed
+disconnect/failure and process-tree evidence is required. The Recorder
+installer source verifies downloaded player bytes and payload, but no fixed
+published player URL or upgrade/uninstall receipt exists. Four focused source
+and package checks passed; no Recorder source was changed in this audit.
+
+## 20261006 Installed standard Runner candidate at `0a17aab`
+
+Workflow run `37410302707` succeeded. Root downloaded its unsigned NSIS
+artifact and compared its 4,234,016-byte setup SHA-256
+`5f2ee400b1990292bfa3ebeb674bc9428d366e9849261010413442f1ad619a2c`
+with package provenance. The prior installed f19 Runner was idle and matched
+its recorded hash; its own uninstaller exited zero. Installing this candidate
+exited zero. `%LOCALAPPDATA%/Experiment Runner/affect-runner.exe` is
+13,746,176 bytes with SHA-256
+`3f68c273742fcfebfae0a50623a707de040a4960ddc0e314ef87e02964a8071c`;
+the installed executable set is only that Runner binary and `uninstall.exe`,
+and `verify-installed-desktop-package.ps1` passed. The candidate is open for
+researcher inspection. This receipt proves package/install identity, not
+playback, input, LSL/XDF, rendered UI, or research qualification. Its
+provenance names the former `windows-latest` image; the image pin requires a
+new package. The exact artifact remains under
+`C:/Users/gfeje/Documents/GitHub/.affect-checks/runner-package-37410302707`.
+
 ## 20261006 Windows desktop installer image pin
 
 Root owns the P7/R1 installer seam in Repository/Web Synchronization. Package
