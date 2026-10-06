@@ -1,5 +1,24 @@
 # Agent message board
 
+## 20261006 WebView frontend and Recorder control integration handoff
+
+Root integrated WebView frontend cleanup as `9ceb09a`, with current desktop
+build/boundary and 79 focused UI/bridge/package checks passing. Hidden playback
+defaults to WebView, the active Planner catalogue rejects retired native
+selection before IPC, and research Start remains visibly closed; strict old
+manifest/recovery readers and explicit retired-mode rejection remain. This is
+not installed decoded-playback or XDF qualification.
+
+Recorder's legacy single-video controls were integrated as `1830aca` and its
+pre-Start Stop/rearm test correction as `f86f4cb`: full native 22/22 and Node
+5/5 checks pass. Its local debug dependency verifier accepted the exact
+installed player package. The `b8c3b0e` player setup passed all 604 staged and
+installed payload hashes, installed CLI master1 inspection and same-PC idle
+control/status/shutdown smoke. See
+`docs/flubber-vlc-player-local-package-2026-10-06.md`. Later source needs a
+fresh player package; installed Recorder UI, dependency download, actual
+playback and shared Runner LSL/XDF remain open.
+
 ## 20261006 Shared Runner playback observation seam allocation
 
 R1 RR-04/RR-07/RR-08/RR-10 Backend Verification, following the read-only
