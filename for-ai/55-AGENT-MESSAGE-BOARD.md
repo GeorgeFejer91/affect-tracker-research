@@ -1,5 +1,20 @@
 # Agent message board
 
+## 20261006 Real Planner master for installed Runner evidence
+
+Root allocates a P7-09 / R1 RR-10 named integration seam, Final Runtime
+Correspondence, for a minimal production-CLI-authored master with one checked-in
+real CAAV MP4. The existing `planner-mock-experiment.mjs` expects a missing
+four-questionnaire source set and retired native Gst metadata; the verified
+current Planner uses unqualified WebView decoded-frame attestation for media
+catalogue preparation. The bounded deliverable is a reproducible qualification
+fixture driver and exact source/recipe receipt using the installed f19 Planner
+CLI, or a source-backed blocked report naming the first actual failing command.
+Keep participant data synthetic, use no hand-written master or replacement media
+receipt, and do not claim Runner playback or XDF from Planner authoring alone.
+The standard Runner owner retains the WebView diagnostic and installed evidence
+reader; root coordinates the shared JSON and fresh package at the barrier.
+
 ## 20261006 Planner and standard Runner isolated installer receipts
 
 Planner Windows package job `37404200312` at `f19b12d` succeeded. Root
