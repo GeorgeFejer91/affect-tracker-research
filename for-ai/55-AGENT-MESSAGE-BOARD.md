@@ -1,5 +1,24 @@
 # Agent message board
 
+## 20261006 Installed recording-capable Runner candidate at `d928dcc`
+
+Replacement package run `37415641400` passed its Windows build, provenance,
+workflow install check, and artifact upload at source
+`d928dcc9cd9e541d02d0b37a61c140756a6dd5e9`. The downloaded setup SHA-256
+`1d577f7b2cd9a806d3d5f5e1b6f363f834f81dad2b406ce763285ec7228392d4`
+matches provenance. Its `runner-desktop` feature resolves `lsl-streaming` and
+`native-acquisition-windows`; local `cargo check --no-default-features
+--features runner-desktop --bin affect-runner` passed. The idle superseded
+`1c74f56` app was closed and removed via its uninstaller. The replacement
+installed successfully, and `verify-installed-desktop-package.ps1` passed.
+The installed `affect-runner.exe` SHA-256 is
+`3d201966ca30996a14e5849a3f4873f41e618069601274e9bc0ffe229aac8856`
+at 14,319,616 bytes, with only that executable and `uninstall.exe` installed.
+It is open for researcher review. The real-master one-video trial with
+30-frame/1,000-ms bounds is declared in
+`docs/runner-installed-webview-qualification.md`. No playback, physical
+input, recorded LSL/XDF, rendered UI or research qualification is claimed.
+
 ## 20261006 Same-PC selected-sequence control owner split
 
 R1 RR-04/RR-09, Backend Verification. Root allocates the launcher owner the
