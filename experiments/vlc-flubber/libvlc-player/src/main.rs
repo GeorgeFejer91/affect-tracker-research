@@ -3,6 +3,7 @@
 
 use labstream::{Channel, Format, Outlet, StreamInfo};
 use libloading::Library;
+use serde::Deserialize;
 use std::collections::VecDeque;
 use std::env;
 use std::ffi::{c_char, c_int, c_void, CString, OsStr};
@@ -236,6 +237,7 @@ impl Vlc {
         let mut options = vec![
             CString::new("--no-video-title-show")?,
             CString::new("--ignore-config")?,
+            CString::new("--no-plugins-cache")?,
         ];
         if env::var_os("FLUBBER_DEBUG").is_some() {
             options.push(CString::new("--verbose=2")?);
@@ -1181,8 +1183,56 @@ struct Args {
     arm: bool,
     wait: bool,
     headless: bool,
-    panel_percent: u32,
-    step_percent: u32,
+    panel_percent: Option<u32>,
+    step_percent: Option<u32>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct Preset {
+    schema: String,
+    panel_percent: Option<u32>,
+    step_percent: Option<u32>,
+}
+
+fn ensure_preset_folder(root: &Path) -> Result<PathBuf> {
+    let folder = root.join("presets");
+    fs::create_dir_all(&folder)?;
+    let default = folder.join("default.flubber.json");
+    match fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(default)
+    {
+        Ok(mut file) => file.write_all(
+            b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":25,\"stepPercent\":10}\n",
+        )?,
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
+        Err(error) => return Err(error.into()),
+    }
+    Ok(folder)
+}
+
+fn preset_settings(video: &Path, folder: &Path) -> Result<(Option<u32>, Option<u32>)> {
+    let stem = video.file_stem().ok_or("Video filename has no stem")?;
+    let candidates = [
+        video.with_extension("flubber.json"),
+        folder.join(stem).with_extension("flubber.json"),
+        folder.join("default.flubber.json"),
+    ];
+    for path in candidates {
+        if path.is_file() {
+            if fs::metadata(&path)?.len() > 64 * 1024 {
+                return Err(format!("Flubber preset exceeds 64 KiB: {}", path.display()).into());
+            }
+            let settings: Preset = serde_json::from_slice(&fs::read(&path)?)?;
+            if settings.schema != "vlc-flubber-sidequest/v1" {
+                return Err(format!("Unsupported Flubber preset: {}", path.display()).into());
+            }
+            return Ok((settings.panel_percent, settings.step_percent));
+        }
+    }
+    Ok((None, None))
 }
 
 impl Args {
@@ -1195,8 +1245,8 @@ impl Args {
             arm: false,
             wait: false,
             headless: false,
-            panel_percent: 25,
-            step_percent: 10,
+            panel_percent: None,
+            step_percent: None,
         };
         while let Some(arg) = args.next() {
             match arg.to_str() {
@@ -1208,18 +1258,20 @@ impl Args {
                         Some(PathBuf::from(args.next().ok_or("--data-dir needs a path")?))
                 }
                 Some("--panel-percent") => {
-                    parsed.panel_percent = args
-                        .next()
-                        .ok_or("--panel-percent needs a value")?
-                        .to_string_lossy()
-                        .parse()?
+                    parsed.panel_percent = Some(
+                        args.next()
+                            .ok_or("--panel-percent needs a value")?
+                            .to_string_lossy()
+                            .parse()?,
+                    );
                 }
                 Some("--step-percent") => {
-                    parsed.step_percent = args
-                        .next()
-                        .ok_or("--step-percent needs a value")?
-                        .to_string_lossy()
-                        .parse()?
+                    parsed.step_percent = Some(
+                        args.next()
+                            .ok_or("--step-percent needs a value")?
+                            .to_string_lossy()
+                            .parse()?,
+                    );
                 }
                 Some("--help" | "-h") => {
                     println!("FlubberVLC [VIDEO] [CSV] [--arm] [--wait] [--data-dir DIR] [--panel-percent 25] [--step-percent 10]");
@@ -1233,7 +1285,12 @@ impl Args {
                 _ => return Err("Too many positional paths".into()),
             }
         }
-        if !(10..=100).contains(&parsed.panel_percent) || !(1..=100).contains(&parsed.step_percent)
+        if parsed
+            .panel_percent
+            .is_some_and(|value| !(10..=100).contains(&value))
+            || parsed
+                .step_percent
+                .is_some_and(|value| !(1..=100).contains(&value))
         {
             return Err("Flubber panel must be 10–100%, and step must be 1–100%".into());
         }
@@ -1257,18 +1314,25 @@ fn run() -> Result<()> {
     let args = Args::parse()?;
     let _timer_resolution = TimerResolution::one_millisecond()?;
     let video = args.video.clone();
+    let shared_data_root =
+        PathBuf::from(env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA is unavailable")?)
+            .join("VLC_Flubber_Player");
+    let preset_folder = ensure_preset_folder(&shared_data_root)?;
+    let (preset_panel, preset_step) = video
+        .as_ref()
+        .map(|path| preset_settings(path, &preset_folder))
+        .transpose()?
+        .unwrap_or((None, None));
+    let panel_percent = args.panel_percent.or(preset_panel).unwrap_or(25);
+    let step_percent = args.step_percent.or(preset_step).unwrap_or(10);
+    if !(10..=100).contains(&panel_percent) || !(1..=100).contains(&step_percent) {
+        return Err("Flubber panel must be 10–100%, and step must be 1–100%".into());
+    }
     let csv_path = if video.is_some() {
         if let Some(csv) = args.csv.clone() {
             Some(csv)
         } else {
-            let root = args
-                .data_dir
-                .clone()
-                .or_else(|| {
-                    env::var_os("LOCALAPPDATA")
-                        .map(|value| PathBuf::from(value).join("VLC_Flubber_Player"))
-                })
-                .ok_or("LOCALAPPDATA is unavailable")?;
+            let root = args.data_dir.clone().unwrap_or(shared_data_root);
             let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
             Some(
                 root.join("recordings")
@@ -1360,8 +1424,8 @@ fn run() -> Result<()> {
         panel_top: 0,
         started: false,
         last_state: -1,
-        panel_percent: args.panel_percent,
-        step: args.step_percent as f32 / 100.0,
+        panel_percent,
+        step: step_percent as f32 / 100.0,
         close_at: None,
         ticks: 0,
         tick_pending: Arc::new(AtomicBool::new(false)),
@@ -1369,7 +1433,7 @@ fn run() -> Result<()> {
         worker_failed,
     });
     let class = wide(OsStr::new("FlubberLibVlcPrototype"));
-    let title = wide(OsStr::new("Flubber VLC prototype"));
+    let title = wide(OsStr::new("Flubber VLC Player"));
     let static_class = wide(OsStr::new("STATIC"));
     // SAFETY: The module handle and class strings remain valid for registration.
     let instance = unsafe { GetModuleHandleW(null()) };

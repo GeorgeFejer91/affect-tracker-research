@@ -1,5 +1,5 @@
 #define ProductName "Flubbercorder"
-#define ProductVersion "0.1.1"
+#define ProductVersion "0.2.0"
 
 [Setup]
 AppId={{BC3E7064-C346-43F4-8A68-66D8BC995670}
@@ -9,7 +9,7 @@ AppPublisher=George Fejer
 DefaultDirName={localappdata}\Programs\Flubbercorder
 DefaultGroupName=Flubbercorder
 OutputDir=build\tauri-package\out
-OutputBaseFilename=Flubbercorder_Setup_0.1.1_x64
+OutputBaseFilename=Flubbercorder_Setup_0.2.0_x64
 Compression=zip/1
 SolidCompression=no
 PrivilegesRequired=lowest

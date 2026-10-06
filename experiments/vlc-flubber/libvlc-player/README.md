@@ -35,9 +35,9 @@ Build with `cargo build --release --manifest-path libvlc-player/Cargo.toml`.
 The executable expects sibling `vlc/libvlc.dll`, `vlc/plugins`, and
 `svg/flubber_svg.dll`; set `FLUBBER_VLC_DIR` and `FLUBBER_SVG_DLL` to override
 those paths for development. Run `flubber-libvlc-prototype.exe VIDEO [CSV]`.
-Generate VLC's `plugins/plugins.dat` with its bundled `vlc-cache-gen.exe`
-before packaging; the test VLC directory lacked that cache initially. The
-player deliberately ignores the user's stock VLC configuration.
+The player disables VLC's plugin cache and ignores the user's stock VLC
+configuration. This prevents installer timestamp changes from making a bundled
+cache stale; VLC scans its plugins on startup.
 
 Left/right and up/down adjust valence/arousal, Space pauses or resumes, and
 Escape stops. The player window can open with no video; LSL is then live while

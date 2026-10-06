@@ -1,49 +1,43 @@
 # Flubber VLC Player (experimental)
 
-This separate Windows player bundles VLC 3.0.20, FFmpeg, liblsl and the native
-SVG Flubber filter. It has no Python runtime. Opening **Flubber VLC Player**
-starts VLC with the Flubber affect and marker LSL outlets online even when no
-video is playing. To play a clip with Flubber below it, drag the clip onto the
-player shortcut or run `FlubberVLC.exe "C:\path\to\video.mp4"`. The Rust
-launcher converts the clip with FFmpeg, preserving its content, audio and
-supported subtitles, then starts VLC with the video and dynamic Flubber.
-VLC retains its normal Qt window, embedded video, menus and playback controls.
-Recorder-driven playback enters fullscreen as the clip starts; Escape returns
-to the ordinary VLC window. The launcher no longer forces WinGDI output.
-The prepared file has a five-second black lead so the LSL outlets exist before
-the original clip starts, plus a short closing tail. CSV time zero remains the
-first frame of the original clip. A recorder that needs the Start marker must
-subscribe before that boundary; the separate Flubbercorder will gate playback
-on confirmed subscriptions.
+This standalone Windows player uses the bundled VLC 3.0.20 LibVLC decoder to
+play the original video file in the upper part of one window. A native SVG
+Flubber animates in the allocated area below it. The player does not transcode
+the video. It has a custom window and keyboard controls rather than VLC's Qt
+menus or playlist. Video playback still depends on the codecs and outputs that
+the bundled VLC runtime can handle on the computer.
 
-For a recorder-controlled session, `FlubberVLC.exe video.mp4 --arm` prepares
-the clip and starts VLC idle. It prints the local VLC RC address, prepared
-clip path, and CSV paths. The recorder can subscribe to both LSL outlets before
-sending VLC an `add <prepared file URI>` command. The RC address binds only to
-127.0.0.1; it is not a network pairing service.
+Opening **Flubber VLC Player** starts the `VLC_Flubber_Affect` and
+`VLC_Flubber_Markers` LSL outlets, even with no video playing. Drag a video
+onto its shortcut, or run `FlubberVLC.exe "C:\path\to\video.mp4"`. Arrow keys
+change valence and arousal, Space pauses or resumes, and Escape stops the
+video. The SVG is rendered at physical display resolution on its own nominal
+30 Hz clock. An independent 30 Hz worker publishes valence and arousal with
+an LSL timestamp. It emits `<video filename>_Start` and `_Stop` markers.
 
-For a video-specific preset, place `<video stem>.flubber.json` beside the clip:
+Each video run creates a `time_s,valence,arousal` CSV under
+`%LOCALAPPDATA%\VLC_Flubber_Player\recordings`. The time column is a monotonic
+30 Hz clock aligned to LibVLC's first advancing media time; it is not a
+decoded-frame presentation timestamp. The CSV writer is independent of LSL.
+Replaying in one process creates another CSV instead of overwriting the first.
+
+The player creates `%LOCALAPPDATA%\VLC_Flubber_Player\presets\default.flubber.json`:
 
 ```json
 {"schema":"vlc-flubber-sidequest/v1","panelPercent":25,"stepPercent":10}
 ```
 
-The player also creates `%LOCALAPPDATA%\VLC_Flubber_Player\presets\default.flubber.json`.
-Put `<video stem>.flubber.json` in that folder for a per-video preset. An
-adjacent preset wins over the shared folder; explicit CLI settings win over
-both. Flubbercorder can open this folder from its HTML window. Its experiment
-JSON supplies panel and step values for controlled runs and overrides these
-presets.
+Place `<video stem>.flubber.json` beside a video or in that presets folder to
+override the default. An adjacent preset wins over the shared folder; explicit
+`--panel-percent` and `--step-percent` arguments win over both. A Recorder
+experiment JSON supplies those explicit settings. The panel ratio means
+panel height relative to the allocated video height; 25 makes the Flubber
+area one-quarter as tall as the video area.
 
-The arrow keys change valence and arousal during playback. VLC saves an event
-CSV and a separate three-variable `time_s,valence,arousal` CSV automatically
-under `%LOCALAPPDATA%\VLC_Flubber_Player\recordings`. It emits
-`<video filename>_Start` and `<video filename>_Stop` LSL markers. The SVG is
-rendered at the prepared video's pixel size. Smaller clips are scaled to at
-least 1080 video pixels high with Lanczos before the panel is added. This keeps
-Flubber smooth at the tested 1080p display size; scaling cannot restore detail
-missing from a low-resolution source, and larger displays may resample it.
-
-Opening an unconverted file with VLC's own **Media > Open File** bypasses the
-Flubber preparation step. Use the shortcut drag-and-drop or the launcher CLI.
-This is an experimental standalone player, not the main Affect Research Runner.
+For Recorder control, `FlubberVLC.exe video.mp4 --arm` publishes its LSL
+outlets and waits for a local `play` command. The Recorder subscribes before
+playback, sends fullscreen, play/pause/stop/volume commands, monitors the
+streams, and records XDF. The command port binds to `127.0.0.1` only. This
+prototype remains a separate side project, outside the main Affect Research
+Planner and Runner. Installed visual playback has been checked on one Windows
+machine; timing, codec breadth, and research use need broader qualification.

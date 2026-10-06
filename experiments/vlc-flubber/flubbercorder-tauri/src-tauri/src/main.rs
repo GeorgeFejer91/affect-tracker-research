@@ -679,6 +679,16 @@ fn render_state(
 }
 
 fn main() {
+    // WebView2 options used by older Flubbercorder builds can differ. A
+    // separate profile lets the native player experiment run alongside them.
+    if std::env::var_os("WEBVIEW2_USER_DATA_FOLDER").is_none() {
+        if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+            std::env::set_var(
+                "WEBVIEW2_USER_DATA_FOLDER",
+                PathBuf::from(local).join("io.github.georgefejer91.flubbercorder/webview2-libvlc"),
+            );
+        }
+    }
     tauri::Builder::default()
         .setup(|app| {
             let local = std::env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA is unavailable")?;

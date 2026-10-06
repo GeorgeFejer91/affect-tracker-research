@@ -1,10 +1,30 @@
 # Native VLC Flubber feasibility probe
 
+## Current 0.2.0 side-project packages
+
+The current standalone [Flubber VLC Player](PLAYER-README.md) passes the
+original video file directly to bundled LibVLC 3.0.20. One native window
+allocates an upper video area and a lower, display-resolution SVG Flubber area.
+The video is not prepared or transcoded for playback. Flubber and its always-on
+valence/arousal LSL outlet each run on an independent nominal 30 Hz clock;
+video-bounded CSV is written separately. This is a custom LibVLC window and
+does not include VLC's stock Qt menus or playlist.
+
+Run `./package-player.ps1` to build the player staging directory, then compile
+`installer-player.iss` with Inno Setup. The separate
+[Rust/Tauri Flubbercorder](flubbercorder-tauri/README.md) consumes that staged
+player, prepares LSL subscriptions before playback, controls the player, and
+records XDF. Its `npm run build` and `installer-tauri.iss` produce the second
+installer. The Recorder installer includes the default Great Dictator study
+clip and JSON. See the [side-quest status](../../for-ai/74-VLC-FLUBBER-SIDE-QUEST.md)
+for exact installed checks and limits. Neither package changes the approved
+Planner or Runner.
+
+## Historical 0.1.x video-filter probe
+
 The [Flubbercorder 0.1 runner](flubbercorder/README.md) is a historical
-Python-based prototype. The requested replacement remains two separate
-installers: a standalone native VLC player and a Rust/Tauri HTML recorder and
-controller. This runbook covers the native player plugin and its current
-feasibility evidence. The 0.1.1 update uses VLC's normal embedded video
+Python-based prototype. This section records the earlier video-filter
+feasibility evidence. The 0.1.1 update used VLC's normal embedded video
 window, adds shared standalone presets, and places Recorder transport and
 volume controls above the stream display. See the side-quest status for the
 exact installed evidence and remaining qualification limits.
