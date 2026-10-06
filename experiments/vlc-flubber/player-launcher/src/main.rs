@@ -12,10 +12,13 @@ use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+mod control;
+
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Default)]
 struct Args {
+    control_stdio: bool,
     inspect_master: Option<PathBuf>,
     participant: Option<String>,
     selector_json: Option<String>,
@@ -71,6 +74,7 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
     let mut parsed = Args::default();
     while let Some(arg) = args.next() {
         match arg.to_str() {
+            Some("--control-stdio") if !parsed.control_stdio => parsed.control_stdio = true,
             Some("--inspect-master") if parsed.inspect_master.is_none() => {
                 parsed.inspect_master = Some(PathBuf::from(value(&mut args, "--inspect-master")?))
             }
@@ -114,9 +118,10 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                 println!(
                     "FlubberVLC --inspect-master PATH --participant P001 --selector-json JSON"
                 );
+                println!("FlubberVLC --control-stdio [--data-dir PATH]");
                 println!("Inspection validates a saved Planner master and prints its selected plan without starting VLC.");
                 println!("Without a video, opens VLC with its Flubber LSL outlets already online.");
-                println!("--arm prepares the video and opens an idle, LSL-ready VLC RC player.");
+                println!("Use --control-stdio for a supervised same-PC player session.");
                 std::process::exit(0);
             }
             _ if parsed.video.is_none() && !arg.to_string_lossy().starts_with('-') => {
@@ -128,6 +133,21 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
                 )
             }
         }
+    }
+    if parsed.control_stdio {
+        if parsed.inspect_master.is_some()
+            || parsed.participant.is_some()
+            || parsed.selector_json.is_some()
+            || parsed.video.is_some()
+            || parsed.panel_percent.is_some()
+            || parsed.step_percent.is_some()
+            || parsed.headless
+            || parsed.wait
+            || parsed.arm
+        {
+            return Err("--control-stdio accepts only --data-dir".into());
+        }
+        return Ok(parsed);
     }
     if parsed.inspect_master.is_some() {
         if parsed.participant.is_none()
@@ -146,6 +166,9 @@ fn parse_args_from(mut args: impl Iterator<Item = OsString>) -> Result<Args> {
     }
     if parsed.participant.is_some() || parsed.selector_json.is_some() {
         return Err("--participant and --selector-json require --inspect-master".into());
+    }
+    if parsed.arm {
+        return Err("--arm direct RC is retired; use --control-stdio".into());
     }
     if parsed.wait && parsed.video.is_none() {
         return Err("--wait requires a video".into());
@@ -295,6 +318,8 @@ fn prepare_video(
         geometry.video_height
     );
     let status = Command::new(ffmpeg)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .args(["-hide_banner", "-loglevel", "error", "-i"])
         .arg(source)
         .args(["-itsoffset", "5", "-i"])
@@ -393,6 +418,9 @@ fn run() -> Result<()> {
 }
 
 fn run_with_args(args: Args) -> Result<()> {
+    if args.control_stdio {
+        return control::run(args.data_dir);
+    }
     if let Some(master) = &args.inspect_master {
         let selector: MasterSelector =
             serde_json::from_str(args.selector_json.as_deref().ok_or("Missing selector")?)?;
@@ -528,8 +556,7 @@ fn run_with_args(args: Args) -> Result<()> {
             return Err(error);
         }
         println!("VLC PID: {}", child.id());
-        if let Some(port) = rc_port {
-            println!("VLC RC: 127.0.0.1:{port}");
+        if rc_port.is_some() {
             println!("Prepared video: {}", prepared.display());
         }
         println!("Affect CSV: {}", csv.display());
@@ -681,6 +708,35 @@ mod tests {
         .is_err());
         assert!(parse_args_from(
             ["--selector-json", selector]
+                .into_iter()
+                .map(OsString::from)
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn stdio_control_cannot_mix_with_legacy_video_or_master_modes() {
+        let parsed = parse_args_from(
+            ["--control-stdio", "--data-dir", "C:\\data"]
+                .into_iter()
+                .map(OsString::from),
+        )
+        .unwrap();
+        assert!(parsed.control_stdio);
+        assert!(parse_args_from(
+            ["--control-stdio", "--video", "clip.mp4"]
+                .into_iter()
+                .map(OsString::from)
+        )
+        .is_err());
+        assert!(parse_args_from(
+            ["--control-stdio", "--inspect-master", "master.json"]
+                .into_iter()
+                .map(OsString::from)
+        )
+        .is_err());
+        assert!(parse_args_from(
+            ["--arm", "--video", "clip.mp4"]
                 .into_iter()
                 .map(OsString::from)
         )
