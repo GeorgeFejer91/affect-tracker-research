@@ -21,8 +21,9 @@ use windows_sys::Win32::Foundation::{
     CloseHandle, HANDLE, HWND, LPARAM, LRESULT, RECT, WAIT_OBJECT_0, WPARAM,
 };
 use windows_sys::Win32::Graphics::Gdi::{
-    BeginPaint, EndPaint, GetMonitorInfoW, InvalidateRect, MonitorFromWindow, PatBlt,
-    StretchDIBits, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, BLACKNESS, DIB_RGB_COLORS, MONITORINFO,
+    BeginPaint, EndPaint, FillRect, GetMonitorInfoW, GetStockObject, GetSysColorBrush,
+    InvalidateRect, MonitorFromWindow, PatBlt, StretchDIBits, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
+    BLACKNESS, COLOR_BTNFACE, DEFAULT_GUI_FONT, DIB_RGB_COLORS, MONITORINFO,
     MONITOR_DEFAULTTONEAREST, PAINTSTRUCT, SRCCOPY,
 };
 use windows_sys::Win32::Media::{timeBeginPeriod, timeEndPeriod};
@@ -35,18 +36,21 @@ use windows_sys::Win32::System::Threading::{
     TIMER_ALL_ACCESS,
 };
 use windows_sys::Win32::UI::HiDpi::{
-    SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+    GetDpiForWindow, SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
 };
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
     SetFocus, VK_DOWN, VK_ESCAPE, VK_LEFT, VK_RIGHT, VK_SPACE, VK_UP,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect, GetMessageW,
-    GetWindowLongPtrW, MoveWindow, PostMessageW, PostQuitMessage, RegisterClassW,
-    SetWindowLongPtrW, SetWindowPos, ShowWindow, TranslateMessage, CW_USEDEFAULT, GWLP_USERDATA,
-    GWL_STYLE, MSG, SWP_FRAMECHANGED, SWP_NOZORDER, SWP_SHOWWINDOW, SW_HIDE, SW_SHOW, WM_APP,
-    WM_CLOSE, WM_DESTROY, WM_KEYDOWN, WM_PAINT, WM_SIZE, WNDCLASSW, WS_CHILD, WS_CLIPCHILDREN,
-    WS_OVERLAPPEDWINDOW, WS_POPUP, WS_VISIBLE,
+    AppendMenuW, CreateMenu, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyMenu,
+    DestroyWindow, DispatchMessageW, GetClientRect, GetMessageW, GetWindowLongPtrW,
+    GetWindowTextLengthW, GetWindowTextW, IsDialogMessageW, MoveWindow, PostMessageW,
+    PostQuitMessage, RegisterClassW, SendMessageW, SetWindowLongPtrW, SetWindowPos, SetWindowTextW,
+    ShowWindow, TranslateMessage, BS_DEFPUSHBUTTON, CW_USEDEFAULT, ES_NUMBER, GWLP_USERDATA,
+    GWL_STYLE, HMENU, MF_GRAYED, MF_POPUP, MF_STRING, MSG, SWP_FRAMECHANGED, SWP_NOZORDER,
+    SWP_SHOWWINDOW, SW_HIDE, SW_SHOW, WM_APP, WM_CLOSE, WM_COMMAND, WM_DESTROY, WM_KEYDOWN,
+    WM_PAINT, WM_SETFONT, WM_SIZE, WNDCLASSW, WS_BORDER, WS_CHILD, WS_CLIPCHILDREN,
+    WS_OVERLAPPEDWINDOW, WS_POPUP, WS_TABSTOP, WS_VISIBLE,
 };
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -54,6 +58,12 @@ const RATE: Duration = Duration::from_nanos(33_333_333);
 const POINTS: usize = 192;
 const WAVES: usize = 16;
 const WM_FLUBBER_TICK: u32 = WM_APP + 1;
+const ID_FLUBBER_SETTINGS: u16 = 1001;
+const ID_PANEL_INPUT: u16 = 1002;
+const ID_STEP_INPUT: u16 = 1003;
+const ID_SAVE_DEFAULT: u16 = 1004;
+const ID_APPLY: u16 = 1;
+const ID_CANCEL: u16 = 2;
 
 struct TimerResolution {
     policy_changed: bool,
@@ -840,6 +850,241 @@ fn animate(
     Ok(())
 }
 
+struct SettingsControls {
+    title: HWND,
+    panel_label: HWND,
+    panel_input: HWND,
+    panel_range: HWND,
+    step_label: HWND,
+    step_input: HWND,
+    step_range: HWND,
+    apply: HWND,
+    save: HWND,
+    cancel: HWND,
+    status: HWND,
+}
+
+impl SettingsControls {
+    fn new(parent: HWND, instance: *mut c_void) -> Result<Self> {
+        let add = |class: &str, label: &str, style: u32, id: u16| -> Result<HWND> {
+            let class = wide(OsStr::new(class));
+            let label = wide(OsStr::new(label));
+            // SAFETY: These standard controls are owned by the live player
+            // window; Windows copies both temporary strings during creation.
+            let handle = unsafe {
+                CreateWindowExW(
+                    0,
+                    class.as_ptr(),
+                    label.as_ptr(),
+                    WS_CHILD | style,
+                    0,
+                    0,
+                    1,
+                    1,
+                    parent,
+                    id as usize as HMENU,
+                    instance,
+                    null(),
+                )
+            };
+            if handle.is_null() {
+                return Err(format!("Could not create Flubber {label:?} control").into());
+            }
+            // SAFETY: The stock font belongs to Windows and outlives the
+            // controls; SendMessageW finishes before returning.
+            unsafe {
+                SendMessageW(
+                    handle,
+                    WM_SETFONT,
+                    GetStockObject(DEFAULT_GUI_FONT) as usize,
+                    0,
+                )
+            };
+            Ok(handle)
+        };
+        Ok(Self {
+            title: add("STATIC", "Flubber settings", 0, 0)?,
+            panel_label: add("STATIC", "Panel height", 0, 0)?,
+            panel_input: add(
+                "EDIT",
+                "",
+                WS_BORDER | WS_TABSTOP | ES_NUMBER as u32,
+                ID_PANEL_INPUT,
+            )?,
+            panel_range: add("STATIC", "10–100% of video height", 0, 0)?,
+            step_label: add("STATIC", "Arrow key step", 0, 0)?,
+            step_input: add(
+                "EDIT",
+                "",
+                WS_BORDER | WS_TABSTOP | ES_NUMBER as u32,
+                ID_STEP_INPUT,
+            )?,
+            step_range: add("STATIC", "1–100%", 0, 0)?,
+            apply: add(
+                "BUTTON",
+                "Apply",
+                WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
+                ID_APPLY,
+            )?,
+            save: add("BUTTON", "Save as default", WS_TABSTOP, ID_SAVE_DEFAULT)?,
+            cancel: add("BUTTON", "Cancel", WS_TABSTOP, ID_CANCEL)?,
+            status: add("STATIC", "", 0, 0)?,
+        })
+    }
+
+    fn all(&self) -> [HWND; 11] {
+        [
+            self.title,
+            self.panel_label,
+            self.panel_input,
+            self.panel_range,
+            self.step_label,
+            self.step_input,
+            self.step_range,
+            self.apply,
+            self.save,
+            self.cancel,
+            self.status,
+        ]
+    }
+
+    fn show(&self, visible: bool) {
+        for handle in self.all() {
+            // SAFETY: Every handle is a live child of the player window.
+            unsafe { ShowWindow(handle, if visible { SW_SHOW } else { SW_HIDE }) };
+        }
+    }
+
+    fn layout(&self, width: i32, top: i32, dpi: u32) {
+        let px = |value: i32| value * dpi as i32 / 96;
+        let left = px(24);
+        let input_left = left + px(130);
+        let hint_left = input_left + px(78);
+        let positions = [
+            (self.title, left, top + px(12), width - px(48), px(22)),
+            (self.panel_label, left, top + px(43), px(126), px(22)),
+            (self.panel_input, input_left, top + px(39), px(68), px(25)),
+            (
+                self.panel_range,
+                hint_left,
+                top + px(43),
+                width - hint_left - px(24),
+                px(22),
+            ),
+            (self.step_label, left, top + px(77), px(126), px(22)),
+            (self.step_input, input_left, top + px(73), px(68), px(25)),
+            (
+                self.step_range,
+                hint_left,
+                top + px(77),
+                width - hint_left - px(24),
+                px(22),
+            ),
+            (self.apply, left, top + px(111), px(80), px(28)),
+            (self.save, left + px(92), top + px(111), px(130), px(28)),
+            (self.cancel, left + px(234), top + px(111), px(80), px(28)),
+            (self.status, left, top + px(149), width - px(48), px(20)),
+        ];
+        for (handle, x, y, w, h) in positions {
+            // SAFETY: All controls are owned by this UI thread and parent.
+            unsafe { MoveWindow(handle, x, y, w.max(1), h, 1) };
+        }
+    }
+
+    fn status(&self, value: &str) {
+        let value = wide(OsStr::new(value));
+        // SAFETY: Windows copies the temporary UTF-16 string synchronously.
+        unsafe { SetWindowTextW(self.status, value.as_ptr()) };
+    }
+}
+
+fn parse_percent(input: &str, min: u32, max: u32) -> Result<u32> {
+    let value: u32 = input.parse()?;
+    if !(min..=max).contains(&value) {
+        return Err(format!("Value must be {min}–{max}%").into());
+    }
+    Ok(value)
+}
+
+fn edit_percent(edit: HWND, min: u32, max: u32) -> Result<u32> {
+    // SAFETY: The edit control is live for the duration of this UI callback.
+    let length = unsafe { GetWindowTextLengthW(edit) };
+    if !(1..=3).contains(&length) {
+        return Err(format!("Value must be {min}–{max}%").into());
+    }
+    let mut buffer = [0_u16; 4];
+    // SAFETY: The buffer includes space for three UTF-16 units and the NUL.
+    let copied = unsafe { GetWindowTextW(edit, buffer.as_mut_ptr(), buffer.len() as i32) };
+    let value = String::from_utf16(&buffer[..copied as usize])?;
+    parse_percent(&value, min, max)
+}
+
+fn save_default_preset(folder: &Path, panel_percent: u32, step_percent: u32) -> Result<()> {
+    let destination = folder.join("default.flubber.json");
+    let temp = folder.join(format!(
+        "default.flubber.json.{}.{}.tmp",
+        std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    ));
+    let body = format!(
+        "{{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":{panel_percent},\"stepPercent\":{step_percent}}}\n"
+    );
+    let result = (|| -> Result<()> {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp)?;
+        file.write_all(body.as_bytes())?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&temp, &destination)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        fs::remove_file(&temp).ok();
+    }
+    result
+}
+
+fn create_player_menu(recorder_controlled: bool) -> Result<HMENU> {
+    // SAFETY: Both menu handles are created on the owning window's UI thread.
+    let menu = unsafe { CreateMenu() };
+    let flubber = unsafe { CreatePopupMenu() };
+    if menu.is_null() || flubber.is_null() {
+        unsafe {
+            if !flubber.is_null() {
+                DestroyMenu(flubber);
+            }
+            if !menu.is_null() {
+                DestroyMenu(menu);
+            }
+        }
+        return Err("Could not create the Flubber menu".into());
+    }
+    let tab = wide(OsStr::new("Flubber"));
+    let item = wide(OsStr::new("Settings..."));
+    // SAFETY: AppendMenuW copies both temporary strings, and ownership of the
+    // popup transfers to the menu after its successful append.
+    let item_added = unsafe {
+        AppendMenuW(
+            flubber,
+            MF_STRING | if recorder_controlled { MF_GRAYED } else { 0 },
+            ID_FLUBBER_SETTINGS as usize,
+            item.as_ptr(),
+        )
+    } != 0;
+    let tab_added =
+        item_added && unsafe { AppendMenuW(menu, MF_POPUP, flubber as usize, tab.as_ptr()) } != 0;
+    if !tab_added {
+        unsafe {
+            DestroyMenu(flubber);
+            DestroyMenu(menu);
+        }
+        return Err("Could not add the Flubber settings menu".into());
+    }
+    Ok(menu)
+}
+
 struct App {
     vlc: Vlc,
     armed_video: Option<PathBuf>,
@@ -858,7 +1103,11 @@ struct App {
     started: bool,
     last_state: i32,
     panel_percent: u32,
-    step: f32,
+    step_percent: u32,
+    preset_folder: PathBuf,
+    recorder_controlled: bool,
+    settings_controls: Option<SettingsControls>,
+    settings_open: bool,
     close_at: Option<Instant>,
     ticks: u64,
     tick_pending: Arc<AtomicBool>,
@@ -873,7 +1122,14 @@ impl App {
         unsafe { GetClientRect(hwnd, &mut rect) };
         let width = (rect.right - rect.left).max(1);
         let height = (rect.bottom - rect.top).max(1);
-        let video_height = height * 100 / (100 + self.panel_percent as i32);
+        // SAFETY: `hwnd` is the live main window; DPI may change on monitor moves.
+        let dpi = unsafe { GetDpiForWindow(hwnd) }.max(1);
+        let preferred_video_height = height * 100 / (100 + self.panel_percent as i32);
+        let video_height = if self.settings_open {
+            preferred_video_height.min((height - (180 * dpi as i32 / 96)).max(1))
+        } else {
+            preferred_video_height
+        };
         self.panel_width = width;
         self.panel_top = video_height;
         self.panel_height = height - video_height;
@@ -882,8 +1138,87 @@ impl App {
         }
         // SAFETY: The child window belongs to the same thread and parent.
         unsafe { MoveWindow(self.video_hwnd, 0, 0, width, video_height, 1) };
+        if self.settings_open {
+            if let Some(controls) = &self.settings_controls {
+                controls.layout(width, video_height, dpi);
+            }
+        }
         // SAFETY: Requests a repaint of only our parent surface.
         unsafe { InvalidateRect(hwnd, null(), 0) };
+    }
+
+    fn open_settings(&mut self, hwnd: HWND) {
+        if self.recorder_controlled {
+            return;
+        }
+        let Some(controls) = &self.settings_controls else {
+            return;
+        };
+        if self.settings_open {
+            // SAFETY: Focus stays within this player window.
+            unsafe { SetFocus(controls.panel_input) };
+            return;
+        }
+        let panel = wide(OsStr::new(&self.panel_percent.to_string()));
+        let step = wide(OsStr::new(&self.step_percent.to_string()));
+        // SAFETY: The edit controls outlive these synchronous calls.
+        unsafe {
+            SetWindowTextW(controls.panel_input, panel.as_ptr());
+            SetWindowTextW(controls.step_input, step.as_ptr());
+        }
+        controls.status("Apply for this session, or save as your default preset.");
+        self.settings_open = true;
+        self.layout(hwnd);
+        let controls = self
+            .settings_controls
+            .as_ref()
+            .expect("settings controls exist");
+        controls.show(true);
+        // SAFETY: The visible edit belongs to this player window.
+        unsafe { SetFocus(controls.panel_input) };
+    }
+
+    fn close_settings(&mut self, hwnd: HWND) {
+        if !self.settings_open {
+            return;
+        }
+        if let Some(controls) = &self.settings_controls {
+            controls.show(false);
+        }
+        self.settings_open = false;
+        self.layout(hwnd);
+        // SAFETY: Return keyboard playback controls to the player window.
+        unsafe { SetFocus(hwnd) };
+    }
+
+    fn apply_settings(&mut self, hwnd: HWND, save_default: bool) {
+        if !self.settings_open || self.recorder_controlled {
+            return;
+        }
+        let Some(controls) = &self.settings_controls else {
+            return;
+        };
+        let values = edit_percent(controls.panel_input, 10, 100)
+            .and_then(|panel| Ok((panel, edit_percent(controls.step_input, 1, 100)?)));
+        let (panel_percent, step_percent) = match values {
+            Ok(values) => values,
+            Err(_) => {
+                controls.status("Panel must be 10–100%; arrow step must be 1–100%.");
+                return;
+            }
+        };
+        if save_default {
+            if let Err(error) =
+                save_default_preset(&self.preset_folder, panel_percent, step_percent)
+            {
+                eprintln!("Could not save Flubber default preset: {error}");
+                controls.status("Could not save the default preset.");
+                return;
+            }
+        }
+        self.panel_percent = panel_percent;
+        self.step_percent = step_percent;
+        self.close_settings(hwnd);
     }
 
     fn tick(&mut self, hwnd: HWND) {
@@ -1038,53 +1373,66 @@ impl App {
         let mut paint = PAINTSTRUCT::default();
         // SAFETY: Standard BeginPaint/EndPaint pair on this UI thread.
         let dc = unsafe { BeginPaint(hwnd, &mut paint) };
-        // SAFETY: Fill the allocated lower panel, leaving child video pixels untouched.
-        unsafe {
-            PatBlt(
-                dc,
-                0,
-                self.panel_top,
-                self.panel_width,
-                self.panel_height,
-                BLACKNESS,
-            )
-        };
-        if let Ok(frame) = self.frame.lock() {
-            if !frame.pixels.is_empty() && self.panel_width > 0 && self.panel_height > 0 {
-                let info = BITMAPINFO {
-                    bmiHeader: BITMAPINFOHEADER {
-                        biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
-                        biWidth: frame.width,
-                        biHeight: -frame.height,
-                        biPlanes: 1,
-                        biBitCount: 32,
-                        biCompression: BI_RGB,
-                        biSizeImage: 0,
-                        biXPelsPerMeter: 0,
-                        biYPelsPerMeter: 0,
-                        biClrUsed: 0,
-                        biClrImportant: 0,
-                    },
-                    bmiColors: [Default::default()],
-                };
-                // SAFETY: The bitmap dimensions and pointer match `frame.pixels`;
-                // the lock prevents mutation throughout the synchronous GDI call.
-                unsafe {
-                    StretchDIBits(
-                        dc,
-                        (self.panel_width - frame.width) / 2,
-                        self.panel_top + (self.panel_height - frame.height) / 2,
-                        frame.width,
-                        frame.height,
-                        0,
-                        0,
-                        frame.width,
-                        frame.height,
-                        frame.pixels.as_ptr().cast(),
-                        &info,
-                        DIB_RGB_COLORS,
-                        SRCCOPY,
-                    );
+        if self.settings_open {
+            let rect = RECT {
+                left: 0,
+                top: self.panel_top,
+                right: self.panel_width,
+                bottom: self.panel_top + self.panel_height,
+            };
+            // SAFETY: The system brush matches the native child controls.
+            unsafe { FillRect(dc, &rect, GetSysColorBrush(COLOR_BTNFACE)) };
+        } else {
+            // SAFETY: Fill the allocated lower panel, leaving video untouched.
+            unsafe {
+                PatBlt(
+                    dc,
+                    0,
+                    self.panel_top,
+                    self.panel_width,
+                    self.panel_height,
+                    BLACKNESS,
+                )
+            };
+        }
+        if !self.settings_open {
+            if let Ok(frame) = self.frame.lock() {
+                if !frame.pixels.is_empty() && self.panel_width > 0 && self.panel_height > 0 {
+                    let info = BITMAPINFO {
+                        bmiHeader: BITMAPINFOHEADER {
+                            biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                            biWidth: frame.width,
+                            biHeight: -frame.height,
+                            biPlanes: 1,
+                            biBitCount: 32,
+                            biCompression: BI_RGB,
+                            biSizeImage: 0,
+                            biXPelsPerMeter: 0,
+                            biYPelsPerMeter: 0,
+                            biClrUsed: 0,
+                            biClrImportant: 0,
+                        },
+                        bmiColors: [Default::default()],
+                    };
+                    // SAFETY: The bitmap dimensions and pointer match `frame.pixels`;
+                    // the lock prevents mutation throughout the synchronous GDI call.
+                    unsafe {
+                        StretchDIBits(
+                            dc,
+                            (self.panel_width - frame.width) / 2,
+                            self.panel_top + (self.panel_height - frame.height) / 2,
+                            frame.width,
+                            frame.height,
+                            0,
+                            0,
+                            frame.width,
+                            frame.height,
+                            frame.pixels.as_ptr().cast(),
+                            &info,
+                            DIB_RGB_COLORS,
+                            SRCCOPY,
+                        );
+                    }
                 }
             }
         }
@@ -1093,15 +1441,24 @@ impl App {
     }
 
     fn key(&mut self, key: u32) {
+        if self.settings_open {
+            return;
+        }
         let mut shared = match self.shared.lock() {
             Ok(shared) => shared,
             Err(_) => return,
         };
         match key as u16 {
-            VK_LEFT => shared.valence = (shared.valence - self.step).max(-1.0),
-            VK_RIGHT => shared.valence = (shared.valence + self.step).min(1.0),
-            VK_UP => shared.arousal = (shared.arousal + self.step).min(1.0),
-            VK_DOWN => shared.arousal = (shared.arousal - self.step).max(-1.0),
+            VK_LEFT => {
+                shared.valence = (shared.valence - self.step_percent as f32 / 100.0).max(-1.0)
+            }
+            VK_RIGHT => {
+                shared.valence = (shared.valence + self.step_percent as f32 / 100.0).min(1.0)
+            }
+            VK_UP => shared.arousal = (shared.arousal + self.step_percent as f32 / 100.0).min(1.0),
+            VK_DOWN => {
+                shared.arousal = (shared.arousal - self.step_percent as f32 / 100.0).max(-1.0)
+            }
             VK_SPACE => self.vlc.pause(self.vlc.state() == 3),
             VK_ESCAPE => self.vlc.stop(),
             _ => {}
@@ -1140,7 +1497,24 @@ unsafe extern "system" fn window_proc(
                 return 0;
             }
             WM_SIZE => {
+                // SAFETY: Moving child controls can synchronously call back.
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
                 app.layout(hwnd);
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, pointer as isize) };
+                return 0;
+            }
+            WM_COMMAND => {
+                // SAFETY: Editing text or moving controls may synchronously
+                // dispatch another message to this window.
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0) };
+                match (wparam & 0xffff) as u16 {
+                    ID_FLUBBER_SETTINGS if lparam == 0 => app.open_settings(hwnd),
+                    ID_APPLY => app.apply_settings(hwnd, false),
+                    ID_SAVE_DEFAULT => app.apply_settings(hwnd, true),
+                    ID_CANCEL => app.close_settings(hwnd),
+                    _ => {}
+                }
+                unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, pointer as isize) };
                 return 0;
             }
             WM_FLUBBER_TICK => {
@@ -1213,13 +1587,14 @@ fn ensure_preset_folder(root: &Path) -> Result<PathBuf> {
     Ok(folder)
 }
 
-fn preset_settings(video: &Path, folder: &Path) -> Result<(Option<u32>, Option<u32>)> {
-    let stem = video.file_stem().ok_or("Video filename has no stem")?;
-    let candidates = [
-        video.with_extension("flubber.json"),
-        folder.join(stem).with_extension("flubber.json"),
-        folder.join("default.flubber.json"),
-    ];
+fn preset_settings(video: Option<&Path>, folder: &Path) -> Result<(Option<u32>, Option<u32>)> {
+    let mut candidates = Vec::new();
+    if let Some(video) = video {
+        let stem = video.file_stem().ok_or("Video filename has no stem")?;
+        candidates.push(video.with_extension("flubber.json"));
+        candidates.push(folder.join(stem).with_extension("flubber.json"));
+    }
+    candidates.push(folder.join("default.flubber.json"));
     for path in candidates {
         if path.is_file() {
             if fs::metadata(&path)?.len() > 64 * 1024 {
@@ -1318,11 +1693,7 @@ fn run() -> Result<()> {
         PathBuf::from(env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA is unavailable")?)
             .join("VLC_Flubber_Player");
     let preset_folder = ensure_preset_folder(&shared_data_root)?;
-    let (preset_panel, preset_step) = video
-        .as_ref()
-        .map(|path| preset_settings(path, &preset_folder))
-        .transpose()?
-        .unwrap_or((None, None));
+    let (preset_panel, preset_step) = preset_settings(video.as_deref(), &preset_folder)?;
     let panel_percent = args.panel_percent.or(preset_panel).unwrap_or(25);
     let step_percent = args.step_percent.or(preset_step).unwrap_or(10);
     if !(10..=100).contains(&panel_percent) || !(1..=100).contains(&step_percent) {
@@ -1425,7 +1796,11 @@ fn run() -> Result<()> {
         started: false,
         last_state: -1,
         panel_percent,
-        step: step_percent as f32 / 100.0,
+        step_percent,
+        preset_folder,
+        recorder_controlled: args.arm,
+        settings_controls: None,
+        settings_open: false,
         close_at: None,
         ticks: 0,
         tick_pending: Arc::new(AtomicBool::new(false)),
@@ -1447,6 +1822,7 @@ fn run() -> Result<()> {
     if unsafe { RegisterClassW(&window_class) } == 0 {
         return Err("Could not register the player window class".into());
     }
+    let menu = create_player_menu(args.arm)?;
     // SAFETY: Creates the owned top-level window on this UI thread.
     let hwnd = unsafe {
         CreateWindowExW(
@@ -1459,12 +1835,14 @@ fn run() -> Result<()> {
             1280,
             900,
             null_mut(),
-            null_mut(),
+            menu,
             instance,
             null(),
         )
     };
     if hwnd.is_null() {
+        // SAFETY: The menu was not transferred to a window on failure.
+        unsafe { DestroyMenu(menu) };
         return Err("Could not create the player window".into());
     }
     // SAFETY: Creates the video child inside the top-level window.
@@ -1490,6 +1868,19 @@ fn run() -> Result<()> {
         return Err("Could not create the video surface".into());
     }
     app.video_hwnd = video_hwnd;
+    app.settings_controls = Some(match SettingsControls::new(hwnd, instance) {
+        Ok(controls) => controls,
+        Err(error) => {
+            // SAFETY: Child controls and menu are owned by the parent HWND.
+            unsafe { DestroyWindow(hwnd) };
+            command_tx.send(SampleCommand::Quit).ok();
+            let lsl_result = worker.join().map_err(|_| "LSL worker panicked")?;
+            let csv_result = csv_worker.join().map_err(|_| "CSV worker panicked")?;
+            lsl_result?;
+            csv_result?;
+            return Err(error);
+        }
+    });
     // SAFETY: `app` remains boxed at a stable address until the message loop ends.
     unsafe { SetWindowLongPtrW(hwnd, GWLP_USERDATA, (&mut *app as *mut App) as isize) };
     app.layout(hwnd);
@@ -1576,6 +1967,11 @@ fn run() -> Result<()> {
     let mut message = MSG::default();
     // SAFETY: Ordinary single-threaded Win32 message loop for owned window.
     while unsafe { GetMessageW(&mut message, null_mut(), 0, 0) } > 0 {
+        // SAFETY: The settings controls are children of this live window.
+        // IsDialogMessageW provides native Tab, Enter, and Escape handling.
+        if app.settings_open && unsafe { IsDialogMessageW(hwnd, &message) } != 0 {
+            continue;
+        }
         unsafe {
             TranslateMessage(&message);
             DispatchMessageW(&message);
@@ -1604,5 +2000,53 @@ fn main() {
     if let Err(error) = run() {
         eprintln!("Flubber VLC prototype: {error}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn settings_reject_out_of_range_or_non_numeric_input() {
+        assert_eq!(parse_percent("10", 10, 100).unwrap(), 10);
+        assert_eq!(parse_percent("100", 10, 100).unwrap(), 100);
+        assert_eq!(parse_percent("1", 1, 100).unwrap(), 1);
+        for bad in ["", "0", "101", "2.5", "10x", "-1", "4294967296"] {
+            assert!(parse_percent(bad, 10, 100).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn saved_default_is_replaced_and_video_presets_keep_priority() -> Result<()> {
+        let root = env::temp_dir().join(format!(
+            "flubber-menu-test-{}-{}",
+            std::process::id(),
+            SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+        ));
+        let folder = root.join("presets");
+        fs::create_dir_all(&folder)?;
+        save_default_preset(&folder, 25, 10)?;
+        save_default_preset(&folder, 40, 5)?;
+        assert_eq!(preset_settings(None, &folder)?, (Some(40), Some(5)));
+        let video = root.join("clip.mp4");
+        let named = folder.join("clip.flubber.json");
+        fs::write(
+            &named,
+            b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":50,\"stepPercent\":6}",
+        )?;
+        assert_eq!(preset_settings(Some(&video), &folder)?, (Some(50), Some(6)));
+        let adjacent = root.join("clip.flubber.json");
+        fs::write(
+            &adjacent,
+            b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":60,\"stepPercent\":7}",
+        )?;
+        assert_eq!(preset_settings(Some(&video), &folder)?, (Some(60), Some(7)));
+        fs::remove_file(adjacent)?;
+        fs::remove_file(named)?;
+        fs::remove_file(folder.join("default.flubber.json"))?;
+        fs::remove_dir(folder)?;
+        fs::remove_dir(root)?;
+        Ok(())
     }
 }

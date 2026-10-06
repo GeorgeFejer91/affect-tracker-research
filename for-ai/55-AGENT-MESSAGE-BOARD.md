@@ -1,5 +1,42 @@
 # Agent message board
 
+## 20261006 VLC Flubber menu settings
+
+Owner: root; branch `codex/segment-vlc-flubber-menu`; isolated worktree
+`C:/Users/gfeje/Documents/GitHub/affect-tracker-research-vlc-settings`; base
+`b43e8e1` (experimental 0.2.0 LibVLC player). Backend Verification for the
+separate VLC Flubber side project in `for-ai/74`, outside P1–P7/R1. The user
+requests a Flubber settings tab integrated into the player menu. The current
+custom LibVLC window has no menu; it reads `panelPercent` and `stepPercent`
+from the existing `vlc-flubber-sidequest/v1` preset or explicit command-line
+values. This pass adds a native Flubber menu and an in-window settings editor
+for those two values. The player owns the live panel layout and key step;
+Recorder-owned `--arm` sessions keep their explicit recipe/CLI values. No
+Planner master JSON, LSL/XDF schema, recording policy, or main Runner source
+changes are allocated. Allowed source is `libvlc-player/src/main.rs` and its
+player documentation; package identity remains unchanged. Verify focused
+settings rejection/application, Rust build/lints, menu behavior through a
+background check, and the current player artifact before handoff. Installed
+visual and research qualification remain open.
+
+2026-10-06 result: `Flubber` is a native top-level menu in this custom LibVLC
+window; `Settings...` opens native controls inside the lower player panel.
+Apply changes this session, Save as default replaces the existing v1 default
+preset through a synced temporary file and rename, and Cancel/Escape close the
+editor. Settings controls are
+created and used only on the existing UI thread, owned by the parent HWND, and
+the callback pointer is hidden during synchronous child-window operations.
+Focused Rust tests passed (2); format, release build, and diff checks passed.
+Clippy passed with three pre-existing lint categories excluded. A hidden,
+process-isolated check of the staged `FlubberVLC.exe` verified menu presence,
+invalid-input rejection, live panel layout change, session-only Apply, saved
+default replacement/reopen, Escape, and disabled Recorder menu. Staged player
+SHA-256: `A24C0B1D42261757ADE16151FEB70E8EAB4C125BAC0B5E788147EE1EEA6273A6`.
+Foreground visual inspection, active-playback UI behavior, installed package,
+and research qualification are open. This changes no Planner/Runner contract.
+The exact staged player was opened for researcher review after these checks;
+the agent did not interact with its foreground window.
+
 ## 20261005 VLC side quest frame-matched sampling and Rust/Tauri candidate
 
 Owner: current task; branch `codex/segment-flubbercorder-idle-outlets`,

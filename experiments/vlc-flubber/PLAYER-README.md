@@ -3,9 +3,10 @@
 This standalone Windows player uses the bundled VLC 3.0.20 LibVLC decoder to
 play the original video file in the upper part of one window. A native SVG
 Flubber animates in the allocated area below it. The player does not transcode
-the video. It has a custom window and keyboard controls rather than VLC's Qt
-menus or playlist. Video playback still depends on the codecs and outputs that
-the bundled VLC runtime can handle on the computer.
+the video. It has a custom window with a native **Flubber** menu and keyboard
+controls rather than VLC's Qt playlist and other menus. Video playback still
+depends on the codecs and outputs that the bundled VLC runtime can handle on
+the computer.
 
 Opening **Flubber VLC Player** starts the `VLC_Flubber_Affect` and
 `VLC_Flubber_Markers` LSL outlets, even with no video playing. Drag a video
@@ -27,12 +28,20 @@ The player creates `%LOCALAPPDATA%\VLC_Flubber_Player\presets\default.flubber.js
 {"schema":"vlc-flubber-sidequest/v1","panelPercent":25,"stepPercent":10}
 ```
 
+Choose **Flubber → Settings...** in the player window to edit panel height
+(10–100%) and arrow key step (1–100%) in place. **Apply** changes this session;
+**Save as default** also writes the default preset for future launches. The
+editor works while idle or during playback. **Cancel** leaves the current
+settings alone. Recorder-controlled `--arm` sessions disable this menu entry
+because the Recorder owns those experiment values.
+
 Place `<video stem>.flubber.json` beside a video or in that presets folder to
 override the default. An adjacent preset wins over the shared folder; explicit
 `--panel-percent` and `--step-percent` arguments win over both. A Recorder
 experiment JSON supplies those explicit settings. The panel ratio means
 panel height relative to the allocated video height; 25 makes the Flubber
-area one-quarter as tall as the video area.
+area one-quarter as tall as the video area. A video-specific preset or command
+line value still wins over the saved default when that video is opened again.
 
 For Recorder control, `FlubberVLC.exe video.mp4 --arm` publishes its LSL
 outlets and waits for a local `play` command. The Recorder subscribes before

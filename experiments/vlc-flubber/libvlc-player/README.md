@@ -11,7 +11,8 @@ its data channels are valence and arousal. The existing VLC 3
 video-filter player and public installers are unchanged.
 
 This is a feasibility test, not a released player. It has a loopback Recorder
-command endpoint but no playlist, ordinary VLC Qt menus, or installer. LibVLC
+command endpoint and a native Flubber settings menu, but no playlist, ordinary
+VLC Qt menus, or installer. LibVLC
 uses VLC's normal decoder and video output path; the prototype does not
 transcode or modify video pixels. Package and installed-machine quality gates
 remain open. The CSV writer is separate from the LSL sampler. A bounded queue
@@ -45,6 +46,15 @@ idle. A video path on the command line starts playback. `--arm` waits for a
 loopback `play` command from Flubbercorder; the same endpoint accepts `pause`,
 `stop`, `volume 0..256`, `f on`, `is_playing`, and `quit`. The window remains
 visible because hidden LibVLC video output did not decode in the local test.
+
+The player window's **Flubber → Settings...** menu opens an editor in the lower
+panel. Panel height accepts 10–100% of video height, and arrow key step accepts
+1–100%. Apply affects the current session; Save as default also replaces
+`%LOCALAPPDATA%\VLC_Flubber_Player\presets\default.flubber.json` using the
+existing `vlc-flubber-sidequest/v1` schema. Video-specific presets and explicit
+command-line values retain startup precedence. Recorder-controlled `--arm`
+sessions disable the menu entry so experiment settings stay under Recorder
+control.
 
 `cargo build --release --bins` also builds `probe.exe`. Start that receiver
 before playback to check 30 Hz delivery and the filename markers. For bounded
