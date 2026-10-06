@@ -23,6 +23,10 @@ The installed executable also inspected the checked-in canonical Planner
 master1 fixture with explicit P001/variant-3/English/desktop selection, exiting
 0 with the `affect-runner-master-plan` v1 schema, ten steps and plan SHA-256
 `e24b7472da37e6eb55b6a04bd401728c99eb8efa76d78e8e16da515e411eeffb`.
+The integrated FlubberRecorder source, built as a local debug executable with
+the two exact manifest hashes embedded, exited 0 for `--verify-player` against
+that installed player. This checks its dependency verifier; it is not a
+Recorder installer or interactive control test.
 
 This is an internal packaging and command-line check of the `b8c3b0e`
 candidate. Later source commits need a new installer and provenance. Visible
