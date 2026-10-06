@@ -19,6 +19,10 @@ payload hashes match the manifest. Installed `FlubberVLC.exe --help` exited 0
 and listed inspection, selected-video/sequence and supervised local-control
 commands. The matching Recorder package script accepted these exact setup and
 manifest hashes in its validate-only preflight.
+The installed executable also inspected the checked-in canonical Planner
+master1 fixture with explicit P001/variant-3/English/desktop selection, exiting
+0 with the `affect-runner-master-plan` v1 schema, ten steps and plan SHA-256
+`e24b7472da37e6eb55b6a04bd401728c99eb8efa76d78e8e16da515e411eeffb`.
 
 This is an internal packaging and command-line check of the `b8c3b0e`
 candidate. Later source commits need a new installer and provenance. Visible
