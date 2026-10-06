@@ -682,7 +682,8 @@ impl MasterRuntime {
                 .as_ref()
                 .filter(|item| !item.worker.is_finished())
                 .ok_or_else(CommandError::no_active_run)?;
-            Ok::<_, CommandError>(lock(&current.status).clone())
+            let status = lock(&current.status).clone();
+            Ok::<_, CommandError>(status)
         };
         let before = live_status()?;
         if !before.active
