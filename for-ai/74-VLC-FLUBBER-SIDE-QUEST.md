@@ -52,6 +52,9 @@ standalone installer is 164,558,264 bytes with SHA-256
 `964023CF23E20073ED7BF65485F83345F52072D72D64F613D35ED13BA0BD6483`.
 The final Recorder installer is 256,180,019 bytes with SHA-256
 `62CA40F6A3A14EA25AE793213ADABA1CAF0D8E93EA485D1934703CB297EF61EF`.
+Both installers are on the [public 0.1.1 prerelease](https://github.com/GeorgeFejer91/affect-tracker-research/releases/tag/vlc-flubber-native-v0.1.1).
+GitHub's asset digests matched the local SHA-256 values, and unauthenticated
+HEAD requests to both direct download URLs returned HTTP 200.
 This is a side-project installed check, not research or main-suite
 qualification.
 
