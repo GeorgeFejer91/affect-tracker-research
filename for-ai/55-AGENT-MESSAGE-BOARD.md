@@ -1,5 +1,31 @@
 # Agent message board
 
+## 20261006 Retired playback frontend controls allocation
+
+R1 RR-04/RR-10 Backend Verification from integrated `56f1bb8`. Root assigns
+one isolated frontend pass for the remaining reachable/defaulted GstPlay
+selection in the Planner shell and dormant legacy package bridge. Select the
+current WebView path explicitly, show its closed research Start reason, and
+remove user-facing native GstPlay offers or success text. Preserve strict
+historical manifest/recovery readers and their explicit rejection of retired
+mode tokens; do not invent a qualified WebView run, change Planner JSON, or
+touch the native Runner Start gate. Own only `site/src/research` UI/bridge files
+and matching focused synthetic UI tests. Report every retained historical
+token and what would break if it were deleted.
+
+## 20261006 Shared VLC Runner consumer assessment allocation
+
+R1 RR-02/RR-04/RR-07/RR-08/RR-09/RR-10, read-only Integration Readiness
+from `56f1bb8`. Root assigns an independent comparison of the installed
+standard Runner worker/services with the selected-master VLC launcher. Identify
+the smallest first source seam that gives the separate VLC Runner the existing
+Runner authority for participant forms, physical input, scheduled affect
+samples, event/information LSL and own/selected-external XDF. Keep playback
+backend and observed lifecycle as the only permitted variant, with exact
+recipe/asset/attempt identity; no second recorder stack or research Start
+claim. Return file-level ownership, a bounded next patch, tests and blocking
+contracts before editing source.
+
 ## 20261006 Retired GStreamer active-source cleanup allocation
 
 R1 RR-04/RR-10 Backend Verification, isolated after the `1950100` WebView
