@@ -80,9 +80,9 @@ invariants.
 
 Each implementation pass owns one allocated segment. Follow the separate-branch,
 isolated-worktree, and unified-integration rules in `for-ai/50-AGENT-WORKFLOW.md`.
-For requested parallel or cross-app development, use the project
+For requested parallel or cross-program development, use the project
 [`Codex development team` skill](./for-ai/skills/affect-chatdev-codex/SKILL.md)
-to delegate Planner, Runner, and verification roles with explicit message
+to delegate affected program owners and verification roles with explicit message
 barriers. The ChatDev YAML runner is optional; Codex can coordinate these roles
 directly without a separate model API key. This routing does not change segment
 ownership or qualification gates.

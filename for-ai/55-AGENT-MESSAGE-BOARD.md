@@ -1,5 +1,18 @@
 # Agent message board
 
+## 20261006 Four-program Codex delegation route
+
+Root integration pass, Repository/Web Synchronization, on
+`codex/integration-four-installers`: update the existing ChatDev-style Codex
+skill and compartment map for Planner, standard WebView Runner, Flubber VLC
+Runner and same-PC FlubberRecorder. Route UI, function/JSON, recording,
+packaging and simplicity checks only when relevant, with peer messages at
+shared-contract barriers. Evidence now: skill validation, documentation diff,
+and existing source/installer receipts; no new application qualification claim.
+The external ChatDev YAML graphs remain bounded optional proposal tools. App
+owners continue their allocated R1/P passes in isolated worktrees, and root
+reconciles their commits and installed gates before any release claim.
+
 ## 20261006 Recorder R1 full player payload trust — next owner allocation
 
 Root package seam for this pass: the player installer puts Inno's uninstaller
