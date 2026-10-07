@@ -264,7 +264,7 @@ fn launch_stock_vlc(recipe: &Recipe, player_dir: &Path, headless: bool) -> Resul
         if let Some(status) = child.try_wait()? {
             return Err(format!("Stock VLC exited before RC readiness: {status}").into());
         }
-        if TcpStream::connect_timeout(&address, Duration::from_millis(100)).is_ok() {
+        if stock_rc_ready(address) {
             break;
         }
         if Instant::now() >= deadline {
@@ -283,6 +283,28 @@ fn launch_stock_vlc(recipe: &Recipe, player_dir: &Path, headless: bool) -> Resul
         _output: None,
         _errors: None,
     })
+}
+
+fn stock_rc_ready(address: SocketAddr) -> bool {
+    let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_millis(100)) else {
+        return false;
+    };
+    if stream.set_read_timeout(Some(Duration::from_millis(250))).is_err()
+        || stream.write_all(b"is_playing\n").is_err()
+    {
+        return false;
+    }
+    let mut reader = BufReader::new(stream);
+    for _ in 0..4 {
+        let mut line = String::new();
+        if reader.read_line(&mut line).is_err() || line.is_empty() {
+            return false;
+        }
+        if line.trim() == "0" {
+            return true;
+        }
+    }
+    false
 }
 
 fn launch_legacy_player(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
@@ -669,6 +691,26 @@ impl Session {
             let video = self.recipe.video.to_str().ok_or("Video path is not UTF-8")?;
             rc(self.launched.port, &format!("add {video} :fullscreen"))?;
             rc(self.launched.port, "f on")?;
+            let start = format!("{}_Start", self.recipe.filename);
+            let deadline = Instant::now() + Duration::from_secs(8);
+            while !self.markers.iter().any(|marker| marker.label == start) {
+                if self.launched.child.try_wait()?.is_some() {
+                    return Err("Stock VLC exited before the video Start marker".into());
+                }
+                if self.recorder.try_wait()?.is_some() {
+                    return Err("XDF recorder exited before the video Start marker".into());
+                }
+                if Instant::now() >= deadline {
+                    return Err("Stock VLC did not start the selected video".into());
+                }
+                match self.receipts.recv_timeout(Duration::from_millis(50)) {
+                    Ok(line) => self.consume_receipt(&line)?,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => {
+                        return Err("XDF recorder receipts closed before the video Start marker".into());
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => {}
+                }
+            }
         } else {
             rc(self.launched.port, "f on")?;
             rc(self.launched.port, "play")?;
