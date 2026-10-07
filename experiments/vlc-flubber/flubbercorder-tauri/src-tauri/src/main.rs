@@ -696,8 +696,16 @@ fn main() {
             let player_dir = std::env::var_os("FLUBBERCORDER_PLAYER_DIR")
                 .map(PathBuf::from)
                 .unwrap_or_else(|| {
-                    if bundled_player.join("FlubberVLC.exe").is_file() {
+                    if (bundled_player.join("vlc.exe").is_file()
+                        && bundled_player.join("flubber_bridge.dll").is_file())
+                        || bundled_player.join("FlubberVLC.exe").is_file()
+                    {
                         bundled_player
+                    } else if PathBuf::from(&local)
+                        .join("Programs/VLCWithFlubber/vlc.exe")
+                        .is_file()
+                    {
+                        PathBuf::from(local).join("Programs/VLCWithFlubber")
                     } else {
                         PathBuf::from(local).join("Programs/FlubberVLCPlayer")
                     }
