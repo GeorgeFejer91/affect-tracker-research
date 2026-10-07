@@ -4,6 +4,9 @@ param(
     [string]$QtPluginPath,
     [Parameter(Mandatory = $true)]
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string]$LauncherExePath,
+    [Parameter(Mandatory = $true)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
     [string]$BridgeDllPath,
     [Parameter(Mandatory = $true)]
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
@@ -56,9 +59,13 @@ $modifiedPluginHash = (Get-FileHash -LiteralPath $QtPluginPath -Algorithm SHA256
 if ($modifiedPluginHash -eq $stockPluginHash) {
     throw 'The supplied Qt plugin is identical to stock VLC and has no Flubber integration.'
 }
+$modifiedExeHash = (Get-FileHash -LiteralPath $LauncherExePath -Algorithm SHA256).Hash
+if ($modifiedExeHash -eq $stockExeHash) {
+    throw 'The supplied VLC launcher is identical to stock and cannot preload Qt dependencies.'
+}
 
-# The package is deliberately a complete official VLC tree with only its Qt UI
-# plugin replaced. This retains VLC's executable, modules, menus, and commands.
+# The package retains the complete official VLC tree and uses a launcher built
+# from its pinned Windows source to preload the dynamic Qt module dependencies.
 $expectedStage = [IO.Path]::GetFullPath((Join-Path $project 'build\stock-vlc-package\stage'))
 $stage = [IO.Path]::GetFullPath($stage)
 $buildRoot = [IO.Path]::GetFullPath($build)
@@ -75,6 +82,8 @@ Copy-Item -Path (Join-Path $vlc '*') -Destination $stage -Recurse -Force
 
 $plugin = Join-Path $stage 'plugins\gui\libqt_plugin.dll'
 Copy-Item -LiteralPath $QtPluginPath -Destination $plugin -Force
+$launcher = Join-Path $stage 'vlc.exe'
+Copy-Item -LiteralPath $LauncherExePath -Destination $launcher -Force
 $bridge = Join-Path $stage 'flubber_bridge.dll'
 Copy-Item -LiteralPath $BridgeDllPath -Destination $bridge -Force
 
@@ -97,7 +106,7 @@ Copy-Item -LiteralPath $vistaStyle -Destination $style
 @('[Paths]', 'Plugins=qt5/plugins') |
     Set-Content -LiteralPath (Join-Path $stage 'qt.conf') -Encoding ascii
 $queue = [Collections.Generic.Queue[string]]::new()
-foreach ($binary in @($plugin, $bridge, $platform, $style)) { $queue.Enqueue($binary) }
+foreach ($binary in @($launcher, $plugin, $bridge, $platform, $style)) { $queue.Enqueue($binary) }
 $visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $runtimeDlls = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 while ($queue.Count -gt 0) {
@@ -155,6 +164,7 @@ Copy-Item -LiteralPath (Join-Path $project '..\..\LICENSE') `
 $manifest = [ordered]@{
     vlcVersion = '3.0.20'
     officialArchiveSha256 = $archiveHash
+    stockExeSha256 = $stockExeHash
     stockQtPluginSha256 = $stockPluginHash
     sourceCommit = $sourceCommit
     files = [ordered]@{}
