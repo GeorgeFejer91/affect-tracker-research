@@ -395,6 +395,15 @@ fn rc(port: u16, command: &str) -> Result<()> {
     Ok(())
 }
 
+fn vlc_rc_path(path: &Path) -> Result<String> {
+    let text = path.to_str().ok_or("Video path is not UTF-8")?;
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        Ok(format!(r"\\{rest}"))
+    } else {
+        Ok(text.strip_prefix(r"\\?\").unwrap_or(text).to_owned())
+    }
+}
+
 fn hex(value: &str) -> String {
     value.bytes().map(|b| format!("{b:02x}")).collect()
 }
@@ -688,7 +697,7 @@ impl Session {
         metadata_file.write_all(b"\n")?;
         metadata_file.sync_all()?;
         if self.launched.stock_vlc {
-            let video = self.recipe.video.to_str().ok_or("Video path is not UTF-8")?;
+            let video = vlc_rc_path(&self.recipe.video)?;
             rc(self.launched.port, &format!("add {video} :fullscreen"))?;
             rc(self.launched.port, "f on")?;
             let start = format!("{}_Start", self.recipe.filename);
@@ -930,6 +939,12 @@ impl Drop for Session {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn vlc_rc_path_removes_windows_verbatim_prefix() {
+        use std::path::Path;
+        assert_eq!(super::vlc_rc_path(Path::new(r"\\?\C:\video.mp4")).unwrap(), r"C:\video.mp4");
+        assert_eq!(super::vlc_rc_path(Path::new(r"\\?\UNC\server\share\video.mp4")).unwrap(), r"\\server\share\video.mp4");
+    }
     use super::{valid_marker_sequence, validate_variables, Variable};
 
     #[test]

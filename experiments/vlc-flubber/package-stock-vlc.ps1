@@ -135,10 +135,12 @@ while ($queue.Count -gt 0) {
     }
 }
 
-# VLC's plugin cache embeds module metadata and must match the replacement DLL.
-$cachegen = Join-Path $stage 'vlc-cache-gen.exe'
-& $cachegen (Join-Path $stage 'plugins')
-if ($LASTEXITCODE -ne 0) { throw 'VLC plugin cache generation failed.' }
+# VLC validates cache entries against installed file timestamps. Inno Setup
+# writes new timestamps, so a staged cache is stale after installation.
+$pluginCache = Join-Path $stage 'plugins\plugins.dat'
+if (Test-Path -LiteralPath $pluginCache -PathType Leaf) {
+    Remove-Item -LiteralPath $pluginCache -Force
+}
 
 $sourceDestination = Join-Path $stage 'source\vlc-qt'
 New-Item -ItemType Directory -Force -Path $sourceDestination | Out-Null
@@ -178,7 +180,7 @@ $manifest = [ordered]@{
     files = [ordered]@{}
 }
 foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
-                   'plugins\gui\libqt_plugin.dll', 'plugins\plugins.dat',
+                   'plugins\gui\libqt_plugin.dll',
                    'flubber_bridge.dll', 'qt.conf',
                    'qt5\plugins\platforms\qwindows.dll',
                    'qt5\plugins\styles\qwindowsvistastyle.dll',
