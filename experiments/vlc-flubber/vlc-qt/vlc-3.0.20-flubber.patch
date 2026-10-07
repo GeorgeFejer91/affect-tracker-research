@@ -1,0 +1,402 @@
+diff --git a/bin/winvlc.c b/bin/winvlc.c
+index e0ca7ee..ce1cbb6 100644
+--- a/bin/winvlc.c
++++ b/bin/winvlc.c
+@@ -111,6 +111,31 @@ static void PrioritizeSystem32(void)
+     SetProcessMitigationPolicy( 10 /* ProcessImageLoadPolicy */, &m, sizeof( m ) );
+ }
+ 
++/* Retain the packaged Qt dependencies for VLC's system32-only module loader. */
++static BOOL PreloadFlubberQt(void)
++{
++    wchar_t path[MAX_PATH];
++    DWORD n = GetModuleFileNameW(NULL, path, MAX_PATH);
++    if (n == 0 || n >= MAX_PATH)
++        return FALSE;
++    wchar_t *name = wcsrchr(path, L'\\');
++    if (name == NULL)
++        return FALSE;
++    ++name;
++    static const wchar_t *const deps[] = {
++        L"Qt5Core.dll", L"Qt5Gui.dll", L"Qt5Widgets.dll", L"Qt5Svg.dll"
++    };
++    for (size_t i = 0; i < sizeof(deps) / sizeof(deps[0]); ++i)
++    {
++        if (wcslen(deps[i]) >= MAX_PATH - (size_t)(name - path))
++            return FALSE;
++        wcscpy(name, deps[i]);
++        if (LoadLibraryExW(path, NULL,
++                LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32) == NULL)
++            return FALSE;
++    }
++    return TRUE;
++}
+ /*
+  * Export WinMain to force GNU ld to generate a .reloc section
+  */
+@@ -175,6 +200,12 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
+      * Load DLLs from system32 before any other folder (when possible)
+      */
+     PrioritizeSystem32();
++    if (!PreloadFlubberQt())
++    {
++        MessageBoxW(NULL, L"Flubber VLC could not load its Qt runtime.",
++                    L"Flubber VLC", MB_OK | MB_ICONERROR);
++        return 1;
++    }
+ 
+     /* Args */
+     wchar_t **wargv = CommandLineToArgvW (GetCommandLine (), &argc);
+diff --git a/modules/gui/qt/components/interface_widgets.cpp b/modules/gui/qt/components/interface_widgets.cpp
+index 2311fed..fc117a3 100644
+--- a/modules/gui/qt/components/interface_widgets.cpp
++++ b/modules/gui/qt/components/interface_widgets.cpp
+@@ -131,6 +131,9 @@ bool VideoWidget::request( struct vout_window_t *p_wnd )
+     plt.setColor( QPalette::Window, Qt::black );
+     stable->setPalette( plt );
+     stable->setAutoFillBackground(true);
++    stable->setMouseTracking( true );
++    stable->installEventFilter( this );
++    setMouseTracking( true );
+     /* Force the widget to be native so that it gets a winId() */
+     stable->setAttribute( Qt::WA_NativeWindow, true );
+     /* Indicates that the widget wants to draw directly onto the screen.
+@@ -360,6 +363,8 @@ void VideoWidget::mousePressEvent( QMouseEvent* event )
+ 
+ void VideoWidget::mouseMoveEvent( QMouseEvent *event )
+ {
++    emit affectMoved( event->localPos().x() * 2 / qMax( 1, width() ) - 1,
++                      1 - event->localPos().y() * 2 / qMax( 1, height() ) );
+     if ( !p_window || !enable_mouse_events )
+     {
+         event->ignore();
+@@ -382,6 +387,17 @@ void VideoWidget::mouseMoveEvent( QMouseEvent *event )
+     event->ignore();
+ }
+ 
++bool VideoWidget::eventFilter( QObject *watched, QEvent *event )
++{
++    if( watched == stable && event->type() == QEvent::MouseMove )
++    {
++        QMouseEvent *mouse = static_cast<QMouseEvent *>( event );
++        emit affectMoved( mouse->localPos().x() * 2 / qMax( 1, stable->width() ) - 1,
++                          1 - mouse->localPos().y() * 2 / qMax( 1, stable->height() ) );
++    }
++    return QFrame::eventFilter( watched, event );
++}
++
+ void VideoWidget::mouseDoubleClickEvent( QMouseEvent *event )
+ {
+     if ( !p_window || !enable_mouse_events )
+diff --git a/modules/gui/qt/components/interface_widgets.hpp b/modules/gui/qt/components/interface_widgets.hpp
+index 11a0bd9..bfadba5 100644
+--- a/modules/gui/qt/components/interface_widgets.hpp
++++ b/modules/gui/qt/components/interface_widgets.hpp
+@@ -70,6 +70,7 @@ protected:
+     }
+ 
+     bool nativeEvent(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
++    bool eventFilter(QObject *, QEvent *) Q_DECL_OVERRIDE;
+     virtual void resizeEvent(QResizeEvent *) Q_DECL_OVERRIDE;
+     void mousePressEvent(QMouseEvent *) Q_DECL_OVERRIDE;
+     void mouseMoveEvent(QMouseEvent *) Q_DECL_OVERRIDE;
+@@ -91,6 +92,7 @@ private:
+ 
+ signals:
+     void sizeChanged( int, int );
++    void affectMoved( double valence, double arousal );
+ 
+ public slots:
+     void setSize( unsigned int, unsigned int );
+diff --git a/modules/gui/qt/main_interface.cpp b/modules/gui/qt/main_interface.cpp
+index 6e66afb..40d0601 100644
+--- a/modules/gui/qt/main_interface.cpp
++++ b/modules/gui/qt/main_interface.cpp
+@@ -38,6 +38,10 @@
+ #include "util/imagehelper.hpp"
+ 
+ #include "components/interface_widgets.hpp"     // bgWidget, videoWidget
++#include "flubber_panel.hpp"
++#include "flubber_bridge.hpp"
++#include <QUrl>
++#include <QDir>
+ #include "components/controller.hpp"            // controllers
+ #include "components/playlist/playlist.hpp"     // plWidget
+ #include "dialogs/firstrun.hpp"                 // First Run
+@@ -96,6 +100,12 @@ MainInterface::MainInterface( intf_thread_t *_p_intf ) : QVLCMW( _p_intf )
+     /* Variables initialisation */
+     bgWidget             = NULL;
+     videoWidget          = NULL;
++    flubberPanel         = NULL;
++    flubberBridge        = NULL;
++    flubberSamplingTimer = NULL;
++    flubberFailureReported = false;
++    flubberTerminalState = 0;
++    flubberTerminalTicks = 0;
+     playlistWidget       = NULL;
+     stackCentralOldWidget= NULL;
+     lastWinScreen        = NULL;
+@@ -167,6 +177,23 @@ MainInterface::MainInterface( intf_thread_t *_p_intf ) : QVLCMW( _p_intf )
+              THEDP, destroyPopupMenu() );
+ 
+     createMainWidget( settings );
++    flubberBridge = new FlubberBridge();
++    if( !flubberBridge->ready() )
++    {
++        msg_Err( p_intf, "Flubber LSL/CSV bridge could not start; check flubber_bridge.dll" );
++        flubberFailureReported = true;
++        QTimer::singleShot( 0, this, [this]() {
++            QMessageBox::warning( this, tr( "Flubber recording unavailable" ),
++                tr( "The Flubber data bridge could not load. Playback continues without LSL or CSV.\n%1" )
++                    .arg( flubberBridge->error() ) );
++        } );
++    }
++    flubberSamplingTimer = new QTimer( this );
++    flubberSamplingTimer->setTimerType( Qt::PreciseTimer );
++    CONNECT( flubberSamplingTimer, timeout(), this, sampleFlubber() );
++    flubberSamplingTimer->start( 33 );
++    CONNECT( THEMIM->getIM(), playingStatusChanged( int ),
++             this, flubberPlaybackStateChanged( int ) );
+ 
+     /**************
+      * Status Bar *
+@@ -269,6 +296,9 @@ MainInterface::MainInterface( intf_thread_t *_p_intf ) : QVLCMW( _p_intf )
+ 
+ MainInterface::~MainInterface()
+ {
++    if( flubberPanel ) flubberPanel->stopRating();
++    flubberSamplingTimer->stop();
++    delete flubberBridge;
+     /* Unsure we hide the videoWidget before destroying it */
+     if( stackCentralOldWidget == videoWidget )
+         showTab( bgWidget );
+@@ -332,8 +362,8 @@ void MainInterface::recreateToolbars()
+ 
+     controls = new ControlsWidget( p_intf, b_adv, this );
+     inputC = new InputControlsWidget( p_intf, this );
+-    mainLayout->insertWidget( 2, inputC );
+-    mainLayout->insertWidget( settings->value( "MainWindow/ToolbarPos", false ).toBool() ? 0: 3,
++    mainLayout->insertWidget( 3, inputC );
++    mainLayout->insertWidget( settings->value( "MainWindow/ToolbarPos", false ).toBool() ? 0: 4,
+                               controls );
+ 
+     if( fullscreenControls )
+@@ -465,21 +495,10 @@ void MainInterface::createMainWidget( QSettings *creationSettings )
+     stackCentralW = new QVLCStackedWidget( main );
+ 
+     /* Bg Cone */
+-    if ( QDate::currentDate().dayOfYear() >= QT_XMAS_JOKE_DAY
+-         && var_InheritBool( p_intf, "qt-icon-change" ) )
+-    {
+-        bgWidget = new EasterEggBackgroundWidget( p_intf );
+-        CONNECT( this, kc_pressed(), bgWidget, animate() );
+-    }
+-    else
+-        bgWidget = new BackgroundWidget( p_intf );
++    bgWidget = new BackgroundWidget( p_intf );
+ 
+     stackCentralW->addWidget( bgWidget );
+-    if ( !var_InheritBool( p_intf, "qt-bgcone" ) )
+-        bgWidget->setWithArt( false );
+-    else
+-        if ( var_InheritBool( p_intf, "qt-bgcone-expands" ) )
+-            bgWidget->setExpandstoHeight( true );
++    bgWidget->setWithArt( false );
+ 
+     /* And video Outputs */
+     if( var_InheritBool( p_intf, "embedded-video" ) )
+@@ -488,6 +507,35 @@ void MainInterface::createMainWidget( QSettings *creationSettings )
+         stackCentralW->addWidget( videoWidget );
+     }
+     mainLayout->insertWidget( 1, stackCentralW );
++    flubberPanel = new FlubberPanel( settings, main );
++    flubberPanel->setRateAllowedHandler( [this]() {
++        input_thread_t *input = THEMIM->getInput();
++        if( !input ) return false;
++        const int state = var_GetInteger( input, "state" );
++        return state == PLAYING_S || state == PAUSE_S || state == OPENING_S;
++    } );
++    connect( THEMIM, &MainInputManager::inputChanged, flubberPanel,
++             [this]( bool ) { flubberPanel->stopRating(); } );
++    if( !flubberPanel->appearanceLoadError().isEmpty() )
++        QTimer::singleShot( 0, this, [this]() {
++            QMessageBox::warning( this, tr( "Flubber appearance unavailable" ),
++                tr( "The saved appearance could not load; the default appearance is active.\n%1" )
++                    .arg( flubberPanel->appearanceLoadError() ) );
++        } );
++    flubberPanel->setInterruptHandler( [this]() {
++        input_thread_t *input = THEMIM->getInput();
++        if( input && ( var_GetInteger( input, "state" ) == PLAYING_S ||
++                       var_GetInteger( input, "state" ) == PAUSE_S ) )
++        {
++            if( flubberBridge ) flubberBridge->interrupt();
++            if( var_GetInteger( input, "state" ) == PLAYING_S ) THEMIM->pause();
++        }
++    } );
++    flubberPanel->setReferenceSurface( stackCentralW );
++    mainLayout->insertWidget( 2, flubberPanel );
++    if( videoWidget )
++        connect( videoWidget, &VideoWidget::affectMoved,
++                 flubberPanel, &FlubberPanel::setVideoAffect );
+ 
+     stackWidgetsSizes[bgWidget] =
+         creationSettings->value( "MainWindow/bgSize", QSize( 600, 0 ) ).toSize();
+@@ -499,9 +547,9 @@ void MainInterface::createMainWidget( QSettings *creationSettings )
+         creationSettings->value( "MainWindow/adv-controls", false ).toBool(), this );
+     inputC = new InputControlsWidget( p_intf, this );
+ 
+-    mainLayout->insertWidget( 2, inputC );
++    mainLayout->insertWidget( 3, inputC );
+     mainLayout->insertWidget(
+-        creationSettings->value( "MainWindow/ToolbarPos", false ).toBool() ? 0: 3,
++        creationSettings->value( "MainWindow/ToolbarPos", false ).toBool() ? 0: 4,
+         controls );
+ 
+     /* Visualisation, disabled for now, they SUCK */
+@@ -530,6 +578,85 @@ void MainInterface::createMainWidget( QSettings *creationSettings )
+         setWindowFlags( windowFlags() | Qt::WindowStaysOnTopHint );
+ }
+ 
++void MainInterface::showFlubberControls()
++{
++    if( flubberPanel )
++    {
++        flubberPanel->stopRating();
++        flubberPanel->showControls( this );
++    }
++}
++
++void MainInterface::sampleFlubber()
++{
++    if( !flubberBridge || !flubberBridge->ready() || !flubberPanel ) return;
++    input_thread_t *input = THEMIM->getInput();
++    int state = 0;
++    qint64 mediaMs = 0;
++    QByteArray name( "video" );
++    QByteArray path;
++    if( input )
++    {
++        const int vlcState = var_GetInteger( input, "state" );
++        if( vlcState == PLAYING_S ) state = 3;
++        else if( vlcState == PAUSE_S ) state = 4;
++        else if( vlcState == OPENING_S ) state = 2;
++        else if( vlcState == END_S ) state = 6;
++        else if( vlcState == ERROR_S ) state = 7;
++        mediaMs = qMax<qint64>( 0, var_GetInteger( input, "time" ) / 1000 );
++        input_item_t *item = input_GetItem( input );
++        if( item )
++        {
++            char *rawUri = input_item_GetURI( item );
++            if( rawUri )
++            {
++                const QUrl uri = QUrl::fromEncoded( QByteArray( rawUri ) );
++                if( uri.isLocalFile() )
++                {
++                    const QString local = uri.toLocalFile();
++                    path = QDir::toNativeSeparators( local ).toUtf8();
++                    name = QFileInfo( local ).fileName().toUtf8();
++                }
++                else if( !uri.fileName().isEmpty() ) name = uri.fileName().toUtf8();
++                free( rawUri );
++            }
++        }
++    }
++    /* The old input may disappear between GUI polls at natural end. Keep its
++     * terminal status for three sampler ticks so the Rust worker observes End
++     * or Error once before a following playlist item begins. */
++    if( flubberTerminalTicks > 0 )
++    {
++        state = flubberTerminalState;
++        --flubberTerminalTicks;
++    }
++    const int result = flubberBridge->update( flubberPanel->valence(), flubberPanel->arousal(),
++                                               state, mediaMs, name, path );
++    if( ( result != 0 || flubberBridge->status() < 0 ) && !flubberFailureReported )
++    {
++        flubberFailureReported = true;
++        msg_Err( p_intf, "Flubber LSL/CSV bridge stopped" );
++        QMessageBox::warning( this, tr( "Flubber recording stopped" ),
++            tr( "The Flubber LSL/CSV worker stopped. Playback continues, but affect data is not recording.\n%1" )
++                .arg( flubberBridge->error() ) );
++    }
++}
++
++void MainInterface::flubberPlaybackStateChanged( int state )
++{
++    if( state == END_S || state == ERROR_S )
++    {
++        /* InputManager also emits END_S when it merely drops an input after
++         * Stop/Next. Only a still-live input in that core state proves a
++         * natural end or playback error. */
++        input_thread_t *input = THEMIM->getInput();
++        if( !input || var_GetInteger( input, "state" ) != state ) return;
++        flubberTerminalState = state == END_S ? 6 : 7;
++        flubberTerminalTicks = 3;
++        sampleFlubber();
++    }
++}
++
+ inline void MainInterface::initSystray()
+ {
+     bool b_systrayAvailable = QSystemTrayIcon::isSystemTrayAvailable();
+@@ -745,6 +872,8 @@ void MainInterface::getVideoSlot( struct vout_window_t *p_wnd,
+     {
+         videoWidget = new VideoWidget( p_intf, stackCentralW );
+         stackCentralW->addWidget( videoWidget );
++        connect( videoWidget, &VideoWidget::affectMoved,
++                 flubberPanel, &FlubberPanel::setVideoAffect );
+     }
+     *res = videoWidget->request( p_wnd );
+     if( *res ) /* The videoWidget is available */
+diff --git a/modules/gui/qt/main_interface.hpp b/modules/gui/qt/main_interface.hpp
+index c567c5b..c049b2d 100644
+--- a/modules/gui/qt/main_interface.hpp
++++ b/modules/gui/qt/main_interface.hpp
+@@ -42,6 +42,8 @@ class QKeyEvent;
+ class QLabel;
+ class QEvent;
+ class VideoWidget;
++class FlubberPanel;
++class FlubberBridge;
+ class BackgroundWidget;
+ class PlaylistWidget;
+ class VisualSelector;
+@@ -152,6 +154,12 @@ protected:
+     QStackedWidget      *stackCentralW;
+ 
+     VideoWidget         *videoWidget;
++    FlubberPanel        *flubberPanel;
++    FlubberBridge       *flubberBridge;
++    QTimer              *flubberSamplingTimer;
++    bool                flubberFailureReported;
++    int                 flubberTerminalState;
++    int                 flubberTerminalTicks;
+     BackgroundWidget    *bgWidget;
+     PlaylistWidget      *playlistWidget;
+     //VisualSelector      *visualSelector;
+@@ -200,6 +208,9 @@ protected:
+     int i_kc_offset;
+ 
+ public slots:
++    void showFlubberControls();
++    void sampleFlubber();
++    void flubberPlaybackStateChanged( int state );
+     void dockPlaylist( bool b_docked = true );
+     void toggleMinimalView( bool );
+     void togglePlaylist();
+diff --git a/modules/gui/qt/menus.cpp b/modules/gui/qt/menus.cpp
+index b3ec20c..4716ddf 100644
+--- a/modules/gui/qt/menus.cpp
++++ b/modules/gui/qt/menus.cpp
+@@ -505,6 +505,11 @@ QMenu *VLCMenuBar::ViewMenu( intf_thread_t *p_intf, QMenu *current, MainInterfac
+ 
+     menu->addSeparator();
+ 
++    /* Minimal View */
++    menu->addAction( qtr( "Flubber Controls…" ), mi,
++                     SLOT( showFlubberControls() ) );
++    menu->addSeparator();
++
+     /* Minimal View */
+     action = menu->addAction( qtr( "Mi&nimal Interface" ) );
+     action->setShortcut( qtr( "Ctrl+H" ) );
