@@ -82,17 +82,22 @@ Copy-Item -LiteralPath $BridgeDllPath -Destination $bridge -Force
 # exact transitive MinGW DLL imports used by the modified Qt module.
 $objdump = Join-Path $MinGwBin 'objdump.exe'
 $qwindows = Join-Path $MinGwBin '..\share\qt5\plugins\platforms\qwindows.dll'
+$vistaStyle = Join-Path $MinGwBin '..\share\qt5\plugins\styles\qwindowsvistastyle.dll'
 if (-not (Test-Path -LiteralPath $objdump -PathType Leaf) -or
-    -not (Test-Path -LiteralPath $qwindows -PathType Leaf)) {
-    throw 'MinGW objdump or Qt Windows platform plugin is missing.'
+    -not (Test-Path -LiteralPath $qwindows -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $vistaStyle -PathType Leaf)) {
+    throw 'MinGW objdump or Qt Windows plugins are missing.'
 }
 $platform = Join-Path $stage 'qt5\plugins\platforms\qwindows.dll'
+$style = Join-Path $stage 'qt5\plugins\styles\qwindowsvistastyle.dll'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $platform) | Out-Null
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $style) | Out-Null
 Copy-Item -LiteralPath $qwindows -Destination $platform
+Copy-Item -LiteralPath $vistaStyle -Destination $style
 @('[Paths]', 'Plugins=qt5/plugins') |
     Set-Content -LiteralPath (Join-Path $stage 'qt.conf') -Encoding ascii
 $queue = [Collections.Generic.Queue[string]]::new()
-foreach ($binary in @($plugin, $bridge, $platform)) { $queue.Enqueue($binary) }
+foreach ($binary in @($plugin, $bridge, $platform, $style)) { $queue.Enqueue($binary) }
 $visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $runtimeDlls = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 while ($queue.Count -gt 0) {
@@ -151,7 +156,8 @@ $manifest = [ordered]@{
 foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
                    'plugins\gui\libqt_plugin.dll', 'plugins\plugins.dat',
                    'flubber_bridge.dll', 'qt.conf',
-                   'qt5\plugins\platforms\qwindows.dll') + @($runtimeDlls | Sort-Object)) {
+                   'qt5\plugins\platforms\qwindows.dll',
+                   'qt5\plugins\styles\qwindowsvistastyle.dll') + @($runtimeDlls | Sort-Object)) {
     $path = Join-Path $stage $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Expected package file is missing: $name"
