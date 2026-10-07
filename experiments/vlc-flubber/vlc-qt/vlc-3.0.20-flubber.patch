@@ -257,8 +257,8 @@ index 6e66afb..7a5f9bd 100644
 +             [this]( bool ) { flubberPanel->stopRating(); } );
 +    if( !flubberPanel->appearanceLoadError().isEmpty() )
 +        QTimer::singleShot( 0, this, [this]() {
-+            QMessageBox::warning( this, tr( "Flubber appearance unavailable" ),
-+                tr( "The saved appearance could not load; the default appearance is active.\n%1" )
++            QMessageBox::warning( this, tr( "Flubber settings unavailable" ),
++                tr( "A saved Flubber setting could not load; defaults are active where needed.\n%1" )
 +                    .arg( flubberPanel->appearanceLoadError() ) );
 +        } );
 +    flubberPanel->setInterruptHandler( [this]() {

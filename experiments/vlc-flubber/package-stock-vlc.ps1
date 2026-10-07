@@ -98,19 +98,23 @@ $qwindows = Join-Path $MinGwBin '..\share\qt5\plugins\platforms\qwindows.dll'
 $vistaStyle = Join-Path $MinGwBin '..\share\qt5\plugins\styles\qwindowsvistastyle.dll'
 $svgIcon = Join-Path $MinGwBin '..\share\qt5\plugins\iconengines\qsvgicon.dll'
 $svgImage = Join-Path $MinGwBin '..\share\qt5\plugins\imageformats\qsvg.dll'
+$jpegImage = Join-Path $MinGwBin '..\share\qt5\plugins\imageformats\qjpeg.dll'
 if (-not (Test-Path -LiteralPath $objdump -PathType Leaf) -or
     -not (Test-Path -LiteralPath $qwindows -PathType Leaf) -or
     -not (Test-Path -LiteralPath $vistaStyle -PathType Leaf) -or
     -not (Test-Path -LiteralPath $svgIcon -PathType Leaf) -or
-    -not (Test-Path -LiteralPath $svgImage -PathType Leaf)) {
-    throw 'MinGW objdump or Qt Windows/SVG plugins are missing.'
+    -not (Test-Path -LiteralPath $svgImage -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $jpegImage -PathType Leaf)) {
+    throw 'MinGW objdump or Qt Windows/SVG/JPEG plugins are missing.'
 }
 $platform = Join-Path $stage 'qt5\plugins\platforms\qwindows.dll'
 $style = Join-Path $stage 'qt5\plugins\styles\qwindowsvistastyle.dll'
 $iconEngine = Join-Path $stage 'qt5\plugins\iconengines\qsvgicon.dll'
 $imageFormat = Join-Path $stage 'qt5\plugins\imageformats\qsvg.dll'
+$jpegFormat = Join-Path $stage 'qt5\plugins\imageformats\qjpeg.dll'
 foreach ($pair in @(@($qwindows, $platform), @($vistaStyle, $style),
-                   @($svgIcon, $iconEngine), @($svgImage, $imageFormat))) {
+                   @($svgIcon, $iconEngine), @($svgImage, $imageFormat),
+                   @($jpegImage, $jpegFormat))) {
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $pair[1]) | Out-Null
     Copy-Item -LiteralPath $pair[0] -Destination $pair[1]
 }
@@ -118,7 +122,7 @@ foreach ($pair in @(@($qwindows, $platform), @($vistaStyle, $style),
     Set-Content -LiteralPath (Join-Path $stage 'qt.conf') -Encoding ascii
 $queue = [Collections.Generic.Queue[string]]::new()
 foreach ($binary in @($launcher, $plugin, $bridge, $platform, $style,
-                     $iconEngine, $imageFormat)) { $queue.Enqueue($binary) }
+                     $iconEngine, $imageFormat, $jpegFormat)) { $queue.Enqueue($binary) }
 $visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $runtimeDlls = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 while ($queue.Count -gt 0) {
@@ -204,7 +208,8 @@ foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
                    'qt5\plugins\platforms\qwindows.dll',
                    'qt5\plugins\styles\qwindowsvistastyle.dll',
                    'qt5\plugins\iconengines\qsvgicon.dll',
-                   'qt5\plugins\imageformats\qsvg.dll') + @($runtimeDlls | Sort-Object) +
+                   'qt5\plugins\imageformats\qsvg.dll',
+                   'qt5\plugins\imageformats\qjpeg.dll') + @($runtimeDlls | Sort-Object) +
                    @($faceFiles | ForEach-Object { Join-Path 'assets\face' $_ })) {
     $path = Join-Path $stage $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
