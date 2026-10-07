@@ -98,23 +98,19 @@ $qwindows = Join-Path $MinGwBin '..\share\qt5\plugins\platforms\qwindows.dll'
 $vistaStyle = Join-Path $MinGwBin '..\share\qt5\plugins\styles\qwindowsvistastyle.dll'
 $svgIcon = Join-Path $MinGwBin '..\share\qt5\plugins\iconengines\qsvgicon.dll'
 $svgImage = Join-Path $MinGwBin '..\share\qt5\plugins\imageformats\qsvg.dll'
-$jpegImage = Join-Path $MinGwBin '..\share\qt5\plugins\imageformats\qjpeg.dll'
 if (-not (Test-Path -LiteralPath $objdump -PathType Leaf) -or
     -not (Test-Path -LiteralPath $qwindows -PathType Leaf) -or
     -not (Test-Path -LiteralPath $vistaStyle -PathType Leaf) -or
     -not (Test-Path -LiteralPath $svgIcon -PathType Leaf) -or
-    -not (Test-Path -LiteralPath $svgImage -PathType Leaf) -or
-    -not (Test-Path -LiteralPath $jpegImage -PathType Leaf)) {
-    throw 'MinGW objdump or Qt Windows/SVG/JPEG plugins are missing.'
+    -not (Test-Path -LiteralPath $svgImage -PathType Leaf)) {
+    throw 'MinGW objdump or Qt Windows/SVG plugins are missing.'
 }
 $platform = Join-Path $stage 'qt5\plugins\platforms\qwindows.dll'
 $style = Join-Path $stage 'qt5\plugins\styles\qwindowsvistastyle.dll'
 $iconEngine = Join-Path $stage 'qt5\plugins\iconengines\qsvgicon.dll'
 $imageFormat = Join-Path $stage 'qt5\plugins\imageformats\qsvg.dll'
-$jpegFormat = Join-Path $stage 'qt5\plugins\imageformats\qjpeg.dll'
 foreach ($pair in @(@($qwindows, $platform), @($vistaStyle, $style),
-                   @($svgIcon, $iconEngine), @($svgImage, $imageFormat),
-                   @($jpegImage, $jpegFormat))) {
+                   @($svgIcon, $iconEngine), @($svgImage, $imageFormat))) {
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $pair[1]) | Out-Null
     Copy-Item -LiteralPath $pair[0] -Destination $pair[1]
 }
@@ -122,7 +118,7 @@ foreach ($pair in @(@($qwindows, $platform), @($vistaStyle, $style),
     Set-Content -LiteralPath (Join-Path $stage 'qt.conf') -Encoding ascii
 $queue = [Collections.Generic.Queue[string]]::new()
 foreach ($binary in @($launcher, $plugin, $bridge, $platform, $style,
-                     $iconEngine, $imageFormat, $jpegFormat)) { $queue.Enqueue($binary) }
+                     $iconEngine, $imageFormat)) { $queue.Enqueue($binary) }
 $visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $runtimeDlls = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 while ($queue.Count -gt 0) {
@@ -161,8 +157,8 @@ if ($LASTEXITCODE -ne 0 -or $sourceState.Count -ne 0) {
 $faceSource = Join-Path $project 'assets\face'
 $faceDestination = Join-Path $stage 'assets\face'
 $faceFiles = @('vlc-face-atlases.json', 'NOTICE.md', 'photo-atlas-packs-v1.json',
-    'affect-face-atlas-v3.json', 'photo-reference-v3.jpg') +
-    @(1..8 | ForEach-Object { 'photo-synthetic-{0:D2}.jpg' -f $_ })
+    'affect-face-atlas-v3.json', 'photo-reference-v3.png') +
+    @(1..8 | ForEach-Object { 'photo-synthetic-{0:D2}.png' -f $_ })
 $assetState = @(& git -C $repository status --porcelain -- 'experiments/vlc-flubber/assets/face')
 if ($LASTEXITCODE -ne 0 -or $assetState.Count -ne 0) {
     throw 'Commit the face atlas assets before staging.'
@@ -208,8 +204,7 @@ foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
                    'qt5\plugins\platforms\qwindows.dll',
                    'qt5\plugins\styles\qwindowsvistastyle.dll',
                    'qt5\plugins\iconengines\qsvgicon.dll',
-                   'qt5\plugins\imageformats\qsvg.dll',
-                   'qt5\plugins\imageformats\qjpeg.dll') + @($runtimeDlls | Sort-Object) +
+                   'qt5\plugins\imageformats\qsvg.dll') + @($runtimeDlls | Sort-Object) +
                    @($faceFiles | ForEach-Object { Join-Path 'assets\face' $_ })) {
     $path = Join-Path $stage $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {

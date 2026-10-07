@@ -4,70 +4,70 @@
   "tileSize": 160,
   "sourceRepository": "GeorgeFejer91/affect-tracker-playground",
   "sourceCommit": "2023af03a4ca3231fe2968f4f3ddd523d25c5c98",
-  "conversion": "Pillow 12.2.0 RGBA composited over black, JPEG quality 95, 4:4:4, optimized",
+  "conversion": "Pillow 12.2.0 decoded archived WebP to lossless RGBA PNG (optimized)",
   "faces": [
     {
       "id": "photo-reference-v3",
       "label": "Original portrait",
-      "file": "photo-reference-v3.jpg",
+      "file": "photo-reference-v3.png",
       "sourceSha256": "02CCA9D9CF9B4D5E3107147B4ED273404700EDE445D05DA66698E537CEB2EF62",
-      "sha256": "5C8E2A48A487AF5E843746B7659FAB357D98F172AE964AD833F4F3FA0E4E1757"
+      "sha256": "FE02511689FF10ECDC084F14775D64E1FB61A609D31194FE1AAF9562C5CD2772"
     },
     {
       "id": "photo-synthetic-01",
       "label": "Synthetic preset 02",
-      "file": "photo-synthetic-01.jpg",
+      "file": "photo-synthetic-01.png",
       "sourceSha256": "1FFBC1232378FDA83D5D539E1D26B4FE7DFA37D0C0594A7D5D5FDC83741A2A84",
-      "sha256": "BE636CB12F8005846CF60E6E9D5886DA483C9785558265229FDF6A1EA52CE487"
+      "sha256": "3BC4507012CA30C272B8B5C1185D8E1E7B13A485932D1B321F66AE5253274337"
     },
     {
       "id": "photo-synthetic-02",
       "label": "Synthetic preset 03",
-      "file": "photo-synthetic-02.jpg",
+      "file": "photo-synthetic-02.png",
       "sourceSha256": "759B5C317B65F3793BE974DDC22F6FA890910159AA7810FAFA92F3C24EDBC64A",
-      "sha256": "E066499AF191C0E552BBEE5424493061D3BB1CB04B7C3168617875B8E09BB3FE"
+      "sha256": "FA9DF35B5C6F053C58B68C8F17EA7C6E0F40F1077B461A319B3A7BBEF2BBAF5D"
     },
     {
       "id": "photo-synthetic-03",
       "label": "Synthetic preset 04",
-      "file": "photo-synthetic-03.jpg",
+      "file": "photo-synthetic-03.png",
       "sourceSha256": "47377AA246A41E913885AC3C3E3C81ACAFDB71E3F004833CBC5E6777ECC47FCE",
-      "sha256": "93774AA112DDEB6CA5635808AB5852AD32C4D90CF89BA84E7C1FBBBE92734B90"
+      "sha256": "6F108ACFDF01A4BBE33F8DF427AE1EC230A2C4D529CE16B657F5E8B8AE106512"
     },
     {
       "id": "photo-synthetic-04",
       "label": "Synthetic preset 05",
-      "file": "photo-synthetic-04.jpg",
+      "file": "photo-synthetic-04.png",
       "sourceSha256": "F79D605F5F9E3E7463E5D747EF08DF3761D2AF9A42DBE541ED65C7F573899365",
-      "sha256": "283804ED131329C33F696F12AC0486F68978C31E47259FC46A905CC36731C0A8"
+      "sha256": "B3D7425C5E3D8EB6C38490770162BD3A5B77461C20E7CD11E61D259B79DEFC90"
     },
     {
       "id": "photo-synthetic-05",
       "label": "Synthetic preset 06",
-      "file": "photo-synthetic-05.jpg",
+      "file": "photo-synthetic-05.png",
       "sourceSha256": "4F7FC2427257A60DCB174CE9B6E27CFEABA9AEFA55327EC4E2A410738E149909",
-      "sha256": "DA6B64E7C5D702E5256ADCAF0F7BD06457EB52A6BE870F9CC10DBD2530E38D0B"
+      "sha256": "3C25FEA8F378FAB6FC73902D7F0835CE5997901B5252EF7B77B3DA0B2C4466AD"
     },
     {
       "id": "photo-synthetic-06",
       "label": "Synthetic preset 07",
-      "file": "photo-synthetic-06.jpg",
+      "file": "photo-synthetic-06.png",
       "sourceSha256": "BE0D7F555008ED952BC566DC1D172625F85235CD46381A87C68BD81E6F35A53A",
-      "sha256": "70C30EA23AB35317B8C1319E81C655196DE80AACE58DA4E22A0FF0645F20FD4F"
+      "sha256": "B1B2156478CE5CFA028B3D6C9D710F53BF4DCBF79B988148EE5B871073C18547"
     },
     {
       "id": "photo-synthetic-07",
       "label": "Synthetic preset 08",
-      "file": "photo-synthetic-07.jpg",
+      "file": "photo-synthetic-07.png",
       "sourceSha256": "DECB67E4C9569C569C1C679D263C82CFEBC78C7B574C8907C919082AF148328C",
-      "sha256": "55AAE51FD1B1026B83E7EFD9F7E12B476C695FCBC2BB220F3D3AFD92F5F45201"
+      "sha256": "CC0BDA8A8992F6136C4E6B2355B0708F9C18F98D75482A21834DECCD333D97CF"
     },
     {
       "id": "photo-synthetic-08",
       "label": "Synthetic preset 09",
-      "file": "photo-synthetic-08.jpg",
+      "file": "photo-synthetic-08.png",
       "sourceSha256": "367DF69E3A5C1787C41EF6FAC4AB6A0ADF457ED8DE04540C6F675DB55DAFBD5F",
-      "sha256": "C1D50ECD5D5B05FF2D4C0628EC0E6AE940292FE2842821E570F91B9928A90B04"
+      "sha256": "C355FB9970F0C220346350AF7ED3BFA67CF9B92AA2AB3B6FCB5D64684E638EB2"
     }
   ]
 }

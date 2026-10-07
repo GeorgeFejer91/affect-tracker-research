@@ -14,10 +14,10 @@ New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $output = (Resolve-Path -LiteralPath $OutputDirectory).Path
 $testFace = Join-Path $output 'assets\face'
 New-Item -ItemType Directory -Force -Path $testFace | Out-Null
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\assets\face\photo-reference-v3.jpg') `
-    -Destination (Join-Path $testFace 'photo-reference-v3.jpg') -Force
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\assets\face\photo-synthetic-01.jpg') `
-    -Destination (Join-Path $testFace 'photo-synthetic-01.jpg') -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\assets\face\photo-reference-v3.png') `
+    -Destination (Join-Path $testFace 'photo-reference-v3.png') -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\assets\face\photo-synthetic-01.png') `
+    -Destination (Join-Path $testFace 'photo-synthetic-01.png') -Force
 $previousPath = $env:PATH
 $previousPlatform = $env:QT_QPA_PLATFORM
 try {

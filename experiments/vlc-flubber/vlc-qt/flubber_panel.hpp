@@ -27,6 +27,7 @@
 #include <QSettings>
 #include <QMessageBox>
 #include <QImage>
+#include <QImageReader>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
@@ -193,10 +194,12 @@ public:
     {
         if( !faceIds().contains( id ) )
         { if( error ) *error = tr( "Unknown face preset." ); return false; }
-        const QString path = QCoreApplication::applicationDirPath() + "/assets/face/" + id + ".jpg";
-        QImage image( path );
+        const QString path = QCoreApplication::applicationDirPath() + "/assets/face/" + id + ".png";
+        QImageReader reader( path, "png" );
+        QImage image = reader.read();
         if( image.size() != QSize( 3360, 3360 ) )
-        { if( error ) *error = tr( "The selected 21×21 face atlas is missing or invalid: %1" ).arg( path ); return false; }
+        { if( error ) *error = tr( "The selected 21×21 face atlas is missing or invalid: %1 (%2)" )
+            .arg( path, reader.errorString() ); return false; }
         faceAtlas_ = image;
         faceId_ = id;
         settings_->setValue( "Flubber/faceId", id );
@@ -316,9 +319,10 @@ public:
         if( !keys( face, { "id", "transitionRate" } ) || !faceIds().contains( face.value( "id" ).toString() ) ||
             !number( face.value( "transitionRate" ), .5, 20 ) )
         { error = tr( "Invalid face settings." ); return false; }
-        QImage atlas( QCoreApplication::applicationDirPath() + "/assets/face/" + face.value( "id" ).toString() + ".jpg" );
+        QImageReader atlasReader( QCoreApplication::applicationDirPath() + "/assets/face/" + face.value( "id" ).toString() + ".png", "png" );
+        QImage atlas = atlasReader.read();
         if( atlas.size() != QSize( 3360, 3360 ) )
-        { error = tr( "The chosen face atlas is missing or invalid." ); return false; }
+        { error = tr( "The chosen face atlas is missing or invalid: %1" ).arg( atlasReader.errorString() ); return false; }
         preset_ = appearance;
         primary_ = kindFromName( primaryName );
         for( int i = 0; i < 3; ++i ) { layers_[i] = parsedLayers[i]; persistLayout( static_cast<FeedbackKind>( i ) ); }

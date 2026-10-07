@@ -26,8 +26,9 @@ its focused tests pass.
 Startup flags set the primary layer, input mode, face preset, and settings
 file. A running player accepts matching commands through its loopback VLC RC
 interface with `vlc-qt/flubberctl.ps1`. This uses VLC's existing command
-transport and queues changes to the Qt GUI thread. Face atlas JPEGs are derived
-from the project's archived WebP assets and listed with source and derived
+transport and queues changes to the Qt GUI thread. Lossless face atlas PNGs are
+converted from the project's archived WebP assets to use Qt's built-in image
+format support. They are listed with source and derived
 SHA-256 hashes in `assets/face/vlc-face-atlases.json`; `assets/face/NOTICE.md`
 preserves source attribution. The runtime package includes all nine atlases.
 
