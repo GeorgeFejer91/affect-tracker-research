@@ -36,6 +36,18 @@ available only while Classic Flubber is the selected preview. The
 existing 30 Hz affect/marker and CSV behavior needs an audited native bridge
 to the integrated surface; no main Runner/XDF claim follows from visual parity.
 
+The pinned VLC 3.0.20 source already has a stable native video child in
+`modules/gui/qt/components/interface_widgets.cpp`: `VideoWidget::request()`
+creates `stable`, adds it to `VideoWidget`'s layout, and gives its `winId()` to
+vout. A Flubber panel can occupy a sibling region while preserving that handle;
+the containing layout, `physicalSize()`/resize reports, and release path require
+audit together. `main_interface.cpp` places `VideoWidget` in the central stack,
+but shows `BackgroundWidget` when idle, so the idle black/Flubber surface must
+be handled explicitly rather than relying on the video child alone. The stock
+View menu is assembled in `menus.cpp::VLCMenuBar::ViewMenu()`; an added action
+there preserves the other menus and commands. This is a source map, not a
+tested patch.
+
 Before implementation, obtain the project-required approval for a new native
 unsafe boundary and establish a reproducible Windows build of the pinned VLC Qt
 module. The current machine has VLC 3.0.20 and MSVC but no MSYS2/Qt toolchain.
