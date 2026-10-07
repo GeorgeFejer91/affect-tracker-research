@@ -36,6 +36,8 @@ Copy-Item -Path (Join-Path $web '*') -Destination $phoneWeb -Recurse
 Copy-Item -Path (Join-Path $source 'recorder-runtime\*') -Destination $resources -Recurse
 $playerSource = if ($env:FLUBBERCORDER_PLAYER_PACKAGE) {
     $env:FLUBBERCORDER_PLAYER_PACKAGE
+} elseif (Test-Path -LiteralPath (Join-Path $root '..\build\stock-vlc-package\stage\manifest.json') -PathType Leaf) {
+    Join-Path $root '..\build\stock-vlc-package\stage'
 } else {
     Join-Path $root '..\build\player-package\stage'
 }
@@ -44,7 +46,17 @@ $manifest = Join-Path $playerSource 'manifest.json'
 if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
     throw "Build the pinned VLC player package first: $playerSource"
 }
-$expected = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+$manifestObject = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+$expected = if ($manifestObject.PSObject.Properties.Name -contains 'files') {
+    if ($manifestObject.vlcVersion -ne '3.0.20' -or
+        -not (Test-Path -LiteralPath (Join-Path $playerSource 'vlc.exe') -PathType Leaf) -or
+        -not (Test-Path -LiteralPath (Join-Path $playerSource 'flubber_bridge.dll') -PathType Leaf)) {
+        throw 'Stock VLC Flubber package is incomplete or unexpected.'
+    }
+    $manifestObject.files
+} else {
+    $manifestObject
+}
 foreach ($entry in $expected.PSObject.Properties) {
     $part = Join-Path $playerSource $entry.Name
     if (-not (Test-Path -LiteralPath $part -PathType Leaf)) {

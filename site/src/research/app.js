@@ -1,4 +1,5 @@
 import { preparePlannerSurface } from "./planner-surface.js";
+import { measureLineStats, measureNaturalWidth, prepareWithSegments } from "./vendor/pretext.js";
 import { canonicalJson, canonicalSha256, sha256Hex } from "./canonical.js";
 import { FORM_DEFINITION_SCHEMA } from "./form-definition.js";
 import { SURVEYJS_DEFINITION_SCHEMA, importSurveyJson, verifySurveySupportedDefinition as verifyP2Definition } from "./surveyjs-definition.js";
@@ -40,6 +41,7 @@ import {
 import { ResearchInputController, withCustomDigitalAction } from "./input-controller.js";
 import { createFeedbackContributionSource, validateFeedbackContributionV1 } from "./feedback-contribution.js";
 import { validateFeedbackContribution, validateFeedbackContributionV2, createFeedbackAuthoringSettingsV2 } from "./feedback-settings.js";
+import { createVlcFlubberAppearance } from "./vlc-flubber-appearance.js";
 import { resolveFeedbackEnvelope } from "./feedback-layout.js";
 import { createResearchPreview, drawAffectField } from "./preview.js";
 import { PREVIEW_GREY, PREVIEW_ANCHORS, CORNER_LABELS, MAX_RENDERED_HALO_PERCENT, parsePreviewNumber, randomPreviewAnchors } from "./preview-appearance.js";
@@ -237,6 +239,63 @@ export function initializeResearchUi(root, { surface = "browser" } = {}) {
   return controller;
 }
 
+function observeAppearanceExportText(root) {
+  const heading = root.querySelector("#preview-quick-appearance .preview-subsection-heading");
+  const title = heading?.querySelector("h3");
+  const button = heading?.querySelector("#preview-appearance-export");
+  if (!(heading instanceof HTMLElement) || !(title instanceof HTMLElement) || !(button instanceof HTMLButtonElement)) return () => {};
+  let frame = 0;
+  let disposed = false;
+  let fontsReady = false;
+  const preparedLabels = new Map();
+  const measure = () => {
+    frame = 0;
+    if (disposed) return;
+    try {
+      const buttonStyle = getComputedStyle(button);
+      const titleStyle = getComputedStyle(title);
+      const prepareLabel = (element, style) => {
+        const label = element.textContent.trim();
+        const font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        const letterSpacing = Number.parseFloat(style.letterSpacing) || 0;
+        const key = JSON.stringify([label, font, letterSpacing, root.ownerDocument.documentElement.lang]);
+        if (!preparedLabels.has(key)) {
+          if (preparedLabels.size >= 8) preparedLabels.clear();
+          preparedLabels.set(key, prepareWithSegments(label, font, { letterSpacing }));
+        }
+        return preparedLabels.get(key);
+      };
+      const buttonText = prepareLabel(button, buttonStyle);
+      const titleText = prepareLabel(title, titleStyle);
+      const buttonInsets = Number.parseFloat(buttonStyle.paddingLeft) + Number.parseFloat(buttonStyle.paddingRight)
+        + Number.parseFloat(buttonStyle.borderLeftWidth) + Number.parseFloat(buttonStyle.borderRightWidth);
+      const gap = Number.parseFloat(getComputedStyle(heading).columnGap) || 0;
+      const shouldWrap = measureNaturalWidth(buttonText) + buttonInsets + measureNaturalWidth(titleText) + gap + 4 > heading.clientWidth;
+      heading.classList.toggle("appearance-export-wrap", shouldWrap);
+      const textWidth = Math.max(1, button.clientWidth - Number.parseFloat(buttonStyle.paddingLeft)
+        - Number.parseFloat(buttonStyle.paddingRight));
+      const lineHeight = Number.parseFloat(buttonStyle.lineHeight);
+      const textHeight = Math.max(0, button.clientHeight - Number.parseFloat(buttonStyle.paddingTop)
+        - Number.parseFloat(buttonStyle.paddingBottom));
+      const text = measureLineStats(buttonText, textWidth);
+      button.dataset.textFit = text.lineCount * lineHeight <= textHeight + 1
+        && text.maxLineWidth <= textWidth + 1
+        && button.scrollWidth <= button.clientWidth + 1
+        && button.scrollHeight <= button.clientHeight + 1 ? "measured" : "reflow";
+    } catch {
+      heading.classList.add("appearance-export-wrap");
+      button.dataset.textFit = "unavailable";
+    }
+  };
+  const schedule = () => { if (fontsReady && !frame && !disposed) frame = requestAnimationFrame(measure); };
+  const observer = new ResizeObserver(schedule);
+  observer.observe(heading);
+  const labelObserver = new MutationObserver(schedule);
+  labelObserver.observe(button, { childList: true, characterData: true, subtree: true });
+  root.ownerDocument.fonts.ready.then(() => { fontsReady = true; schedule(); });
+  return () => { disposed = true; observer.disconnect(); labelObserver.disconnect(); if (frame) cancelAnimationFrame(frame); };
+}
+
 // Interaction and projection code is kept below the declarative instrument so
 // importing this module for contract tests never requires a DOM.
 function createUiController(root, { surface }) {
@@ -250,6 +309,7 @@ function createInteractionController(root, { surface }) {
 
 function bindResearchInteractions(root, { surface }) {
   const shell = root.querySelector(".research-shell");
+  const stopAppearanceExportText = observeAppearanceExportText(root);
   const setupLayout = createSetupLayout(root.querySelector(".setup-layout"));
   let disconnectScreenLayout = () => {};
   const layoutDraftEditor = createScreenLayoutDraftEditor(root.querySelector("[data-screen-layout-draft]"), {
@@ -1514,6 +1574,19 @@ function bindResearchInteractions(root, { surface }) {
     return Number(raw);
   }
 
+  function appearanceVisualFromUi() {
+    return {
+      transparency: restoredTransparency?.raw === value("visual-transparency")
+        ? restoredTransparency.value : feedbackNumber("visual-transparency") / 100,
+      flubber: {
+        showOutline: checked("flubber-outline-visible"),
+        outlineThickness: feedbackNumber("flubber-outline-thickness"),
+        showHalo: checked("flubber-halo-visible"),
+      },
+      colors: Object.fromEntries(COLOR_FIELDS.map(({ id }) => [id, value(`color-${id}-hex`).trim().toLowerCase()])),
+    };
+  }
+
   function legacyFeedbackFromUi() {
     if (value("input-preset") !== (UI_PRESET_IDS[inputBinding.preset] ?? "custom")) {
       throw new TypeError("Choose a valid input preset before saving.");
@@ -1525,23 +1598,16 @@ function bindResearchInteractions(root, { surface }) {
         gridEnabled: checked("visual-grid-visible"),
         flubberEnabled: checked("visual-flubber-visible"),
         sizePercent: feedbackNumber("visual-size"),
-        transparency: restoredTransparency?.raw === value("visual-transparency")
-          ? restoredTransparency.value : feedbackNumber("visual-transparency") / 100,
         hideFeedback: checked("visual-hide-feedback"),
         overlayPosition: { x: feedbackNumber("visual-position-x"), y: feedbackNumber("visual-position-y") },
         lockPosition: checked("visual-lock-position"),
-        flubber: {
-          showOutline: checked("flubber-outline-visible"),
-          outlineThickness: feedbackNumber("flubber-outline-thickness"),
-          showHalo: checked("flubber-halo-visible"),
-        },
+        ...appearanceVisualFromUi(),
         grid: {
           lineThickness: feedbackNumber("grid-line-thickness"),
           showOutline: checked("grid-outline-visible"),
           outlineThickness: feedbackNumber("grid-outline-thickness"),
           cursorSize: feedbackNumber("grid-cursor-size"),
         },
-        colors: Object.fromEntries(COLOR_FIELDS.map(({ id }) => [id, value(`color-${id}-hex`).trim().toLowerCase()])),
       },
       mappings: mappingsFromUi(),
     });
@@ -1563,6 +1629,31 @@ function bindResearchInteractions(root, { surface }) {
         fullSpanDurationMs: feedbackNumber("preview-full-span-duration"),
         holdRule: query('input[name="previewHoldRule"]:checked')?.value, repeatDelayMs: feedbackNumber("preview-repeat-delay") },
     });
+  }
+
+  function exportFlubberAppearance() {
+    try {
+      const appearance = createVlcFlubberAppearance({
+        visual: appearanceVisualFromUi(),
+        presentation: {
+          renderer: feedbackPreviewMode,
+          colorAnchors: query('input[name="previewColorAnchors"]:checked')?.value,
+          halo: { widthPercent: feedbackNumber("preview-halo-size"), gradient: checked("preview-halo-gradient"),
+            steepness: feedbackNumber("preview-halo-steepness") },
+        },
+        mappings: mappingsFromUi(),
+      });
+      const json = `${JSON.stringify(appearance, null, 2)}\n`;
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json;charset=utf-8" }));
+      const link = root.ownerDocument.createElement("a");
+      link.href = url;
+      link.download = "flubber-appearance.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      announce("Flubber appearance JSON exported for the VLC player.");
+    } catch (error) {
+      announce(`Flubber appearance export failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   function researchSettingsDraft({ verifySources = true } = {}) {
@@ -5294,6 +5385,10 @@ function bindResearchInteractions(root, { surface }) {
   root.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target.closest("button") : null;
     if (!(target instanceof HTMLButtonElement)) return;
+    if (target.id === "preview-appearance-export") {
+      exportFlubberAppearance();
+      return;
+    }
     if (["flubber", "grid", "face"].includes(target.dataset.feedbackPreviewMode)) {
       if (feedbackSettingsVersion !== 2) return;
       packageEditRevision += 1;
@@ -6531,6 +6626,7 @@ function bindResearchInteractions(root, { surface }) {
     },
     destroy() {
       researchUiDisposed = true;
+      stopAppearanceExportText();
       localPresetLifetime.abort();
       researcherLocalPresets?.destroy();
       plannerAuthoringSession.destroy();

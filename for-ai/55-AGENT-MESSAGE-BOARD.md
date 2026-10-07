@@ -6336,3 +6336,115 @@ checks confirmed exact CSV/XDF markers and frame counts; current phone pairing
 needs a private IPv4 route, unavailable on this validation PC. VLC's own
 Media > Open File bypasses FFmpeg preparation and is not an automatic-Flubber
 path. No Planner/Runner contract or main-suite qualification is claimed.
+
+## Stock VLC Flubber UI and appearance handoff — 2026-10-07
+
+The direct user goal for the separate VLC side quest requires all stock VLC
+menus/commands, a persistent black idle/video/Flubber surface, a View menu
+Flubber Controls entry, Planner appearance JSON export/import, and manual
+Flubber size/position. Owner: VLC side quest on isolated branch
+`codex/segment-vlc-player-ui`, base `3c6db83`; shared seam: P5 preview-only
+appearance export. No P1–P7/R1 checklist credit or recipe JSON change. The
+source probe and required Qt integration are recorded in
+`experiments/vlc-flubber/STOCK-VLC-INTEGRATION.md`. The historical native
+filter compiles, but direct Media Open File failed to retain added panel
+geometry; its launcher also fails against the current master API. New native
+Qt/unsafe implementation requires the project approval gate before mutation.
+The Planner preview now offers a separate `flubber-appearance.json` download;
+its serializer and Chrome/Edge rendered export were checked in the isolated
+branch. Native VLC import and final UI qualification remain pending.
+
+Pass brief for the cross-app seam: Backend Verification stage. P5-02/P5-06
+provide the validated colors, outline/halo and mappings; this pass adds a
+preview-only appearance export without changing their completed checklist
+claims. The consumer is the separate VLC side quest under `for-ai/75`, with no
+R1/RR credit. Root owns the isolated branch and all source edits. The bounded
+deliverable now is a browser-delivered standalone appearance JSON and contract
+record; evidence due is focused serializer tests, a static Pages build, and
+Chrome/Edge rendered export checks. Native import, the black stock VLC shell,
+full command parity, and final player visual qualification are deferred pending
+the required new-boundary approval. UI and function reviewers inspect this
+patch read-only in the same worktree; no parallel writer shares its files.
+UI_VERIFY and FUNCTION_VERIFY reported a pass for that narrow Planner export
+seam after the response-grid coupling and text-width measurement were fixed.
+The native VLC player still accepts only its older panel/step preset JSON and
+cannot read `vlc-flubber-appearance/v1`; no native or installed visual claim
+follows. Full Research tests passed 1,231/1,231, with Pages and desktop source
+build verifiers passing in this isolated branch.
+
+## Approved native VLC Qt implementation pass — 2026-10-07
+
+The user explicitly approved native VLC Qt integration and asked to finish the
+full VLC Flubber project. Stage: Backend Verification, with UI and installed
+verification before any claim of completion. The goal retains every stock VLC
+menu and command, a black idle/video background, persistent bottom Flubber,
+View → Flubber Controls, strict Planner appearance JSON import, manual size and
+position, and final visual/command checks. This is still the separate `for-ai/75`
+side quest; P5-02/P5-06 producer is complete and unchanged, and no R1/RR item
+is claimed. Shared contract: `vlc-flubber-appearance/v1` in
+`site/src/research/vlc-flubber-appearance.js`.
+
+Root integration owner: `codex/segment-vlc-player-ui` at `0d0689a`, worktree
+`C:\Users\gfeje\Documents\GitHub\affect-tracker-research-vlc-player-ui`.
+Native Qt owner allocation: separate `codex/segment-vlc-qt-native` worktree;
+allowed edits under `experiments/vlc-flubber/vlc-qt/` and its own side-quest
+tests/documentation, no Planner or main Runner edits. Deliverable: pinned
+VLC 3.0.20 Qt source patch implementing the black split surface, bottom
+Flubber, View action, JSON import, size/position controls, and native lifecycle
+audit. Evidence due: source patch, focused native checks, built Qt candidate if
+toolchain available, exact remaining runtime gaps. Build/toolchain role is
+read-only for tracked source and works in its own ignored build directory;
+deliverable is a reproducible unmodified VLC Qt build route and provenance.
+Root reserves packaging, integration, installed GUI/command verification and
+final claim. Reviews follow the owner patch barrier; no shared worktree writers.
+
+## Stock VLC integration verification handoff — 2026-10-07
+
+Root integrated the pinned VLC Qt patch, Planner appearance export, and
+Recorder adapter on `codex/segment-vlc-player-ui`. The fresh standalone 0.3.0
+install retained stock menus/controls, showed black idle and bottom Flubber
+surfaces, and opened View → Flubber Controls with appearance JSON import and
+manual size/position controls. The installed manifest hashes matched and the
+plugin cache was omitted. The independent Recorder subscribed before playback
+and finalized XDF with 331 affect samples plus exact Start/End/Stop markers;
+VLC wrote the selected CSV. The Recorder RC path normalizes Windows verbatim
+paths before sending video to VLC. Evidence and claim limits are in
+`experiments/vlc-flubber/STOCK-VLC-INTEGRATION.md`. No main Runner or P1–P7/R1
+qualification is claimed. Physical input and every stock command were not
+exhaustively exercised.
+
+The companion Flubbercorder Tauri release and Inno installer then built and
+installed with this stock VLC package. Its 36 bundled player manifest hashes
+matched, and the installed Recorder screen opened with the test recipe. The
+obsolete LibVLC preset-folder control was removed in favor of the native VLC
+View-menu appearance dialog. This verifies package closure and launch; the
+independent native CLI/XDF run is the completed recording evidence.
+
+## VLC top-level Flubber menu follow-up — 2026-10-07
+
+The user clarified that Flubber belongs on VLC's top menu bar. Root moved the
+View-menu action to **Flubber → Settings…** on the same side-quest branch.
+The dialog retains appearance JSON import, panel height, size, and position.
+The pinned patch applied to pristine VLC 3.0.20 source and its Qt module
+built. Both standalone and companion Recorder installers were rebuilt and
+installed; each bundled VLC manifest matched all 36 files. The installed menu
+bar, dialog, idle/playing surfaces, and Recorder hint were captured under
+`experiments/vlc-flubber/build/evidence/top-menu-*.png`. An upgraded installed
+Recorder trial finalized XDF with 331 affect samples and Start/End/Stop.
+No main Runner qualification is implied.
+
+## VLC three-feedback side-quest implementation — 2026-10-07
+
+Root owns the stock VLC side-quest extension on `codex/segment-vlc-player-ui`.
+The pinned Qt patch compiles with top-level menu hotkeys for primary feedback,
+independent Flubber/grid/photo-face visibility, input mode, startup options,
+and a GUI-queued VLC RC command. The panel renders the archived 21×21
+synthetic face atlas and both other layers together, with per-layer layout,
+detailed settings pages, and v1/v2 JSON import/export. The focused panel check
+passes and Planner's already implemented standalone appearance export passed
+its four targeted tests. The installed PNG player and Flubbercorder each
+matched a 49-file manifest. Stock menus/controls, black idle area, three-layer
+panel, detailed settings, direct video, RC changes, and numeric/input hotkeys
+were checked; captures and limits are in the stock integration decision record.
+This work belongs only to the separate VLC side quest; it does not
+alter the main Planner/Runner face-feature boundary.

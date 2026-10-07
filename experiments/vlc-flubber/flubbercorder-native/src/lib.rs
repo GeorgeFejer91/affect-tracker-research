@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
 use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{SocketAddr, TcpStream};
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc::{self, Receiver};
@@ -194,9 +194,10 @@ struct Launched {
     pid: u32,
     port: u16,
     csv: PathBuf,
+    stock_vlc: bool,
     child: Child,
-    _output: thread::JoinHandle<()>,
-    _errors: thread::JoinHandle<()>,
+    _output: Option<thread::JoinHandle<()>>,
+    _errors: Option<thread::JoinHandle<()>>,
 }
 
 impl Drop for Launched {
@@ -221,6 +222,92 @@ fn line_value<'a>(lines: &'a [String], prefix: &str) -> Result<&'a str> {
 }
 
 fn launch(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
+    if player_dir.join("vlc.exe").is_file() && player_dir.join("flubber_bridge.dll").is_file() {
+        return launch_stock_vlc(recipe, player_dir, headless);
+    }
+    launch_legacy_player(recipe, player_dir, headless)
+}
+
+fn launch_stock_vlc(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
+    let parent = recipe.video.parent().ok_or("Video has no parent")?;
+    let stem = recipe.video.file_stem().and_then(|s| s.to_str()).ok_or("Video stem is unavailable")?;
+    let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+    let csv = (0..100_u32)
+        .map(|retry| parent.join(format!("{stem}-flubbercorder-{stamp}-{}-{retry}.csv", std::process::id())))
+        .find(|path| !path.exists())
+        .ok_or("No unique affect CSV name available")?;
+    let listener = TcpListener::bind(("127.0.0.1", 0))?;
+    let port = listener.local_addr()?.port();
+    drop(listener);
+    let mut command = Command::new(player_dir.join("vlc.exe"));
+    command
+        .arg("--no-one-instance")
+        .arg("--no-qt-privacy-ask")
+        .arg("--intf=qt")
+        .arg("--extraintf=rc")
+        .arg(format!("--rc-host=127.0.0.1:{port}"))
+        .arg("--rc-quiet")
+        .env("VLC_FLUBBER_CSV_PATH", &csv)
+        .env("VLC_FLUBBER_PANEL_PERCENT", recipe.panel_percent.to_string())
+        .env("VLC_FLUBBER_STEP_PERCENT", recipe.step_percent.to_string())
+        .current_dir(player_dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    if headless {
+        command.arg("--qt-start-minimized");
+    }
+    let mut child = command.spawn()?;
+    let address: SocketAddr = format!("127.0.0.1:{port}").parse()?;
+    let deadline = Instant::now() + Duration::from_secs(8);
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Err(format!("Stock VLC exited before RC readiness: {status}").into());
+        }
+        if stock_rc_ready(address) {
+            break;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err("Stock VLC did not open its local RC port".into());
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    Ok(Launched {
+        pid: child.id(),
+        port,
+        csv,
+        stock_vlc: true,
+        child,
+        _output: None,
+        _errors: None,
+    })
+}
+
+fn stock_rc_ready(address: SocketAddr) -> bool {
+    let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_millis(100)) else {
+        return false;
+    };
+    if stream.set_read_timeout(Some(Duration::from_millis(250))).is_err()
+        || stream.write_all(b"is_playing\n").is_err()
+    {
+        return false;
+    }
+    let mut reader = BufReader::new(stream);
+    for _ in 0..4 {
+        let mut line = String::new();
+        if reader.read_line(&mut line).is_err() || line.is_empty() {
+            return false;
+        }
+        if line.trim() == "0" {
+            return true;
+        }
+    }
+    false
+}
+
+fn launch_legacy_player(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
     let exe = player_dir.join("FlubberVLC.exe");
     if !exe.is_file() {
         return Err(format!("Missing installed player: {}", exe.display()).into());
@@ -292,9 +379,10 @@ fn launch(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched
         pid,
         port,
         csv,
+        stock_vlc: false,
         child,
-        _output: output,
-        _errors: errors,
+        _output: Some(output),
+        _errors: Some(errors),
     })
 }
 
@@ -305,6 +393,15 @@ fn rc(port: u16, command: &str) -> Result<()> {
     stream.write_all(command.as_bytes())?;
     stream.write_all(b"\n")?;
     Ok(())
+}
+
+fn vlc_rc_path(path: &Path) -> Result<String> {
+    let text = path.to_str().ok_or("Video path is not UTF-8")?;
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        Ok(format!(r"\\{rest}"))
+    } else {
+        Ok(text.strip_prefix(r"\\?\").unwrap_or(text).to_owned())
+    }
 }
 
 fn hex(value: &str) -> String {
@@ -599,8 +696,34 @@ impl Session {
         serde_json::to_writer_pretty(&mut metadata_file, &metadata)?;
         metadata_file.write_all(b"\n")?;
         metadata_file.sync_all()?;
-        rc(self.launched.port, "f on")?;
-        rc(self.launched.port, "play")?;
+        if self.launched.stock_vlc {
+            let video = vlc_rc_path(&self.recipe.video)?;
+            rc(self.launched.port, &format!("add {video} :fullscreen"))?;
+            rc(self.launched.port, "f on")?;
+            let start = format!("{}_Start", self.recipe.filename);
+            let deadline = Instant::now() + Duration::from_secs(8);
+            while !self.markers.iter().any(|marker| marker.label == start) {
+                if self.launched.child.try_wait()?.is_some() {
+                    return Err("Stock VLC exited before the video Start marker".into());
+                }
+                if self.recorder.try_wait()?.is_some() {
+                    return Err("XDF recorder exited before the video Start marker".into());
+                }
+                if Instant::now() >= deadline {
+                    return Err("Stock VLC did not start the selected video".into());
+                }
+                match self.receipts.recv_timeout(Duration::from_millis(50)) {
+                    Ok(line) => self.consume_receipt(&line)?,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => {
+                        return Err("XDF recorder receipts closed before the video Start marker".into());
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => {}
+                }
+            }
+        } else {
+            rc(self.launched.port, "f on")?;
+            rc(self.launched.port, "play")?;
+        }
         self.phase = Phase::Running;
         Ok(())
     }
@@ -816,6 +939,12 @@ impl Drop for Session {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn vlc_rc_path_removes_windows_verbatim_prefix() {
+        use std::path::Path;
+        assert_eq!(super::vlc_rc_path(Path::new(r"\\?\C:\video.mp4")).unwrap(), r"C:\video.mp4");
+        assert_eq!(super::vlc_rc_path(Path::new(r"\\?\UNC\server\share\video.mp4")).unwrap(), r"\\server\share\video.mp4");
+    }
     use super::{valid_marker_sequence, validate_variables, Variable};
 
     #[test]

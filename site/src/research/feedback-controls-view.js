@@ -106,7 +106,7 @@ function mappingDisclosure(mapping) {
 export function feedbackAppearanceMarkup() {
   return `
       <section id="preview-quick-appearance" class="preview-quick-appearance" aria-labelledby="preview-appearance-title">
-        <div class="preview-subsection-heading"><h3 id="preview-appearance-title">Appearance</h3></div>
+        <div class="preview-subsection-heading"><h3 id="preview-appearance-title">Appearance</h3><button id="preview-appearance-export" type="button">Export Flubber appearance JSON</button></div>
         <p class="field-help">Feedback type, visibility, transparency and halo appearance are saved.</p>
         <div class="field-grid">
           <label class="check-field"><input id="visual-hide-feedback" type="checkbox"><span><strong>Hide Visual Feedback</strong><br><span class="field-help">Acquisition continues while Grid and Flubber are hidden.</span></span></label>
