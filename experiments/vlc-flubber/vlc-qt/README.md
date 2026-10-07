@@ -3,8 +3,9 @@
 This source modifies the official VLC 3.0.20 Qt interface. It keeps VLC's
 existing Media, Playback, Audio, Video, Subtitle, Tools, View, and Help menus,
 playlist, transport and video child window. The patch adds a black bottom
-Flubber panel, makes the idle central background black, and adds **View →
-Flubber Controls…**. It is separate from the standard Experiment Runner.
+Flubber panel, makes the idle central background black, and adds a top-level
+**Flubber → Settings…** menu. Its dialog holds appearance JSON import, size,
+and position. It is separate from the standard Experiment Runner.
 
 ## Reproducible inputs and outputs
 

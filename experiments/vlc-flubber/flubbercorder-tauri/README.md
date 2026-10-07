@@ -21,12 +21,12 @@ Research Planner and Runner.
 The experimenter and paired phone can Start, Pause, Resume, Stop, and set VLC
 volume from 0–100%. Recorder-driven playback requests fullscreen immediately
 before the original clip starts. The integrated VLC window retains its stock
-menus, playlist, and controls, including View → Flubber Controls for
+menus, playlist, and controls, including Flubber → Settings for
 appearance JSON import and manual Flubber size and position.
 Before Prepare, the experimenter can add up to six custom label/value fields;
 Start writes these as a `flubbercorder-session/v1` `.session.json` file beside
 the XDF. The experiment JSON supplies panel height and input step for a
-controlled session; Flubber appearance is loaded in VLC's own View menu.
+controlled session; Flubber appearance is loaded in VLC's Flubber menu.
 
 ## Phone control
 

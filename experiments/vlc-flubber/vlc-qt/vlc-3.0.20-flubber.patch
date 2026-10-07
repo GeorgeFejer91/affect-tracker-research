@@ -385,18 +385,16 @@ index c567c5b..c049b2d 100644
      void toggleMinimalView( bool );
      void togglePlaylist();
 diff --git a/modules/gui/qt/menus.cpp b/modules/gui/qt/menus.cpp
-index b3ec20c..4716ddf 100644
+index b3ec20c..5f54dbb 100644
 --- a/modules/gui/qt/menus.cpp
 +++ b/modules/gui/qt/menus.cpp
-@@ -505,6 +505,11 @@ QMenu *VLCMenuBar::ViewMenu( intf_thread_t *p_intf, QMenu *current, MainInterfac
- 
-     menu->addSeparator();
- 
-+    /* Minimal View */
-+    menu->addAction( qtr( "Flubber Controls…" ), mi,
-+                     SLOT( showFlubberControls() ) );
-+    menu->addSeparator();
+@@ -342,3 +342,8 @@ void VLCMenuBar::createMenuBar( MainInterface *mi,
+     BAR_DADD( ViewMenu( p_intf, NULL, mi ), qtr( "V&iew" ), 4 );
+-
 +
-     /* Minimal View */
-     action = menu->addAction( qtr( "Mi&nimal Interface" ) );
-     action->setShortcut( qtr( "Ctrl+H" ) );
++    QMenu *flubberMenu = new QMenu( bar );
++    flubberMenu->addAction( qtr( "&Settings…" ), mi,
++                            SLOT( showFlubberControls() ) );
++    addMenuToMainbar( flubberMenu, qtr( "&Flubber" ), bar );
++
+     addMenuToMainbar( HelpMenu( bar ), qtr( "&Help" ), bar );
