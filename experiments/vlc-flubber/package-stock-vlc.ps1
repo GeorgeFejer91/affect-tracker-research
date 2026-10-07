@@ -92,21 +92,29 @@ Copy-Item -LiteralPath $BridgeDllPath -Destination $bridge -Force
 $objdump = Join-Path $MinGwBin 'objdump.exe'
 $qwindows = Join-Path $MinGwBin '..\share\qt5\plugins\platforms\qwindows.dll'
 $vistaStyle = Join-Path $MinGwBin '..\share\qt5\plugins\styles\qwindowsvistastyle.dll'
+$svgIcon = Join-Path $MinGwBin '..\share\qt5\plugins\iconengines\qsvgicon.dll'
+$svgImage = Join-Path $MinGwBin '..\share\qt5\plugins\imageformats\qsvg.dll'
 if (-not (Test-Path -LiteralPath $objdump -PathType Leaf) -or
     -not (Test-Path -LiteralPath $qwindows -PathType Leaf) -or
-    -not (Test-Path -LiteralPath $vistaStyle -PathType Leaf)) {
-    throw 'MinGW objdump or Qt Windows plugins are missing.'
+    -not (Test-Path -LiteralPath $vistaStyle -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $svgIcon -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $svgImage -PathType Leaf)) {
+    throw 'MinGW objdump or Qt Windows/SVG plugins are missing.'
 }
 $platform = Join-Path $stage 'qt5\plugins\platforms\qwindows.dll'
 $style = Join-Path $stage 'qt5\plugins\styles\qwindowsvistastyle.dll'
-New-Item -ItemType Directory -Force -Path (Split-Path -Parent $platform) | Out-Null
-New-Item -ItemType Directory -Force -Path (Split-Path -Parent $style) | Out-Null
-Copy-Item -LiteralPath $qwindows -Destination $platform
-Copy-Item -LiteralPath $vistaStyle -Destination $style
+$iconEngine = Join-Path $stage 'qt5\plugins\iconengines\qsvgicon.dll'
+$imageFormat = Join-Path $stage 'qt5\plugins\imageformats\qsvg.dll'
+foreach ($pair in @(@($qwindows, $platform), @($vistaStyle, $style),
+                   @($svgIcon, $iconEngine), @($svgImage, $imageFormat))) {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $pair[1]) | Out-Null
+    Copy-Item -LiteralPath $pair[0] -Destination $pair[1]
+}
 @('[Paths]', 'Plugins=qt5/plugins') |
     Set-Content -LiteralPath (Join-Path $stage 'qt.conf') -Encoding ascii
 $queue = [Collections.Generic.Queue[string]]::new()
-foreach ($binary in @($launcher, $plugin, $bridge, $platform, $style)) { $queue.Enqueue($binary) }
+foreach ($binary in @($launcher, $plugin, $bridge, $platform, $style,
+                     $iconEngine, $imageFormat)) { $queue.Enqueue($binary) }
 $visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $runtimeDlls = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 while ($queue.Count -gt 0) {
@@ -173,7 +181,9 @@ foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
                    'plugins\gui\libqt_plugin.dll', 'plugins\plugins.dat',
                    'flubber_bridge.dll', 'qt.conf',
                    'qt5\plugins\platforms\qwindows.dll',
-                   'qt5\plugins\styles\qwindowsvistastyle.dll') + @($runtimeDlls | Sort-Object)) {
+                   'qt5\plugins\styles\qwindowsvistastyle.dll',
+                   'qt5\plugins\iconengines\qsvgicon.dll',
+                   'qt5\plugins\imageformats\qsvg.dll') + @($runtimeDlls | Sort-Object)) {
     $path = Join-Path $stage $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Expected package file is missing: $name"
