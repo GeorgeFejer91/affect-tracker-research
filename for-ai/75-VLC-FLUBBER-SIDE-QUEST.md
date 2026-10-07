@@ -1,5 +1,20 @@
 # Native VLC Flubber side quest
 
+## Dedicated top-level Flubber menu, 2026-10-07
+
+The user clarified the desired menu placement with a VLC screenshot. The
+current 0.3.0 Qt player now has a top-level **Flubber** menu between View and
+Help. **Flubber → Settings…** opens all native Flubber controls: appearance
+JSON import, panel height, Flubber size, and horizontal/vertical position.
+The earlier View entry was moved. The pinned patch applied to pristine VLC
+source, and the rebuilt standalone and companion Recorder installers passed
+fresh installs with matching 36-file VLC manifests. Installed idle, playing,
+dialog, and Recorder captures are under
+`experiments/vlc-flubber/build/evidence/top-menu-*.png`. The upgraded player
+also completed the ten-second Recorder trial with 331 affect samples and
+Start/End/Stop markers in XDF. This is the separate VLC side quest and does
+not alter main Runner qualification.
+
 ## Current stock VLC Qt player candidate, 2026-10-07
 
 The approved 0.3.0 side quest now uses the pinned VLC 3.0.20 Qt shell with its

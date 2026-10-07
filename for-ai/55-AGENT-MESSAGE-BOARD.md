@@ -6419,3 +6419,16 @@ matched, and the installed Recorder screen opened with the test recipe. The
 obsolete LibVLC preset-folder control was removed in favor of the native VLC
 View-menu appearance dialog. This verifies package closure and launch; the
 independent native CLI/XDF run is the completed recording evidence.
+
+## VLC top-level Flubber menu follow-up — 2026-10-07
+
+The user clarified that Flubber belongs on VLC's top menu bar. Root moved the
+View-menu action to **Flubber → Settings…** on the same side-quest branch.
+The dialog retains appearance JSON import, panel height, size, and position.
+The pinned patch applied to pristine VLC 3.0.20 source and its Qt module
+built. Both standalone and companion Recorder installers were rebuilt and
+installed; each bundled VLC manifest matched all 36 files. The installed menu
+bar, dialog, idle/playing surfaces, and Recorder hint were captured under
+`experiments/vlc-flubber/build/evidence/top-menu-*.png`. An upgraded installed
+Recorder trial finalized XDF with 331 affect samples and Start/End/Stop.
+No main Runner qualification is implied.

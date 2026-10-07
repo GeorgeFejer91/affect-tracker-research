@@ -1,5 +1,26 @@
 # Stock VLC Flubber integration decision record
 
+## Dedicated Flubber menu follow-up — 2026-10-07
+
+The VLC menu bar now includes **Flubber** between View and Help. Its
+**Settings…** action opens the existing Flubber Controls dialog with appearance
+JSON import, bottom-panel height, Flubber size, and horizontal/vertical
+position. The old View-menu action was moved, leaving VLC's stock menus and
+commands unchanged. The Qt patch applied to a pristine pinned VLC 3.0.20
+source tree and produced the same `menus.cpp` hash as the compiled source.
+
+The rebuilt Qt module was packaged in a fresh standalone installer and the
+companion Flubbercorder installer. Both per-user installations matched all 36
+listed VLC file hashes and used Qt plugin SHA-256
+`B50BD5A55F14903A1501CF3FF392A22966CB14889AC1690CFF0B9C332D1ACCF7`.
+Installed UI Automation enumerated Media, Playback, Audio, Video, Subtitle,
+Tools, View, **Flubber**, Help, and one Settings action beneath Flubber; that
+action opened the dialog. Idle, playing, dialog, and Recorder captures are in
+`build/evidence/top-menu-*.png`. The upgraded installed player completed a
+Recorder/XDF trial with 331 affect samples, a selected CSV, and exact
+Start/End/Stop markers. The Recorder's visible hint points to Flubber →
+Settings and was inspected at 1296×889 and its 760×560 minimum window size.
+
 ## Installed 0.3.0 candidate — 2026-10-07
 
 The pinned VLC 3.0.20 Qt module is patched and built. The resulting player
