@@ -127,6 +127,11 @@ $sourceDestination = Join-Path $stage 'source\vlc-qt'
 New-Item -ItemType Directory -Force -Path $sourceDestination | Out-Null
 $repository = (& git -C $project rev-parse --show-toplevel).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Git repository unavailable for source packaging.' }
+$sourceState = @(& git -C $repository status --porcelain -- 'experiments/vlc-flubber/vlc-qt' 'experiments/vlc-flubber/package-stock-vlc.ps1')
+if ($LASTEXITCODE -ne 0 -or $sourceState.Count -ne 0) {
+    throw 'Commit the VLC Qt integration and package script before staging.'
+}
+$sourceCommit = (& git -C $repository rev-parse HEAD).Trim()
 $sourcePrefix = 'experiments/vlc-flubber/vlc-qt/'
 $trackedFiles = @(& git -C $repository ls-files -- 'experiments/vlc-flubber/vlc-qt')
 if ($LASTEXITCODE -ne 0 -or $trackedFiles.Count -eq 0) {
@@ -151,6 +156,7 @@ $manifest = [ordered]@{
     vlcVersion = '3.0.20'
     officialArchiveSha256 = $archiveHash
     stockQtPluginSha256 = $stockPluginHash
+    sourceCommit = $sourceCommit
     files = [ordered]@{}
 }
 foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
