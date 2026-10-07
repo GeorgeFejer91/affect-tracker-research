@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
 use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{SocketAddr, TcpStream};
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc::{self, Receiver};
@@ -194,9 +194,10 @@ struct Launched {
     pid: u32,
     port: u16,
     csv: PathBuf,
+    stock_vlc: bool,
     child: Child,
-    _output: thread::JoinHandle<()>,
-    _errors: thread::JoinHandle<()>,
+    _output: Option<thread::JoinHandle<()>>,
+    _errors: Option<thread::JoinHandle<()>>,
 }
 
 impl Drop for Launched {
@@ -221,6 +222,70 @@ fn line_value<'a>(lines: &'a [String], prefix: &str) -> Result<&'a str> {
 }
 
 fn launch(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
+    if player_dir.join("vlc.exe").is_file() && player_dir.join("flubber_bridge.dll").is_file() {
+        return launch_stock_vlc(recipe, player_dir, headless);
+    }
+    launch_legacy_player(recipe, player_dir, headless)
+}
+
+fn launch_stock_vlc(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
+    let parent = recipe.video.parent().ok_or("Video has no parent")?;
+    let stem = recipe.video.file_stem().and_then(|s| s.to_str()).ok_or("Video stem is unavailable")?;
+    let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+    let csv = (0..100_u32)
+        .map(|retry| parent.join(format!("{stem}-flubbercorder-{stamp}-{}-{retry}.csv", std::process::id())))
+        .find(|path| !path.exists())
+        .ok_or("No unique affect CSV name available")?;
+    let listener = TcpListener::bind(("127.0.0.1", 0))?;
+    let port = listener.local_addr()?.port();
+    drop(listener);
+    let mut command = Command::new(player_dir.join("vlc.exe"));
+    command
+        .arg("--no-one-instance")
+        .arg("--no-qt-privacy-ask")
+        .arg("--intf=qt")
+        .arg("--extraintf=rc")
+        .arg(format!("--rc-host=127.0.0.1:{port}"))
+        .arg("--rc-quiet")
+        .env("VLC_FLUBBER_CSV_PATH", &csv)
+        .env("VLC_FLUBBER_PANEL_PERCENT", recipe.panel_percent.to_string())
+        .env("VLC_FLUBBER_STEP_PERCENT", recipe.step_percent.to_string())
+        .current_dir(player_dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    if headless {
+        command.arg("--qt-start-minimized");
+    }
+    let mut child = command.spawn()?;
+    let address: SocketAddr = format!("127.0.0.1:{port}").parse()?;
+    let deadline = Instant::now() + Duration::from_secs(8);
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Err(format!("Stock VLC exited before RC readiness: {status}").into());
+        }
+        if TcpStream::connect_timeout(&address, Duration::from_millis(100)).is_ok() {
+            break;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err("Stock VLC did not open its local RC port".into());
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    Ok(Launched {
+        pid: child.id(),
+        port,
+        csv,
+        stock_vlc: true,
+        child,
+        _output: None,
+        _errors: None,
+    })
+}
+
+fn launch_legacy_player(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched> {
     let exe = player_dir.join("FlubberVLC.exe");
     if !exe.is_file() {
         return Err(format!("Missing installed player: {}", exe.display()).into());
@@ -292,9 +357,10 @@ fn launch(recipe: &Recipe, player_dir: &Path, headless: bool) -> Result<Launched
         pid,
         port,
         csv,
+        stock_vlc: false,
         child,
-        _output: output,
-        _errors: errors,
+        _output: Some(output),
+        _errors: Some(errors),
     })
 }
 
@@ -599,8 +665,14 @@ impl Session {
         serde_json::to_writer_pretty(&mut metadata_file, &metadata)?;
         metadata_file.write_all(b"\n")?;
         metadata_file.sync_all()?;
-        rc(self.launched.port, "f on")?;
-        rc(self.launched.port, "play")?;
+        if self.launched.stock_vlc {
+            let video = self.recipe.video.to_str().ok_or("Video path is not UTF-8")?;
+            rc(self.launched.port, &format!("add {video} :fullscreen"))?;
+            rc(self.launched.port, "f on")?;
+        } else {
+            rc(self.launched.port, "f on")?;
+            rc(self.launched.port, "play")?;
+        }
         self.phase = Phase::Running;
         Ok(())
     }
