@@ -33,6 +33,15 @@ before playback and promoted XDF with 331 affect samples and the exact
 now sends the ordinary Win32 path. This is an experimental Windows player
 candidate, not a main Runner research qualification.
 
+The companion Flubbercorder Tauri app also built in release mode with the stock
+VLC package, its Inno installer completed a fresh isolated install, and the
+installed app opened with the chosen test recipe. Its bundled player manifest
+listed 36 files with matching SHA-256 hashes. The Recorder screen now directs
+appearance changes to VLC's View menu and no longer offers the obsolete
+LibVLC preset-folder action. The installed Recorder screen was captured at
+`build/evidence/final-installed-recorder.png`; a complete interactive Tauri
+button-driven recording session was not run in this pass.
+
 Goal: retain the complete VLC 3.0.20 Qt menu and command set, add a persistent
 Flubber surface beneath video on the same black player background, and offer
 **View → Flubber Controls…** for appearance JSON import and manual size/position.

@@ -6,7 +6,7 @@ use flubbercorder_native::{
 use labstream::Query;
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, UdpSocket};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -449,24 +449,6 @@ async fn dispatch(
         return Ok(());
     }
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
-        if action == "open_presets" {
-            let local = std::env::var_os("LOCALAPPDATA").ok_or("LOCALAPPDATA is unavailable")?;
-            let folder = PathBuf::from(local).join("VLC_Flubber_Player/presets");
-            std::fs::create_dir_all(&folder).map_err(|error| error.to_string())?;
-            let default = folder.join("default.flubber.json");
-            if !default.exists() {
-                match std::fs::OpenOptions::new().write(true).create_new(true).open(default) {
-                    Ok(mut file) => file.write_all(b"{\"schema\":\"vlc-flubber-sidequest/v1\",\"panelPercent\":25,\"stepPercent\":10}\n").map_err(|error| error.to_string())?,
-                    Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
-                    Err(error) => return Err(error.to_string()),
-                }
-            }
-            std::process::Command::new("explorer.exe")
-                .arg(folder)
-                .spawn()
-                .map_err(|error| error.to_string())?;
-            return Ok(());
-        }
         if action == "give_phone" {
             let result = give_phone(&authority);
             if let Ok(mut inner) = authority.inner.lock() {

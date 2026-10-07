@@ -6412,3 +6412,10 @@ paths before sending video to VLC. Evidence and claim limits are in
 `experiments/vlc-flubber/STOCK-VLC-INTEGRATION.md`. No main Runner or P1–P7/R1
 qualification is claimed. Physical input and every stock command were not
 exhaustively exercised.
+
+The companion Flubbercorder Tauri release and Inno installer then built and
+installed with this stock VLC package. Its 36 bundled player manifest hashes
+matched, and the installed Recorder screen opened with the test recipe. The
+obsolete LibVLC preset-folder control was removed in favor of the native VLC
+View-menu appearance dialog. This verifies package closure and launch; the
+independent native CLI/XDF run is the completed recording evidence.

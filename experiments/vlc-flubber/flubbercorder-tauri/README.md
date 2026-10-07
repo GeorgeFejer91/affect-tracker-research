@@ -1,13 +1,14 @@
 # Flubbercorder (VLC side project)
 
-This Windows Tauri app is a separate experimenter console for the native VLC
-Flubber player. It loads a `flubbercorder-experiment/v1` JSON, prepares the
-original video, waits for exact Flubber LSL subscriptions before playback, controls
+This Windows Tauri app is a separate experimenter console for the stock VLC
+3.0.20 Qt player with its bottom Flubber panel. It loads a
+`flubbercorder-experiment/v1` JSON, waits for exact Flubber LSL subscriptions
+before playback, controls
 VLC, shows live affect and marker streams, and records an XDF. VLC writes an
 independent `time_s,valence,arousal` CSV beside the played video as a backup;
 that directory must be writable. The app bundles its
 own player and native XDF recorder; Python is not part of this installer.
-The player gives the original file directly to LibVLC. Its native SVG panel
+The player opens the original file through VLC. Its native Flubber panel
 and LSL affect outlet each run at nominal 30 Hz independently of video frame
 rate. The fallback CSV contains 30 Hz video-bounded time, valence, and arousal
 rows. The Recorder is a separate executable. It checks for filename Start/Stop
@@ -19,13 +20,13 @@ Research Planner and Runner.
 
 The experimenter and paired phone can Start, Pause, Resume, Stop, and set VLC
 volume from 0–100%. Recorder-driven playback requests fullscreen immediately
-before the original clip starts. The experimental LibVLC window has keyboard
-controls and a local command endpoint, but not VLC's Qt menus or playlist.
+before the original clip starts. The integrated VLC window retains its stock
+menus, playlist, and controls, including View → Flubber Controls for
+appearance JSON import and manual Flubber size and position.
 Before Prepare, the experimenter can add up to six custom label/value fields;
 Start writes these as a `flubbercorder-session/v1` `.session.json` file beside
-the XDF. The HTML **Open VLC Flubber presets folder** button opens the shared
-player preset directory. Recipe panel and step settings override folder presets
-for controlled sessions.
+the XDF. The experiment JSON supplies panel height and input step for a
+controlled session; Flubber appearance is loaded in VLC's own View menu.
 
 ## Phone control
 
@@ -42,9 +43,10 @@ boundary is in [REMOTE-PROFILE.md](REMOTE-PROFILE.md).
 
 ## Build on Windows
 
-1. Build the pinned player package in `../build/player-package/stage` using
-   the [player runbook](../README.md). The Tauri build checks every binary
-   hash in that package's `manifest.json`.
+1. Build the pinned stock VLC player package in
+   `../build/stock-vlc-package/stage` using
+   [the stock VLC runbook](../vlc-qt/README.md). The Tauri build checks every
+   listed file hash in that package's `manifest.json`.
 2. The checked-in `../flubbercorder/recorder-runtime/` is the native XDF
    recorder. Its C++ source and reproducible build script are in
    `../flubbercorder/recorder-source/`; Python is used only by that build script,

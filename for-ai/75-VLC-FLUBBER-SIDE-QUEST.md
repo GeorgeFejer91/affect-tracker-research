@@ -23,6 +23,15 @@ strict JSON rejection, and manual size/position. This is a VLC side-quest
 candidate; it does not change the main Planner/Runner research qualification
 or claim exhaustive physical-input testing of every VLC command.
 
+The companion Flubbercorder Tauri release build and Inno installer also passed
+in a fresh isolated install. Its bundled stock VLC manifest matched all 36
+listed file hashes, and the installed Recorder opened with the test recipe.
+The obsolete LibVLC preset-folder control was removed; the screen now routes
+appearance setup to the VLC View menu. The installed screen capture is
+`experiments/vlc-flubber/build/evidence/final-installed-recorder.png`. The
+Recorder's full interactive Tauri session remains separate from the completed
+native CLI/XDF trial above.
+
 ## One current VLC line: mouse rating and control markers, 2026-10-06
 
 The current source now keeps the separated LibVLC player and separate
