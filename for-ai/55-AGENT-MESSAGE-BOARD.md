@@ -6336,3 +6336,38 @@ checks confirmed exact CSV/XDF markers and frame counts; current phone pairing
 needs a private IPv4 route, unavailable on this validation PC. VLC's own
 Media > Open File bypasses FFmpeg preparation and is not an automatic-Flubber
 path. No Planner/Runner contract or main-suite qualification is claimed.
+
+## Stock VLC Flubber UI and appearance handoff — 2026-10-07
+
+The direct user goal for the separate VLC side quest requires all stock VLC
+menus/commands, a persistent black idle/video/Flubber surface, a View menu
+Flubber Controls entry, Planner appearance JSON export/import, and manual
+Flubber size/position. Owner: VLC side quest on isolated branch
+`codex/segment-vlc-player-ui`, base `3c6db83`; shared seam: P5 preview-only
+appearance export. No P1–P7/R1 checklist credit or recipe JSON change. The
+source probe and required Qt integration are recorded in
+`experiments/vlc-flubber/STOCK-VLC-INTEGRATION.md`. The historical native
+filter compiles, but direct Media Open File failed to retain added panel
+geometry; its launcher also fails against the current master API. New native
+Qt/unsafe implementation requires the project approval gate before mutation.
+The Planner preview now offers a separate `flubber-appearance.json` download;
+its serializer and Chrome/Edge rendered export were checked in the isolated
+branch. Native VLC import and final UI qualification remain pending.
+
+Pass brief for the cross-app seam: Backend Verification stage. P5-02/P5-06
+provide the validated colors, outline/halo and mappings; this pass adds a
+preview-only appearance export without changing their completed checklist
+claims. The consumer is the separate VLC side quest under `for-ai/75`, with no
+R1/RR credit. Root owns the isolated branch and all source edits. The bounded
+deliverable now is a browser-delivered standalone appearance JSON and contract
+record; evidence due is focused serializer tests, a static Pages build, and
+Chrome/Edge rendered export checks. Native import, the black stock VLC shell,
+full command parity, and final player visual qualification are deferred pending
+the required new-boundary approval. UI and function reviewers inspect this
+patch read-only in the same worktree; no parallel writer shares its files.
+UI_VERIFY and FUNCTION_VERIFY reported a pass for that narrow Planner export
+seam after the response-grid coupling and text-width measurement were fixed.
+The native VLC player still accepts only its older panel/step preset JSON and
+cannot read `vlc-flubber-appearance/v1`; no native or installed visual claim
+follows. Full Research tests passed 1,231/1,231, with Pages and desktop source
+build verifiers passing in this isolated branch.
