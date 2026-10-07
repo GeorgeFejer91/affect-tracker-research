@@ -712,6 +712,34 @@ public:
 protected:
     bool eventFilter( QObject *watched, QEvent *event ) Q_DECL_OVERRIDE
     {
+        if( ( event->type() == QEvent::KeyPress || event->type() == QEvent::ShortcutOverride ) &&
+            !QApplication::activeModalWidget() && !QApplication::activePopupWidget() &&
+            ratingWindowIsForeground() )
+        {
+            QWidget *target = qobject_cast<QWidget *>( watched );
+            if( target && target->window() == window() )
+            {
+                QKeyEvent *key = static_cast<QKeyEvent *>( event );
+                const Qt::KeyboardModifiers modifiers = key->modifiers() & ~Qt::KeypadModifier;
+                int digit = int( key->nativeVirtualKey() ) - 0x31;
+                if( digit < 0 || digit > 2 ) digit = key->key() - Qt::Key_1;
+                if( digit >= 0 && digit < 3 &&
+                    modifiers == ( Qt::ControlModifier | Qt::ShiftModifier ) )
+                {
+                    if( event->type() == QEvent::ShortcutOverride ) { key->accept(); return true; }
+                    setPrimary( static_cast<FeedbackKind>( digit ) );
+                    key->accept(); return true;
+                }
+                if( digit >= 0 && digit < 3 &&
+                    modifiers == ( Qt::ControlModifier | Qt::AltModifier ) )
+                {
+                    if( event->type() == QEvent::ShortcutOverride ) { key->accept(); return true; }
+                    const FeedbackKind kind = static_cast<FeedbackKind>( digit );
+                    setVisible( kind, !visible( kind ) );
+                    key->accept(); return true;
+                }
+            }
+        }
         if( arrowMode_ && event->type() == QEvent::KeyPress &&
             !QApplication::activeModalWidget() && !QApplication::activePopupWidget() &&
             ratingWindowIsForeground() && ( !rateAllowed_ || rateAllowed_() ) )

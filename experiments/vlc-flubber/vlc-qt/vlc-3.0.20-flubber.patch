@@ -527,7 +527,7 @@ diff --git a/modules/gui/qt/menus.cpp b/modules/gui/qt/menus.cpp
 index b3ec20c..ff4293f 100644
 --- a/modules/gui/qt/menus.cpp
 +++ b/modules/gui/qt/menus.cpp
-@@ -341,6 +341,62 @@ void VLCMenuBar::createMenuBar( MainInterface *mi,
+@@ -341,6 +341,64 @@ void VLCMenuBar::createMenuBar( MainInterface *mi,
      /* View menu, a bit different */
      BAR_DADD( ViewMenu( p_intf, NULL, mi ), qtr( "V&iew" ), 4 );
  
@@ -545,6 +545,7 @@ index b3ec20c..ff4293f 100644
 +        feedbackActions[i] = flubberMenu->addAction( qtr( feedbackNames[i] ) );
 +        feedbackActions[i]->setCheckable( true );
 +        feedbackActions[i]->setShortcut( QKeySequence( QString( "Ctrl+Shift+%1" ).arg( i + 1 ) ) );
++        feedbackActions[i]->setShortcutContext( Qt::WidgetShortcut );
 +        feedbackGroup->addAction( feedbackActions[i] );
 +        QObject::connect( feedbackActions[i], &QAction::triggered, mi,
 +                          [mi, i]() { mi->setFlubberPrimary( i ); } );
@@ -556,6 +557,7 @@ index b3ec20c..ff4293f 100644
 +        visibleActions[i] = shown->addAction( qtr( feedbackNames[i] ) );
 +        visibleActions[i]->setCheckable( true );
 +        visibleActions[i]->setShortcut( QKeySequence( QString( "Ctrl+Alt+%1" ).arg( i + 1 ) ) );
++        visibleActions[i]->setShortcutContext( Qt::WidgetShortcut );
 +        QAction *action = visibleActions[i];
 +        QObject::connect( visibleActions[i], &QAction::triggered, mi,
 +                          [mi, i, action]() {

@@ -34,8 +34,23 @@ preserves source attribution. The runtime package includes all nine atlases.
 
 The isolated Qt panel check validates the three-layer render, face preset
 selection, v2 JSON round trip, rejection of invalid settings, input switching,
-and Planner appearance import. Installed-player visual and CLI qualification
-for this update is recorded separately after the rebuilt installers are tested.
+and Planner appearance import.
+
+The installed PNG candidate shows the stock VLC 3.0.20 menu wrapper and
+transport controls, black idle video area, and all three feedback elements on
+the matching black bottom panel in `build/evidence/final-installed-png-idle.png`.
+`final-installed-png-playing.png` shows direct video above that panel.
+`final-installed-png-settings.png`, `-face-settings.png`, and `-mappings.png`
+show the native detailed controls. Startup flags selected Flubber, a synthetic
+portrait, and arrow input. VLC RC commands changed the visible layers and
+selected another portrait in the running player. Physical Ctrl+Shift+2
+changed the persisted main feedback to grid, Ctrl+Alt+3 hid face, and
+Ctrl+Shift+A selected arrow input. The isolated panel test passes with PNG
+assets, including all-layer rendering and JSON validation. Each freshly
+installed standalone and Flubbercorder player manifest listed 49 matching
+files, including all nine PNG atlases. This verifies the side quest on this
+Windows machine; it is not main Runner research qualification or exhaustive
+coverage of every stock VLC command.
 
 ## Dedicated Flubber menu follow-up — 2026-10-07
 

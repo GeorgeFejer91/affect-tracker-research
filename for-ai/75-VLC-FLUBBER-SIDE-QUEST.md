@@ -13,7 +13,10 @@ appearance JSON and reads/writes full `vlc-feedback-settings/v2` files. Qt
 startup flags and VLC's loopback RC interface support commands while running.
 The pinned native Qt patch and isolated panel test compile, including a
 three-layer render, JSON round trip, face selection, and invalid-file rejection.
-Installed-player and Recorder package verification follows this source pass.
+The installed VLC and Flubbercorder bundles each matched a 49-file manifest
+with nine lossless PNG atlases. Installed captures show stock menus, controls,
+black idle/player surfaces, direct video, and all three feedback modes;
+physical numeric and input hotkeys plus live RC commands changed the player.
 This side-quest extension does not reactivate archived Face/Photoatlas in the
 main Planner/Runner application or change its v1 research qualification.
 

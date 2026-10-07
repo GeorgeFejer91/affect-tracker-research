@@ -6442,6 +6442,9 @@ and a GUI-queued VLC RC command. The panel renders the archived 21×21
 synthetic face atlas and both other layers together, with per-layer layout,
 detailed settings pages, and v1/v2 JSON import/export. The focused panel check
 passes and Planner's already implemented standalone appearance export passed
-its four targeted tests. Installer and installed-window verification are the
-next gates. This work belongs only to the separate VLC side quest; it does not
+its four targeted tests. The installed PNG player and Flubbercorder each
+matched a 49-file manifest. Stock menus/controls, black idle area, three-layer
+panel, detailed settings, direct video, RC changes, and numeric/input hotkeys
+were checked; captures and limits are in the stock integration decision record.
+This work belongs only to the separate VLC side quest; it does not
 alter the main Planner/Runner face-feature boundary.
