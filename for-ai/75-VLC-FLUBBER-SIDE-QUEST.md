@@ -1,5 +1,22 @@
 # Native VLC Flubber side quest
 
+## Three simultaneous feedback modes, 2026-10-07
+
+The user extended the experimental stock VLC player with three independently
+visible elements: Classic Flubber, a 2D affect grid, and the archived
+playground's 21×21 synthetic photo-face transition matrix. Main-feedback
+hotkeys Ctrl+Shift+1/2/3 select the prominent element; Ctrl+Alt+1/2/3 toggle
+visibility, allowing all three at once. Flubber → Settings exposes panel and
+per-element layout, every v1 appearance field, grid detail, portrait preset,
+face transition speed, and mouse/arrow input. It imports Planner's standalone
+appearance JSON and reads/writes full `vlc-feedback-settings/v2` files. Qt
+startup flags and VLC's loopback RC interface support commands while running.
+The pinned native Qt patch and isolated panel test compile, including a
+three-layer render, JSON round trip, face selection, and invalid-file rejection.
+Installed-player and Recorder package verification follows this source pass.
+This side-quest extension does not reactivate archived Face/Photoatlas in the
+main Planner/Runner application or change its v1 research qualification.
+
 ## Dedicated top-level Flubber menu, 2026-10-07
 
 The user clarified the desired menu placement with a VLC screenshot. The

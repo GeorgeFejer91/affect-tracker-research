@@ -6432,3 +6432,16 @@ bar, dialog, idle/playing surfaces, and Recorder hint were captured under
 `experiments/vlc-flubber/build/evidence/top-menu-*.png`. An upgraded installed
 Recorder trial finalized XDF with 331 affect samples and Start/End/Stop.
 No main Runner qualification is implied.
+
+## VLC three-feedback side-quest implementation — 2026-10-07
+
+Root owns the stock VLC side-quest extension on `codex/segment-vlc-player-ui`.
+The pinned Qt patch compiles with top-level menu hotkeys for primary feedback,
+independent Flubber/grid/photo-face visibility, input mode, startup options,
+and a GUI-queued VLC RC command. The panel renders the archived 21×21
+synthetic face atlas and both other layers together, with per-layer layout,
+detailed settings pages, and v1/v2 JSON import/export. The focused panel check
+passes and Planner's already implemented standalone appearance export passed
+its four targeted tests. Installer and installed-window verification are the
+next gates. This work belongs only to the separate VLC side quest; it does not
+alter the main Planner/Runner face-feature boundary.

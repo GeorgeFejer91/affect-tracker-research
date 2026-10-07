@@ -98,6 +98,35 @@ VLC 3.0.20's stock `oldrc` interface supports
 `pause`, `stop`, `volume`, `is_playing`, and `f on|off` commands. An armed Recorder
 can launch idle VLC, wait for the two LSL outlets, then send `add <media>`.
 
+The Flubber menu adds **Main feedback** shortcuts Ctrl+Shift+1/2/3 for
+Flubber, 2D grid, and face morph. Ctrl+Alt+1/2/3 independently shows or hides
+each element, so all three can appear together. Ctrl+Shift+A and Ctrl+Shift+M
+select arrow and mouse input. **Flubber → Settings…** holds the detailed
+appearance, face preset, and layout controls.
+
+Launch VLC with `--flubber-settings=<absolute JSON path>` to load a settings
+file. `--flubber-primary=flubber|grid|face`, `--flubber-input=arrows|mouse`,
+and `--flubber-face=photo-reference-v3|photo-synthetic-01..08` override their
+respective settings afterward. These are Qt interface options and work with
+the packaged player.
+
+For a running player, start VLC with loopback RC enabled, then use
+`flubberctl.ps1 -Port <port> -Command '<command>'`. The script sends the
+following stock RC extension commands to that instance:
+
+```text
+flubber primary flubber|grid|face
+flubber input arrows|mouse
+flubber visible flubber|grid|face on|off
+flubber face photo-reference-v3|photo-synthetic-01..08
+flubber load <absolute JSON path>
+```
+
+Example: `flubberctl.ps1 -Port 42123 -Command 'visible grid on'`. The existing
+VLC RC interface is the command transport. The Qt callback queues state
+changes to the GUI thread; malformed commands and invalid settings show an
+error in the player.
+
 ## Native lifecycle audit
 
 - Qt creates `FlubberPanel` and `FlubberBridge` on the GUI thread. The panel's

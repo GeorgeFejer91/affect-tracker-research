@@ -53,8 +53,7 @@ int main( int argc, char **argv )
     FlubberPanel redPanel( &settings );
     redPanel.resize( 640, redPanel.height() ); redPanel.show(); app.processEvents();
     const QImage redImage = redPanel.grab().toImage();
-    if( redImage.pixelColor( 320, 65 ) != QColor( "#ff0000" ) ||
-        redImage.pixelColor( 592, 65 ) != QColor( "#00ff00" ) ) return 10;
+    if( redImage.pixelColor( 320, 65 ) != QColor( "#ff0000" ) ) return 10;
     visual.insert( "transparency", 1 );
     appearance.insert( "visual", visual );
     QFile transparent( temp.filePath( "transparent.json" ) );
@@ -66,18 +65,21 @@ int main( int argc, char **argv )
     if( clearPanel.grab().toImage().pixelColor( 320, 65 ) != QColor( Qt::black ) ) return 12;
     QTimer::singleShot( 0, &app, [&]() {
         QDialog *dialog = qobject_cast<QDialog *>( QApplication::activeModalWidget() );
-        if( !dialog ) return;
-        const QList<QSpinBox *> boxes = dialog->findChildren<QSpinBox *>();
-        if( boxes.size() != 4 ) return;
-        boxes[0]->setValue( 200 ); boxes[1]->setValue( 80 );
-        boxes[2]->setValue( 25 ); boxes[3]->setValue( 75 );
+        if( !dialog ) { std::fprintf( stderr, "No modal dialog\n" ); return; }
+        QSpinBox *height = dialog->findChild<QSpinBox *>( "flubber-panel-height" );
+        QSpinBox *size = dialog->findChild<QSpinBox *>( "flubber-layer-0-size" );
+        QSpinBox *x = dialog->findChild<QSpinBox *>( "flubber-layer-0-x" );
+        QSpinBox *y = dialog->findChild<QSpinBox *>( "flubber-layer-0-y" );
+        if( !height || !size || !x || !y ) { dialog->reject(); return; }
+        height->setValue( 200 ); size->setValue( 80 );
+        x->setValue( 25 ); y->setValue( 75 );
         dialog->accept();
     } );
     panel.showControls( NULL );
     if( settings.value( "Flubber/panelHeight" ).toInt() != 200 ||
-        settings.value( "Flubber/sizePercent" ).toInt() != 80 ||
-        settings.value( "Flubber/xPercent" ).toInt() != 25 ||
-        settings.value( "Flubber/yPercent" ).toInt() != 75 ) return 13;
+        settings.value( "Flubber/layers/flubber/size" ).toInt() != 80 ||
+        settings.value( "Flubber/layers/flubber/x" ).toInt() != 25 ||
+        settings.value( "Flubber/layers/flubber/y" ).toInt() != 75 ) return 13;
     qputenv( "VLC_FLUBBER_STEP_PERCENT", "20" );
     const auto ratioCheck = [&]( const char *ratio, int expected ) {
         qputenv( "VLC_FLUBBER_PANEL_PERCENT", ratio );
@@ -114,6 +116,32 @@ int main( int argc, char **argv )
     };
     if( !ratioCheck( "100", 400 ) || !ratioCheck( "10", 73 ) ) return 14;
     if( settings.value( "Flubber/panelHeight" ).toInt() != 200 ) return 15;
+    panel.setLayout( FlubberPanel::GridKind, { true, 45, 18, 50 } );
+    panel.setLayout( FlubberPanel::FaceKind, { true, 45, 82, 50 } );
+    panel.setPrimary( FlubberPanel::GridKind );
+    if( panel.primary() != FlubberPanel::GridKind || !panel.visible( FlubberPanel::FaceKind ) ||
+        !panel.visible( FlubberPanel::FlubberKind ) ) return 16;
+    QString faceError;
+    if( !panel.setFaceId( "photo-synthetic-01", &faceError ) ) return 17;
+    panel.resize( 900, panel.height() ); app.processEvents();
+    const QImage three = panel.grab().toImage();
+    three.save( QFileInfo( QString::fromLocal8Bit( argv[2] ) ).dir().filePath( "three-layers.png" ) );
+    if( three.pixelColor( 0, 0 ) != QColor( Qt::black ) ||
+        three.pixelColor( 162, 100 ) == QColor( Qt::black ) ||
+        three.pixelColor( 738, 100 ) == QColor( Qt::black ) ) return 18;
+    const QString fullSettings = temp.filePath( "full-settings.json" );
+    if( !panel.saveSettingsFile( fullSettings, error ) ) return 19;
+    FlubberPanel restored( &settings );
+    if( !restored.loadSettingsFile( fullSettings, error ) ||
+        restored.primary() != FlubberPanel::GridKind ||
+        restored.faceId() != QLatin1String( "photo-synthetic-01" ) ||
+        !restored.visible( FlubberPanel::FaceKind ) ) return 20;
+    QJsonObject invalid = panel.settingsJson(); invalid.insert( "primary", "unknown" );
+    QFile invalidFile( temp.filePath( "invalid-settings.json" ) );
+    if( !invalidFile.open( QIODevice::WriteOnly ) ) return 21;
+    invalidFile.write( QJsonDocument( invalid ).toJson() ); invalidFile.close();
+    if( restored.loadSettingsFile( invalidFile.fileName(), error ) ||
+        restored.primary() != FlubberPanel::GridKind ) return 22;
     qunsetenv( "VLC_FLUBBER_PANEL_PERCENT" );
     qunsetenv( "VLC_FLUBBER_STEP_PERCENT" );
     return 0;

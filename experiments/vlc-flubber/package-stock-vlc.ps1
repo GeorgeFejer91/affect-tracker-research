@@ -150,6 +150,21 @@ $sourceState = @(& git -C $repository status --porcelain -- 'experiments/vlc-flu
 if ($LASTEXITCODE -ne 0 -or $sourceState.Count -ne 0) {
     throw 'Commit the VLC Qt integration and package script before staging.'
 }
+$faceSource = Join-Path $project 'assets\face'
+$faceDestination = Join-Path $stage 'assets\face'
+$faceFiles = @('vlc-face-atlases.json', 'NOTICE.md', 'photo-atlas-packs-v1.json',
+    'affect-face-atlas-v3.json', 'photo-reference-v3.jpg') +
+    @(1..8 | ForEach-Object { 'photo-synthetic-{0:D2}.jpg' -f $_ })
+$assetState = @(& git -C $repository status --porcelain -- 'experiments/vlc-flubber/assets/face')
+if ($LASTEXITCODE -ne 0 -or $assetState.Count -ne 0) {
+    throw 'Commit the face atlas assets before staging.'
+}
+New-Item -ItemType Directory -Force -Path $faceDestination | Out-Null
+foreach ($name in $faceFiles) {
+    $from = Join-Path $faceSource $name
+    if (-not (Test-Path -LiteralPath $from -PathType Leaf)) { throw "Face asset missing: $name" }
+    Copy-Item -LiteralPath $from -Destination (Join-Path $faceDestination $name)
+}
 $sourceCommit = (& git -C $repository rev-parse HEAD).Trim()
 $sourcePrefix = 'experiments/vlc-flubber/vlc-qt/'
 $trackedFiles = @(& git -C $repository ls-files -- 'experiments/vlc-flubber/vlc-qt')
@@ -185,7 +200,8 @@ foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
                    'qt5\plugins\platforms\qwindows.dll',
                    'qt5\plugins\styles\qwindowsvistastyle.dll',
                    'qt5\plugins\iconengines\qsvgicon.dll',
-                   'qt5\plugins\imageformats\qsvg.dll') + @($runtimeDlls | Sort-Object)) {
+                   'qt5\plugins\imageformats\qsvg.dll') + @($runtimeDlls | Sort-Object) +
+                   @($faceFiles | ForEach-Object { Join-Path 'assets\face' $_ })) {
     $path = Join-Path $stage $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Expected package file is missing: $name"

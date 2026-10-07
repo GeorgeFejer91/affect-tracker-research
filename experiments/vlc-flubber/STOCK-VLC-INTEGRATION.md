@@ -1,5 +1,41 @@
 # Stock VLC Flubber integration decision record
 
+## Three-feedback update — 2026-10-07
+
+The side-quest player now has three independent feedback layers in its native
+black bottom panel: Classic Flubber, a 2D affect grid, and the archived
+playground's 21×21 smooth photo-face transition matrix. Each layer has its own
+visibility, size, and normalized X/Y position. Selecting the main feedback
+swaps its placement with the previous main layer; other visible layers remain
+available. The default shows Flubber in the center, with optional grid and
+face positions at the left and right. The portrait selector offers the original
+synthetic atlas and eight archived synthetic variants. The face mapping
+bilinearly mixes the four adjacent cells while an adjustable transition rate
+eases toward the current affect.
+
+The top-level **Flubber** menu retains stock VLC menus and commands. It adds
+main-feedback shortcuts Ctrl+Shift+1/2/3, independent layer visibility
+shortcuts Ctrl+Alt+1/2/3, and input shortcuts Ctrl+Shift+A/M. Its Settings
+dialog has Display, Flubber, Colors, Mappings, 2D grid, and Face morph pages,
+covering all v1 appearance fields and the player layout. It imports Planner's
+strict `vlc-flubber-appearance/v1` file, exports that appearance alone, and
+imports/exports `vlc-feedback-settings/v2` for the complete player state. The
+Planner's separate appearance-only button and serializer were already present;
+its focused tests pass.
+
+Startup flags set the primary layer, input mode, face preset, and settings
+file. A running player accepts matching commands through its loopback VLC RC
+interface with `vlc-qt/flubberctl.ps1`. This uses VLC's existing command
+transport and queues changes to the Qt GUI thread. Face atlas JPEGs are derived
+from the project's archived WebP assets and listed with source and derived
+SHA-256 hashes in `assets/face/vlc-face-atlases.json`; `assets/face/NOTICE.md`
+preserves source attribution. The runtime package includes all nine atlases.
+
+The isolated Qt panel check validates the three-layer render, face preset
+selection, v2 JSON round trip, rejection of invalid settings, input switching,
+and Planner appearance import. Installed-player visual and CLI qualification
+for this update is recorded separately after the rebuilt installers are tested.
+
 ## Dedicated Flubber menu follow-up — 2026-10-07
 
 The VLC menu bar now includes **Flubber** between View and Help. Its
