@@ -253,7 +253,7 @@ index 6e66afb..40d0601 100644
          controls );
  
      /* Visualisation, disabled for now, they SUCK */
-@@ -530,6 +578,85 @@ void MainInterface::createMainWidget( QSettings *creationSettings )
+@@ -530,6 +578,101 @@ void MainInterface::createMainWidget( QSettings *creationSettings )
          setWindowFlags( windowFlags() | Qt::WindowStaysOnTopHint );
  }
  
@@ -264,6 +264,22 @@ index 6e66afb..40d0601 100644
 +        flubberPanel->stopRating();
 +        flubberPanel->showControls( this );
 +    }
++}
++
++bool MainInterface::flubberUsesArrows() const
++{
++    return flubberPanel ? flubberPanel->arrowMode() :
++        getSettings()->value( "Flubber/inputMode", "mouse" ).toString() == QLatin1String( "arrows" );
++}
++
++void MainInterface::useFlubberArrows()
++{
++    if( flubberPanel ) flubberPanel->setArrowMode( true );
++}
++
++void MainInterface::useFlubberMouse()
++{
++    if( flubberPanel ) flubberPanel->setArrowMode( false );
 +}
 +
 +void MainInterface::sampleFlubber()
@@ -339,7 +355,7 @@ index 6e66afb..40d0601 100644
  inline void MainInterface::initSystray()
  {
      bool b_systrayAvailable = QSystemTrayIcon::isSystemTrayAvailable();
-@@ -745,6 +872,8 @@ void MainInterface::getVideoSlot( struct vout_window_t *p_wnd,
+@@ -745,6 +888,8 @@ void MainInterface::getVideoSlot( struct vout_window_t *p_wnd,
      {
          videoWidget = new VideoWidget( p_intf, stackCentralW );
          stackCentralW->addWidget( videoWidget );
@@ -374,11 +390,14 @@ index c567c5b..c049b2d 100644
      BackgroundWidget    *bgWidget;
      PlaylistWidget      *playlistWidget;
      //VisualSelector      *visualSelector;
-@@ -200,6 +208,9 @@ protected:
+@@ -200,6 +208,12 @@ protected:
      int i_kc_offset;
  
  public slots:
 +    void showFlubberControls();
++    bool flubberUsesArrows() const;
++    void useFlubberArrows();
++    void useFlubberMouse();
 +    void sampleFlubber();
 +    void flubberPlaybackStateChanged( int state );
      void dockPlaylist( bool b_docked = true );
@@ -388,13 +407,26 @@ diff --git a/modules/gui/qt/menus.cpp b/modules/gui/qt/menus.cpp
 index b3ec20c..5f54dbb 100644
 --- a/modules/gui/qt/menus.cpp
 +++ b/modules/gui/qt/menus.cpp
-@@ -342,3 +342,8 @@ void VLCMenuBar::createMenuBar( MainInterface *mi,
+@@ -342,3 +342,21 @@ void VLCMenuBar::createMenuBar( MainInterface *mi,
      BAR_DADD( ViewMenu( p_intf, NULL, mi ), qtr( "V&iew" ), 4 );
 -
 +
 +    QMenu *flubberMenu = new QMenu( bar );
 +    flubberMenu->addAction( qtr( "&Settings…" ), mi,
 +                            SLOT( showFlubberControls() ) );
++    flubberMenu->addSeparator();
++    QActionGroup *flubberInput = new QActionGroup( flubberMenu );
++    QAction *arrowInput = flubberMenu->addAction( qtr( "&Arrow-key control" ), mi,
++                                                 SLOT( useFlubberArrows() ) );
++    arrowInput->setShortcut( QKeySequence( "Ctrl+Shift+A" ) );
++    arrowInput->setCheckable( true );
++    flubberInput->addAction( arrowInput );
++    QAction *mouseInput = flubberMenu->addAction( qtr( "&Mouse control" ), mi,
++                                                 SLOT( useFlubberMouse() ) );
++    mouseInput->setShortcut( QKeySequence( "Ctrl+Shift+M" ) );
++    mouseInput->setCheckable( true );
++    flubberInput->addAction( mouseInput );
++    ( mi->flubberUsesArrows() ? arrowInput : mouseInput )->setChecked( true );
 +    addMenuToMainbar( flubberMenu, qtr( "&Flubber" ), bar );
 +
      addMenuToMainbar( HelpMenu( bar ), qtr( "&Help" ), bar );

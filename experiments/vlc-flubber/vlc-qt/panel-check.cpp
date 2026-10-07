@@ -96,7 +96,21 @@ int main( int argc, char **argv )
         if( sessionPanel.height() != expected ) return false;
         QKeyEvent right( QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier );
         QApplication::sendEvent( &sessionPanel, &right );
-        return qFuzzyCompare( sessionPanel.valence() + 1.f, 1.f );
+        if( !qFuzzyCompare( sessionPanel.valence() + 1.f, 1.f ) ) return false;
+        sessionPanel.setRateAllowedHandler( []() { return true; } );
+        sessionPanel.setArrowMode( true );
+        if( !sessionPanel.handleArrowKey( &right ) ||
+            !qFuzzyCompare( sessionPanel.valence() + 1.f, 1.2f ) ) return false;
+        sessionPanel.setVideoAffect( -.8, -.8 );
+        if( !qFuzzyCompare( sessionPanel.valence() + 1.f, 1.2f ) ) return false;
+        QKeyEvent modified( QEvent::KeyPress, Qt::Key_Right, Qt::ControlModifier );
+        if( sessionPanel.handleArrowKey( &modified ) ) return false;
+        sessionPanel.setArrowMode( false );
+        if( sessionPanel.handleArrowKey( &right ) ) return false;
+        sessionPanel.setVideoAffect( -.5, .5 );
+        return qFuzzyCompare( sessionPanel.valence() + 1.f, .5f ) &&
+               qFuzzyCompare( sessionPanel.arousal() + 1.f, 1.5f ) &&
+               settings.value( "Flubber/inputMode" ).toString() == QLatin1String( "mouse" );
     };
     if( !ratioCheck( "100", 400 ) || !ratioCheck( "10", 73 ) ) return 14;
     if( settings.value( "Flubber/panelHeight" ).toInt() != 200 ) return 15;

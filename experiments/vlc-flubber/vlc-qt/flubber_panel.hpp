@@ -51,12 +51,13 @@ public:
         : QWidget( parent ), settings_( settings ), affectX_( 0 ), affectY_( 0 ),
           phase_( 0 ), sizePercent_( 65 ), xPercent_( 50 ), yPercent_( 50 ),
           panelHeight_( 130 ), panelPercent_( -1 ), stepPercent_( 10 ), referenceSurface_( NULL ),
+          arrowMode_( settings_->value( "Flubber/inputMode", "mouse" ).toString() == QLatin1String( "arrows" ) ),
           ratingActive_( false ), capturePending_( false ), cursorHideCalls_( 0 )
     {
         setObjectName( "vlc-flubber-panel" );
         setMouseTracking( true );
         setFocusPolicy( Qt::ClickFocus );
-        setToolTip( QObject::tr( "Click to rate with relative mouse movement; Escape releases the pointer." ) );
+        updateInputTooltip();
         setAutoFillBackground( true );
         QPalette p = palette();
         p.setColor( QPalette::Window, Qt::black );
@@ -126,9 +127,34 @@ public:
     QString appearanceLoadError() const { return appearanceLoadError_; }
     bool ratingActive() const { return ratingActive_; }
     void stopRating() { releaseRating(); }
+    bool arrowMode() const { return arrowMode_; }
+    void setArrowMode( bool enabled )
+    {
+        releaseRating();
+        arrowMode_ = enabled;
+        settings_->setValue( "Flubber/inputMode", enabled ? "arrows" : "mouse" );
+        updateInputTooltip();
+        if( enabled && ratingWindowIsForeground() ) setFocus( Qt::ShortcutFocusReason );
+    }
     void setVideoAffect( double valence, double arousal )
     {
-        if( !ratingActive_ ) setAffect( valence, arousal );
+        if( !arrowMode_ && !ratingActive_ ) setAffect( valence, arousal );
+    }
+    bool handleArrowKey( QKeyEvent *event )
+    {
+        if( !arrowMode_ || ( rateAllowed_ && !rateAllowed_() ) ||
+            ( event->modifiers() & ~Qt::KeypadModifier ) ) return false;
+        const double step = stepPercent_ / 100.0;
+        switch( event->key() )
+        {
+            case Qt::Key_Left: setAffect( affectX_ - step, affectY_ ); break;
+            case Qt::Key_Right: setAffect( affectX_ + step, affectY_ ); break;
+            case Qt::Key_Up: setAffect( affectX_, affectY_ + step ); break;
+            case Qt::Key_Down: setAffect( affectX_, affectY_ - step ); break;
+            default: return false;
+        }
+        event->accept();
+        return true;
     }
     void setInterruptHandler( const std::function<void()> &handler ) { interrupted_ = handler; }
     void setRateAllowedHandler( const std::function<bool()> &handler ) { rateAllowed_ = handler; }
@@ -274,6 +300,14 @@ public:
 protected:
     bool eventFilter( QObject *watched, QEvent *event ) Q_DECL_OVERRIDE
     {
+        if( arrowMode_ && event->type() == QEvent::KeyPress &&
+            !QApplication::activeModalWidget() && !QApplication::activePopupWidget() &&
+            ratingWindowIsForeground() && ( !rateAllowed_ || rateAllowed_() ) )
+        {
+            QWidget *target = qobject_cast<QWidget *>( watched );
+            if( target && target->window() == window() &&
+                handleArrowKey( static_cast<QKeyEvent *>( event ) ) ) return true;
+        }
         if( ratingActive_ && ( event->type() == QEvent::ApplicationDeactivate ||
             ( watched == window() && event->type() == QEvent::WindowDeactivate ) ) )
             interruptRating();
@@ -288,20 +322,11 @@ protected:
         {
             releaseRating(); event->accept(); return;
         }
-        if( !ratingActive_ ) { QWidget::keyPressEvent( event ); return; }
-        const double step = stepPercent_ / 100.0;
-        switch( event->key() )
-        {
-            case Qt::Key_Left: setAffect( affectX_ - step, affectY_ ); break;
-            case Qt::Key_Right: setAffect( affectX_ + step, affectY_ ); break;
-            case Qt::Key_Up: setAffect( affectX_, affectY_ + step ); break;
-            case Qt::Key_Down: setAffect( affectX_, affectY_ - step ); break;
-            default: QWidget::keyPressEvent( event ); return;
-        }
-        event->accept();
+        QWidget::keyPressEvent( event );
     }
     void mouseMoveEvent( QMouseEvent *event ) Q_DECL_OVERRIDE
     {
+        if( arrowMode_ ) { QWidget::mouseMoveEvent( event ); return; }
         if( ratingActive_ )
         {
             const QPoint center = mapToGlobal( rect().center() );
@@ -322,7 +347,7 @@ protected:
     }
     void mousePressEvent( QMouseEvent *event ) Q_DECL_OVERRIDE
     {
-        if( event->button() == Qt::LeftButton && !ratingActive_ )
+        if( event->button() == Qt::LeftButton && !arrowMode_ && !ratingActive_ )
         {
             capturePending_ = true;
             event->accept();
@@ -436,6 +461,12 @@ protected:
     }
 
 private:
+    void updateInputTooltip()
+    {
+        setToolTip( arrowMode_
+            ? QObject::tr( "Arrow-key control is active. Use Ctrl+Shift+M for mouse control." )
+            : QObject::tr( "Mouse control is active. Click to capture the pointer; Escape releases it. Use Ctrl+Shift+A for arrow keys." ) );
+    }
     bool ratingWindowIsForeground() const
     {
 #ifdef Q_OS_WIN
@@ -650,6 +681,7 @@ private:
     int sizePercent_, xPercent_, yPercent_, panelHeight_;
     int panelPercent_, stepPercent_;
     QWidget *referenceSurface_; // VLC owns the sibling central surface
+    bool arrowMode_;
     bool ratingActive_;
     bool capturePending_;
     int cursorHideCalls_;
