@@ -1,7 +1,10 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
-    [string]$QtPluginPath
+    [string]$QtPluginPath,
+    [Parameter(Mandatory = $true)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string]$BridgeDllPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -69,6 +72,7 @@ Copy-Item -Path (Join-Path $vlc '*') -Destination $stage -Recurse -Force
 
 $plugin = Join-Path $stage 'plugins\gui\libqt_plugin.dll'
 Copy-Item -LiteralPath $QtPluginPath -Destination $plugin -Force
+Copy-Item -LiteralPath $BridgeDllPath -Destination (Join-Path $stage 'flubber_bridge.dll') -Force
 
 # VLC's plugin cache embeds module metadata and must match the replacement DLL.
 $cachegen = Join-Path $stage 'vlc-cache-gen.exe'
@@ -77,7 +81,22 @@ if ($LASTEXITCODE -ne 0) { throw 'VLC plugin cache generation failed.' }
 
 $sourceDestination = Join-Path $stage 'source\vlc-qt'
 New-Item -ItemType Directory -Force -Path $sourceDestination | Out-Null
-Copy-Item -Path (Join-Path $source '*') -Destination $sourceDestination -Recurse -Force
+$repository = (& git -C $project rev-parse --show-toplevel).Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Git repository unavailable for source packaging.' }
+$sourcePrefix = 'experiments/vlc-flubber/vlc-qt/'
+$trackedFiles = @(& git -C $repository ls-files -- 'experiments/vlc-flubber/vlc-qt')
+if ($LASTEXITCODE -ne 0 -or $trackedFiles.Count -eq 0) {
+    throw 'No tracked VLC Qt integration source is available for packaging.'
+}
+foreach ($trackedFile in $trackedFiles) {
+    if (-not $trackedFile.StartsWith($sourcePrefix, [StringComparison]::Ordinal)) {
+        throw "Unexpected source path: $trackedFile"
+    }
+    $relative = $trackedFile.Substring($sourcePrefix.Length)
+    $destination = Join-Path $sourceDestination $relative
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
+    Copy-Item -LiteralPath (Join-Path $repository $trackedFile) -Destination $destination
+}
 Copy-Item -LiteralPath (Join-Path $project 'package-stock-vlc.ps1'),
     (Join-Path $project 'STOCK-VLC-INTEGRATION.md') -Destination (Join-Path $stage 'source')
 New-Item -ItemType Directory -Force -Path (Join-Path $stage 'licenses') | Out-Null
@@ -91,7 +110,8 @@ $manifest = [ordered]@{
     files = [ordered]@{}
 }
 foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
-                   'plugins\gui\libqt_plugin.dll', 'plugins\plugins.dat')) {
+                   'plugins\gui\libqt_plugin.dll', 'plugins\plugins.dat',
+                   'flubber_bridge.dll')) {
     $path = Join-Path $stage $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Expected package file is missing: $name"
