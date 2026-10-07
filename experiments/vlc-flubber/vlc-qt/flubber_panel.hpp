@@ -462,6 +462,8 @@ public:
         flubberForm->addRow( tr( "Color anchors" ), anchors );
         QFormLayout *colorForm = page( tr( "Colors" ) );
         const char *colorNames[] = { "up", "down", "left", "right", "idle", "outline", "halo", "cursor" };
+        const QString colorLabels[] = { tr( "Up" ), tr( "Down" ), tr( "Left" ), tr( "Right" ),
+            tr( "Idle" ), tr( "Outline" ), tr( "Halo" ), tr( "Cursor" ) };
         QPushButton *colorButtons[8];
         for( int i = 0; i < 8; ++i )
         {
@@ -469,7 +471,7 @@ public:
             const QString color = visual.value( "colors" ).toObject().value( QLatin1String( colorNames[i] ) ).toString();
             colorButtons[i]->setText( color );
             colorButtons[i]->setStyleSheet( "background-color: " + color + ";" );
-            colorForm->addRow( QString::fromLatin1( colorNames[i] ), colorButtons[i] );
+            colorForm->addRow( colorLabels[i], colorButtons[i] );
             connect( colorButtons[i], &QPushButton::clicked, &dialog, [&, i]() {
                 const QColor chosen = QColorDialog::getColor( QColor( colorButtons[i]->text() ), &dialog );
                 if( chosen.isValid() ) { colorButtons[i]->setText( chosen.name() );
@@ -479,6 +481,9 @@ public:
         QFormLayout *mappingForm = page( tr( "Mappings" ) );
         const char *mappingNames[] = { "oscillationFrequency", "edgeSmoothness", "projectionAmplitude",
             "pulseSynchrony", "waveSizeVariation", "saturation" };
+        const QString mappingLabels[] = { tr( "Oscillation speed" ), tr( "Edge smoothness" ),
+            tr( "Projection size" ), tr( "Pulse synchrony" ), tr( "Wave size variation" ),
+            tr( "Color saturation" ) };
         QDoubleSpinBox *mappingMin[6], *mappingMax[6]; QComboBox *mappingDriver[6]; QCheckBox *mappingReverse[6];
         const QString drivers[] = { "x-axis", "y-axis", "angle", "radius" };
         for( int i = 0; i < 6; ++i )
@@ -493,7 +498,7 @@ public:
             line->addWidget( new QLabel( tr( "Min" ), row ) ); line->addWidget( mappingMin[i] );
             line->addWidget( new QLabel( tr( "Max" ), row ) ); line->addWidget( mappingMax[i] );
             line->addWidget( mappingDriver[i] ); line->addWidget( mappingReverse[i] );
-            mappingForm->addRow( QString::fromLatin1( mappingNames[i] ), row );
+            mappingForm->addRow( mappingLabels[i], row );
         }
         QFormLayout *gridForm = page( tr( "2D grid" ) );
         QSpinBox *columns = spin( &dialog, 3, 2001, gridColumns_, QString() ); columns->setSingleStep( 2 );
