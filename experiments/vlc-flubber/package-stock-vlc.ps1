@@ -4,7 +4,10 @@ param(
     [string]$QtPluginPath,
     [Parameter(Mandatory = $true)]
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
-    [string]$BridgeDllPath
+    [string]$BridgeDllPath,
+    [Parameter(Mandatory = $true)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
+    [string]$MinGwBin
 )
 
 $ErrorActionPreference = 'Stop'
@@ -72,7 +75,43 @@ Copy-Item -Path (Join-Path $vlc '*') -Destination $stage -Recurse -Force
 
 $plugin = Join-Path $stage 'plugins\gui\libqt_plugin.dll'
 Copy-Item -LiteralPath $QtPluginPath -Destination $plugin -Force
-Copy-Item -LiteralPath $BridgeDllPath -Destination (Join-Path $stage 'flubber_bridge.dll') -Force
+$bridge = Join-Path $stage 'flubber_bridge.dll'
+Copy-Item -LiteralPath $BridgeDllPath -Destination $bridge -Force
+
+# The MSYS2 Qt 5 build is dynamic. Deploy its Windows platform plugin and the
+# exact transitive MinGW DLL imports used by the modified Qt module.
+$objdump = Join-Path $MinGwBin 'objdump.exe'
+$qwindows = Join-Path $MinGwBin '..\share\qt5\plugins\platforms\qwindows.dll'
+if (-not (Test-Path -LiteralPath $objdump -PathType Leaf) -or
+    -not (Test-Path -LiteralPath $qwindows -PathType Leaf)) {
+    throw 'MinGW objdump or Qt Windows platform plugin is missing.'
+}
+$platform = Join-Path $stage 'qt5\plugins\platforms\qwindows.dll'
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $platform) | Out-Null
+Copy-Item -LiteralPath $qwindows -Destination $platform
+@('[Paths]', 'Plugins=qt5/plugins') |
+    Set-Content -LiteralPath (Join-Path $stage 'qt.conf') -Encoding ascii
+$queue = [Collections.Generic.Queue[string]]::new()
+foreach ($binary in @($plugin, $bridge, $platform)) { $queue.Enqueue($binary) }
+$visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+$runtimeDlls = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+while ($queue.Count -gt 0) {
+    $binary = $queue.Dequeue()
+    if (-not $visited.Add($binary)) { continue }
+    foreach ($line in (& $objdump -p $binary)) {
+        if ($line -notmatch '^\s*DLL Name:\s*(\S+)') { continue }
+        $dllName = $Matches[1]
+        $bundled = Join-Path $stage $dllName
+        $fromMinGw = Join-Path $MinGwBin $dllName
+        if (Test-Path -LiteralPath $bundled -PathType Leaf) {
+            $queue.Enqueue($bundled)
+        } elseif (Test-Path -LiteralPath $fromMinGw -PathType Leaf) {
+            Copy-Item -LiteralPath $fromMinGw -Destination $bundled
+            $runtimeDlls.Add($dllName) | Out-Null
+            $queue.Enqueue($bundled)
+        }
+    }
+}
 
 # VLC's plugin cache embeds module metadata and must match the replacement DLL.
 $cachegen = Join-Path $stage 'vlc-cache-gen.exe'
@@ -111,7 +150,8 @@ $manifest = [ordered]@{
 }
 foreach ($name in @('vlc.exe', 'libvlc.dll', 'libvlccore.dll',
                    'plugins\gui\libqt_plugin.dll', 'plugins\plugins.dat',
-                   'flubber_bridge.dll')) {
+                   'flubber_bridge.dll', 'qt.conf',
+                   'qt5\plugins\platforms\qwindows.dll') + @($runtimeDlls | Sort-Object)) {
     $path = Join-Path $stage $name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Expected package file is missing: $name"
