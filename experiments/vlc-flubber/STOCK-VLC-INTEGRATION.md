@@ -48,9 +48,12 @@ View menu is assembled in `menus.cpp::VLCMenuBar::ViewMenu()`; an added action
 there preserves the other menus and commands. This is a source map, not a
 tested patch.
 
-Before implementation, obtain the project-required approval for a new native
-unsafe boundary and establish a reproducible Windows build of the pinned VLC Qt
-module. The current machine has VLC 3.0.20 and MSVC but no MSYS2/Qt toolchain.
+The user explicitly approved the native VLC Qt integration on 2026-10-07 and
+asked to finish the full project. The new boundary still requires a documented
+audit of native handles, threads, teardown, errors, and lifecycle. Establish a
+reproducible Windows build of the pinned VLC Qt module before claiming a player
+candidate. At approval time the machine had VLC 3.0.20 and MSVC but no
+MSYS2/Qt toolchain.
 
 ## Planner appearance export receipt
 

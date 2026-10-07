@@ -6371,3 +6371,29 @@ The native VLC player still accepts only its older panel/step preset JSON and
 cannot read `vlc-flubber-appearance/v1`; no native or installed visual claim
 follows. Full Research tests passed 1,231/1,231, with Pages and desktop source
 build verifiers passing in this isolated branch.
+
+## Approved native VLC Qt implementation pass — 2026-10-07
+
+The user explicitly approved native VLC Qt integration and asked to finish the
+full VLC Flubber project. Stage: Backend Verification, with UI and installed
+verification before any claim of completion. The goal retains every stock VLC
+menu and command, a black idle/video background, persistent bottom Flubber,
+View → Flubber Controls, strict Planner appearance JSON import, manual size and
+position, and final visual/command checks. This is still the separate `for-ai/75`
+side quest; P5-02/P5-06 producer is complete and unchanged, and no R1/RR item
+is claimed. Shared contract: `vlc-flubber-appearance/v1` in
+`site/src/research/vlc-flubber-appearance.js`.
+
+Root integration owner: `codex/segment-vlc-player-ui` at `0d0689a`, worktree
+`C:\Users\gfeje\Documents\GitHub\affect-tracker-research-vlc-player-ui`.
+Native Qt owner allocation: separate `codex/segment-vlc-qt-native` worktree;
+allowed edits under `experiments/vlc-flubber/vlc-qt/` and its own side-quest
+tests/documentation, no Planner or main Runner edits. Deliverable: pinned
+VLC 3.0.20 Qt source patch implementing the black split surface, bottom
+Flubber, View action, JSON import, size/position controls, and native lifecycle
+audit. Evidence due: source patch, focused native checks, built Qt candidate if
+toolchain available, exact remaining runtime gaps. Build/toolchain role is
+read-only for tracked source and works in its own ignored build directory;
+deliverable is a reproducible unmodified VLC Qt build route and provenance.
+Root reserves packaging, integration, installed GUI/command verification and
+final claim. Reviews follow the owner patch barrier; no shared worktree writers.
