@@ -63,6 +63,10 @@ $modifiedExeHash = (Get-FileHash -LiteralPath $LauncherExePath -Algorithm SHA256
 if ($modifiedExeHash -eq $stockExeHash) {
     throw 'The supplied VLC launcher is identical to stock and cannot preload Qt dependencies.'
 }
+$launcherImports = @(& (Join-Path $MinGwBin 'objdump.exe') -p $LauncherExePath | Select-String 'DLL Name: libvlc.dll')
+if ($LASTEXITCODE -ne 0 -or $launcherImports.Count -eq 0) {
+    throw 'The supplied launcher does not import libvlc.dll; use bin/.libs/vlc.exe, not the libtool wrapper.'
+}
 
 # The package retains the complete official VLC tree and uses a launcher built
 # from its pinned Windows source to preload the dynamic Qt module dependencies.
