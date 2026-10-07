@@ -1,5 +1,38 @@
 # Stock VLC Flubber integration decision record
 
+## Installed 0.3.0 candidate — 2026-10-07
+
+The pinned VLC 3.0.20 Qt module is patched and built. The resulting player
+retains VLC's stock menu bar and command implementations, transport/seek/volume
+controls, and native video playback. Its idle canvas is black; the bottom
+Flubber region stays black during playback. The added **View → Flubber
+Controls…** action opens the native dialog with strict
+`vlc-flubber-appearance/v1` import and Flubber size, horizontal position, and
+vertical position controls. The Planner exports this appearance file from the
+Classic Flubber preview without experiment or response settings.
+
+The standalone Inno installer was built from the pinned official VLC archive,
+the compiled Qt module and launcher, and the Rust LSL/CSV bridge. A fresh
+silent install succeeded. Every file listed in the installed manifest matched
+its SHA-256, and the package omitted `plugins.dat` so installation does not
+invalidate VLC's plugin cache. Installed idle, playing, and settings dialog
+captures are under `build/evidence/final-installed-*.png`; the playing capture
+shows video above the black Flubber surface with stock controls visible.
+UI Automation enumerated the stock Media, Playback, Audio, Video, Subtitle,
+Tools, View, and Help menus and the added View action. The action opened the
+settings dialog. The offscreen Qt panel check imported the Planner appearance
+JSON, rejected malformed/duplicate fields, and checked manual size and
+position. Physical mouse rating and every individual stock VLC command were
+not exhaustively exercised in this installed session.
+
+The installed player accepted a normal video through VLC RC, wrote the
+selected CSV, and completed an independent Recorder trial. Recorder subscribed
+before playback and promoted XDF with 331 affect samples and the exact
+`test-ui-10s.mp4_Start`, `_End`, and `_Stop` markers. A Windows canonical
+`\\?\` video path had initially caused VLC RC to reject the media; the Recorder
+now sends the ordinary Win32 path. This is an experimental Windows player
+candidate, not a main Runner research qualification.
+
 Goal: retain the complete VLC 3.0.20 Qt menu and command set, add a persistent
 Flubber surface beneath video on the same black player background, and offer
 **View → Flubber Controls…** for appearance JSON import and manual size/position.

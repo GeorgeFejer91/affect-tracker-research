@@ -1,5 +1,28 @@
 # Native VLC Flubber side quest
 
+## Current stock VLC Qt player candidate, 2026-10-07
+
+The approved 0.3.0 side quest now uses the pinned VLC 3.0.20 Qt shell with its
+full stock menus and commands, plus a persistent black bottom Flubber panel
+and **View → Flubber Controls…**. Idle video and Flubber surfaces share the
+same black background. Planner's Classic Flubber preview exports standalone
+`vlc-flubber-appearance/v1` JSON; the native dialog imports it and controls
+Flubber size and normalized horizontal/vertical position. The older LibVLC
+shell and release receipts below are historical evidence for this side quest.
+
+The standalone installer built and installed in a fresh directory. Installed
+manifest file hashes matched; the package has no stale VLC plugin cache.
+Installed idle, playing, and settings captures are recorded in
+`experiments/vlc-flubber/build/evidence/final-installed-*.png`. A direct
+installed player probe played original video and wrote its selected CSV. The
+separate Recorder subscribed before playback, then finalized an XDF with 331
+affect samples and Start/End/Stop markers for the ten-second test clip. The
+stock Qt menus and added View action were enumerated on the installed build;
+the dialog opened. Native panel checks covered Planner appearance import,
+strict JSON rejection, and manual size/position. This is a VLC side-quest
+candidate; it does not change the main Planner/Runner research qualification
+or claim exhaustive physical-input testing of every VLC command.
+
 ## One current VLC line: mouse rating and control markers, 2026-10-06
 
 The current source now keeps the separated LibVLC player and separate

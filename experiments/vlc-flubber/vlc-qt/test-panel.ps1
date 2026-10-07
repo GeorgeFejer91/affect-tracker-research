@@ -1,10 +1,13 @@
 param(
     [Parameter(Mandatory = $true)][string]$QtBin,
     [Parameter(Mandatory = $true)][string]$AppearanceJson,
-    [string]$OutputDirectory = (Join-Path $PSScriptRoot '../build/panel-check')
+    [string]$OutputDirectory = ''
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $OutputDirectory) {
+    $OutputDirectory = Join-Path $PSScriptRoot '../build/panel-check'
+}
 $qt = (Resolve-Path -LiteralPath $QtBin).Path
 $preset = (Resolve-Path -LiteralPath $AppearanceJson).Path
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null

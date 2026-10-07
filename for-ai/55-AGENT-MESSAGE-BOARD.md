@@ -6397,3 +6397,18 @@ read-only for tracked source and works in its own ignored build directory;
 deliverable is a reproducible unmodified VLC Qt build route and provenance.
 Root reserves packaging, integration, installed GUI/command verification and
 final claim. Reviews follow the owner patch barrier; no shared worktree writers.
+
+## Stock VLC integration verification handoff — 2026-10-07
+
+Root integrated the pinned VLC Qt patch, Planner appearance export, and
+Recorder adapter on `codex/segment-vlc-player-ui`. The fresh standalone 0.3.0
+install retained stock menus/controls, showed black idle and bottom Flubber
+surfaces, and opened View → Flubber Controls with appearance JSON import and
+manual size/position controls. The installed manifest hashes matched and the
+plugin cache was omitted. The independent Recorder subscribed before playback
+and finalized XDF with 331 affect samples plus exact Start/End/Stop markers;
+VLC wrote the selected CSV. The Recorder RC path normalizes Windows verbatim
+paths before sending video to VLC. Evidence and claim limits are in
+`experiments/vlc-flubber/STOCK-VLC-INTEGRATION.md`. No main Runner or P1–P7/R1
+qualification is claimed. Physical input and every stock command were not
+exhaustively exercised.
