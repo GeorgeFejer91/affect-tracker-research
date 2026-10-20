@@ -1,0 +1,15 @@
+[package]
+name = "flubber-vlc-qt-bridge"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-2.0-or-later"
+
+[lib]
+name = "flubber_bridge"
+crate-type = ["cdylib"]
+
+[dependencies]
+labstream = "0.1.0"
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation", "Win32_System_Threading", "Win32_Media", "Win32_Security",
+] }

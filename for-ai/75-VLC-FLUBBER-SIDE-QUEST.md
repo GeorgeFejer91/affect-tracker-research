@@ -1,5 +1,72 @@
 # Native VLC Flubber side quest
 
+## Three simultaneous feedback modes, 2026-10-07
+
+The user extended the experimental stock VLC player with three independently
+visible elements: Classic Flubber, a 2D affect grid, and the archived
+playground's 21×21 synthetic photo-face transition matrix. Main-feedback
+hotkeys Ctrl+Shift+1/2/3 select the prominent element; Ctrl+Alt+1/2/3 toggle
+visibility, allowing all three at once. Flubber → Settings exposes panel and
+per-element layout, every v1 appearance field, grid detail, portrait preset,
+face transition speed, and mouse/arrow input. It imports Planner's standalone
+appearance JSON and reads/writes full `vlc-feedback-settings/v2` files. Qt
+startup flags and VLC's loopback RC interface support commands while running.
+The pinned native Qt patch and isolated panel test compile, including a
+three-layer render, JSON round trip, face selection, and invalid-file rejection.
+The installed VLC and Flubbercorder bundles each matched a 49-file manifest
+with nine lossless PNG atlases. Installed captures show stock menus, controls,
+black idle/player surfaces, direct video, and all three feedback modes;
+physical numeric and input hotkeys plus live RC commands changed the player.
+This side-quest extension does not reactivate archived Face/Photoatlas in the
+main Planner/Runner application or change its v1 research qualification.
+
+## Dedicated top-level Flubber menu, 2026-10-07
+
+The user clarified the desired menu placement with a VLC screenshot. The
+current 0.3.0 Qt player now has a top-level **Flubber** menu between View and
+Help. **Flubber → Settings…** opens all native Flubber controls: appearance
+JSON import, panel height, Flubber size, and horizontal/vertical position.
+The earlier View entry was moved. The pinned patch applied to pristine VLC
+source, and the rebuilt standalone and companion Recorder installers passed
+fresh installs with matching 36-file VLC manifests. Installed idle, playing,
+dialog, and Recorder captures are under
+`experiments/vlc-flubber/build/evidence/top-menu-*.png`. The upgraded player
+also completed the ten-second Recorder trial with 331 affect samples and
+Start/End/Stop markers in XDF. This is the separate VLC side quest and does
+not alter main Runner qualification.
+
+## Current stock VLC Qt player candidate, 2026-10-07
+
+The approved 0.3.0 side quest now uses the pinned VLC 3.0.20 Qt shell with its
+full stock menus and commands, plus a persistent black bottom Flubber panel
+and **View → Flubber Controls…**. Idle video and Flubber surfaces share the
+same black background. Planner's Classic Flubber preview exports standalone
+`vlc-flubber-appearance/v1` JSON; the native dialog imports it and controls
+Flubber size and normalized horizontal/vertical position. The older LibVLC
+shell and release receipts below are historical evidence for this side quest.
+
+The standalone installer built and installed in a fresh directory. Installed
+manifest file hashes matched; the package has no stale VLC plugin cache.
+Installed idle, playing, and settings captures are recorded in
+`experiments/vlc-flubber/build/evidence/final-installed-*.png`. A direct
+installed player probe played original video and wrote its selected CSV. The
+separate Recorder subscribed before playback, then finalized an XDF with 331
+affect samples and Start/End/Stop markers for the ten-second test clip. The
+stock Qt menus and added View action were enumerated on the installed build;
+the dialog opened. Native panel checks covered Planner appearance import,
+strict JSON rejection, and manual size/position. This is a VLC side-quest
+candidate; it does not change the main Planner/Runner research qualification
+or claim exhaustive physical-input testing of every VLC command.
+
+The companion Flubbercorder Tauri release build and Inno installer also passed
+in a fresh isolated install. Its bundled stock VLC manifest matched all 36
+listed file hashes, and the installed Recorder opened with the test recipe.
+The obsolete LibVLC preset-folder control was removed; the screen now routes
+appearance setup to the VLC View menu. The installed screen capture is
+`experiments/vlc-flubber/build/evidence/final-installed-recorder.png`. The
+Recorder's full interactive Tauri session remains separate from the completed
+native CLI/XDF trial above.
+
 ## One current VLC line: mouse rating and control markers, 2026-10-06
 
 The current source now keeps the separated LibVLC player and separate

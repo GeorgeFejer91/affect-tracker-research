@@ -1,4 +1,5 @@
 build/
+player-launcher/target/
 *.csv
 *.log
 __pycache__/
