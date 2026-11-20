@@ -274,7 +274,7 @@ function checkText() {
   scheduled = true;
   requestAnimationFrame(() => {
     scheduled = false;
-    for (const element of document.querySelectorAll('button.fit, dd, .stream-name, .stream-state, #affect, .marker-view li, #variables-title, #variables-note, .volume-control span')) {
+    for (const element of document.querySelectorAll('button.fit, dd, .stream-name, .stream-state, #affect, .marker-view li, #variables-title, #variables-note, #flubber-settings-hint, .volume-control span')) {
       const style = getComputedStyle(element);
       const text = element.textContent.trim();
       if (!text) continue;

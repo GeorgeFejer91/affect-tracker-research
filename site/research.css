@@ -2444,6 +2444,29 @@ tbody tr:last-child td {
   font-size: 0.78rem;
 }
 
+#preview-appearance-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.7rem;
+  line-height: 1.25rem;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: center;
+}
+
+.preview-subsection-heading.appearance-export-wrap {
+  flex-wrap: wrap;
+}
+
+.appearance-export-wrap #preview-appearance-export {
+  flex: 1 1 100%;
+}
+
 .preview-affect-map-layout {
   display: grid;
   grid-template-areas:
